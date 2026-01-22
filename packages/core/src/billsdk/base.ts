@@ -1,7 +1,11 @@
+import { memoryAdapter } from "../adapters/memory-adapter";
 import { createRouter } from "../api";
-import type { BillingContext } from "../context/create-context";
+import {
+  type BillingContext,
+  createBillingContext,
+} from "../context/create-context";
 import type { BillSDK, InferredAPI } from "../types/billsdk";
-import type { BillSDKOptions } from "../types/options";
+import type { BillSDKOptions, FeatureConfig } from "../types/options";
 
 /**
  * Base error codes for BillSDK
@@ -169,20 +173,25 @@ function createAPI(contextPromise: Promise<BillingContext>): InferredAPI {
 }
 
 /**
+ * Initialize the billing context
+ */
+async function init(options: BillSDKOptions): Promise<BillingContext> {
+  const adapter = options.database ?? memoryAdapter();
+  return createBillingContext(adapter, options);
+}
+
+/**
  * Create a BillSDK instance
  *
  * @param options - Configuration options
- * @param initFn - Initialization function that creates the context
  * @returns BillSDK instance
  */
 // biome-ignore lint/suspicious/noExplicitAny: Generic constraint flexibility for readonly/mutable arrays
 export function createBillSDK<Options extends BillSDKOptions<any>>(
   options: Options,
-  // biome-ignore lint/suspicious/noExplicitAny: Init function accepts any valid options
-  initFn: (options: any) => Promise<BillingContext>,
 ): BillSDK<Options> {
   // Lazy initialization - context is created only when needed
-  const contextPromise = initFn(options);
+  const contextPromise = init(options);
 
   // Collect error codes from plugins
   const errorCodes: Record<string, string> = {};
@@ -213,4 +222,29 @@ export function createBillSDK<Options extends BillSDKOptions<any>>(
       ...errorCodes,
     } as BillSDK<Options>["$ERROR_CODES"],
   };
+}
+
+/**
+ * Create a BillSDK instance
+ *
+ * @example
+ * ```typescript
+ * import { billsdk } from "@billsdk/core";
+ *
+ * export const billing = billsdk({
+ *   basePath: "/api/billing",
+ *   features: [
+ *     { code: "export", name: "Export" },
+ *   ],
+ *   plans: [
+ *     { code: "pro", features: ["export"] }, // Validated!
+ *   ],
+ * });
+ * ```
+ */
+export function billsdk<const TFeatures extends readonly FeatureConfig<string>[]>(
+  options: BillSDKOptions<TFeatures>,
+): BillSDK<BillSDKOptions<TFeatures>> {
+  // biome-ignore lint/suspicious/noExplicitAny: Type coercion needed for generic constraint compatibility
+  return createBillSDK(options as any);
 }

@@ -3,7 +3,7 @@
 // Adapters
 export { memoryAdapter } from "./adapters/memory-adapter";
 // Main factory - the only way to create a billing instance
-export { billsdk, default } from "./billsdk";
+export { billsdk } from "./billsdk";
 
 // Types - only what users need
 export type {

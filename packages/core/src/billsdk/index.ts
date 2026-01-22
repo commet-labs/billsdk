@@ -1,2 +1,1 @@
-export { createBillSDK } from "./base";
-export { billsdk, default } from "./full";
+export { billsdk, createBillSDK } from "./base";
