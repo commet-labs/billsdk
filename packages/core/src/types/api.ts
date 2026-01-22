@@ -39,11 +39,12 @@ export type EndpointHandler<
 
 /**
  * Billing endpoint definition
- * Using 'any' for handler to allow flexible typing in route definitions
+ * Uses GenericBillingEndpointContext for flexible typing while maintaining type safety
  */
 export interface BillingEndpoint {
   path: string;
   options: EndpointOptions;
+  // biome-ignore lint/suspicious/noExplicitAny: Handler accepts generic context for flexible endpoint typing
   handler: (context: any) => Promise<unknown> | unknown;
 }
 
