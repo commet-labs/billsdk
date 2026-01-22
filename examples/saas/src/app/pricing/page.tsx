@@ -1,4 +1,4 @@
-import { billing } from "@/lib/billing";
+import { bill } from "@/lib/billing";
 import { PricingCard } from "@/components/pricing-card";
 import { IntervalToggle } from "./interval-toggle";
 import { SubscribeButton } from "./subscribe-button";
@@ -14,7 +14,7 @@ export default async function PricingPage({ searchParams }: PageProps) {
   const interval: BillingInterval =
     intervalParam === "yearly" ? "yearly" : "monthly";
 
-  const plans = await billing.api.listPlans();
+  const plans = await bill.api.listPlans();
 
   return (
     <div className="min-h-screen py-12 px-4">

@@ -7,7 +7,7 @@ import * as schema from "./db/schema";
 /**
  * BillSDK instance for the SaaS example
  */
-export const billing = billsdk({
+export const bill = billsdk({
   // Database adapter
   database: drizzleAdapter(db, {
     schema,
@@ -19,9 +19,6 @@ export const billing = billsdk({
     secretKey: process.env.STRIPE_SECRET_KEY!,
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
   }),
-
-  // API base path
-  basePath: "/api/billing",
 
   // Secret for signing
   secret: process.env.BILLSDK_SECRET || "dev-secret-change-in-production",
