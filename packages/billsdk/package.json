@@ -1,0 +1,56 @@
+{
+  "name": "billsdk",
+  "version": "0.1.0",
+  "description": "The billing SDK for SaaS applications",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "default": "./dist/client/index.js"
+    },
+    "./adapters/memory": {
+      "types": "./dist/adapters/memory-adapter/index.d.ts",
+      "default": "./dist/adapters/memory-adapter/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check . --write",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "zod": "latest",
+    "defu": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "tsup": "latest",
+    "vitest": "latest",
+    "@types/node": "latest",
+    "@biomejs/biome": "latest"
+  },
+  "keywords": [
+    "billing",
+    "sdk",
+    "saas",
+    "subscriptions",
+    "payments",
+    "typescript"
+  ]
+}

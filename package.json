@@ -1,0 +1,23 @@
+{
+  "name": "billsdk-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "clean": "turbo clean && rm -rf node_modules .turbo"
+  },
+  "devDependencies": {
+    "turbo": "latest",
+    "@biomejs/biome": "latest",
+    "typescript": "latest"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  }
+}
