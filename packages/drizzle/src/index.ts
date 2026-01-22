@@ -1,1 +1,5 @@
-export { drizzleAdapter, type DrizzleAdapterConfig, type DrizzleDB } from "./drizzle-adapter";
+export {
+  type DrizzleAdapterConfig,
+  type DrizzleDB,
+  drizzleAdapter,
+} from "./drizzle-adapter";

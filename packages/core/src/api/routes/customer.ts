@@ -28,11 +28,15 @@ export const customerEndpoints: Record<string, BillingEndpoint> = {
       method: "POST",
       body: createCustomerSchema,
     },
-    handler: async (context: EndpointContext<z.infer<typeof createCustomerSchema>>) => {
+    handler: async (
+      context: EndpointContext<z.infer<typeof createCustomerSchema>>,
+    ) => {
       const { ctx, body } = context;
 
       // Check if customer already exists
-      const existing = await ctx.internalAdapter.findCustomerByExternalId(body.externalId);
+      const existing = await ctx.internalAdapter.findCustomerByExternalId(
+        body.externalId,
+      );
       if (existing) {
         return { customer: existing };
       }
@@ -49,10 +53,14 @@ export const customerEndpoints: Record<string, BillingEndpoint> = {
       method: "GET",
       query: getCustomerQuerySchema,
     },
-    handler: async (context: EndpointContext<unknown, z.infer<typeof getCustomerQuerySchema>>) => {
+    handler: async (
+      context: EndpointContext<unknown, z.infer<typeof getCustomerQuerySchema>>,
+    ) => {
       const { ctx, query } = context;
 
-      const customer = await ctx.internalAdapter.findCustomerByExternalId(query.externalId);
+      const customer = await ctx.internalAdapter.findCustomerByExternalId(
+        query.externalId,
+      );
       if (!customer) {
         return { customer: null };
       }

@@ -1,1 +1,1 @@
-export { stripePayment, type StripePaymentOptions } from "./stripe-payment";
+export { type StripePaymentOptions, stripePayment } from "./stripe-payment";

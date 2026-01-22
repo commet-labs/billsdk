@@ -1,4 +1,8 @@
-import type { CheckoutResult, PaymentAdapter, WebhookResult } from "@billsdk/core";
+import type {
+  CheckoutResult,
+  PaymentAdapter,
+  WebhookResult,
+} from "@billsdk/core";
 import type Stripe from "stripe";
 
 /**
@@ -43,7 +47,8 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
 
     const { default: Stripe } = await import("stripe");
     stripe = new Stripe(options.secretKey, {
-      apiVersion: (options.apiVersion as Stripe.LatestApiVersion) ?? "2024-11-20.acacia",
+      apiVersion:
+        (options.apiVersion as Stripe.LatestApiVersion) ?? "2024-11-20.acacia",
     });
 
     return stripe;
@@ -69,7 +74,8 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
       }
 
       // Map interval to Stripe format
-      const stripeInterval = params.price.interval === "yearly" ? "year" : "month";
+      const stripeInterval =
+        params.price.interval === "yearly" ? "year" : "month";
 
       // Create checkout session
       const session = await stripeClient.checkout.sessions.create({

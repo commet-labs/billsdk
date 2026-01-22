@@ -1,7 +1,12 @@
 import type { Customer, Plan } from "../types/models";
 import { asyncAtom, atom } from "./atoms";
 import { createFetch } from "./proxy";
-import type { AsyncAtom, ClientConfig, HealthResponse, SubscriptionResponse } from "./types";
+import type {
+  AsyncAtom,
+  ClientConfig,
+  HealthResponse,
+  SubscriptionResponse,
+} from "./types";
 
 /**
  * Billing client interface
@@ -14,7 +19,9 @@ export interface BillingClient {
 
   // API methods
   customer: {
-    get(options: { query: { externalId: string } }): Promise<{ customer: Customer | null }>;
+    get(options: {
+      query: { externalId: string };
+    }): Promise<{ customer: Customer | null }>;
     create(options: {
       body: { externalId: string; email: string; name?: string };
     }): Promise<{ customer: Customer }>;
@@ -31,7 +38,9 @@ export interface BillingClient {
   };
 
   subscription: {
-    get(options: { query: { customerId: string } }): Promise<SubscriptionResponse>;
+    get(options: {
+      query: { customerId: string };
+    }): Promise<SubscriptionResponse>;
   };
 
   health: {
@@ -78,10 +87,13 @@ export function createBillingClient(config: ClientConfig): BillingClient {
       const customerId = customerIdAtom.get();
       if (!customerId) return null;
 
-      const response = await $fetch<{ customer: Customer | null }>("/customer", {
-        method: "GET",
-        query: { externalId: customerId },
-      });
+      const response = await $fetch<{ customer: Customer | null }>(
+        "/customer",
+        {
+          method: "GET",
+          query: { externalId: customerId },
+        },
+      );
       return response.customer;
     },
     { autoFetch: false },
@@ -160,7 +172,11 @@ export function createBillingClient(config: ClientConfig): BillingClient {
     },
 
     async refresh() {
-      await Promise.all([$customer.refresh(), $subscription.refresh(), $plans.refresh()]);
+      await Promise.all([
+        $customer.refresh(),
+        $subscription.refresh(),
+        $plans.refresh(),
+      ]);
     },
   };
 }

@@ -1,3 +1,4 @@
+import { XCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { XCircle } from "lucide-react";
 
 export default function CancelPage() {
   return (

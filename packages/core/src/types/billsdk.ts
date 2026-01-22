@@ -1,7 +1,21 @@
 import type { BillingContext } from "../context/create-context";
-import type { Customer, Feature, Plan, PlanFeature, PlanPrice, Subscription } from "./models";
+import type {
+  Customer,
+  Feature,
+  Plan,
+  PlanPrice,
+  Subscription,
+} from "./models";
 import type { BillSDKOptions } from "./options";
-import type { CheckoutResult } from "./payment";
+
+/**
+ * Feature access info returned by listFeatures
+ */
+export interface FeatureAccess {
+  code: string;
+  name: string;
+  enabled: boolean;
+}
 
 /**
  * Inferred API type from endpoints
@@ -9,14 +23,20 @@ import type { CheckoutResult } from "./payment";
 export interface InferredAPI {
   // Customer endpoints
   getCustomer: (params: { externalId: string }) => Promise<Customer | null>;
-  createCustomer: (data: { externalId: string; email: string; name?: string }) => Promise<Customer>;
+  createCustomer: (data: {
+    externalId: string;
+    email: string;
+    name?: string;
+  }) => Promise<Customer>;
 
-  // Plan endpoints
+  // Plan endpoints (from config, not DB)
   listPlans: () => Promise<Plan[]>;
-  getPlan: (params: { id: string }) => Promise<Plan | null>;
+  getPlan: (params: { code: string }) => Promise<Plan | null>;
 
   // Subscription endpoints
-  getSubscription: (params: { customerId: string }) => Promise<Subscription | null>;
+  getSubscription: (params: {
+    customerId: string;
+  }) => Promise<Subscription | null>;
   createSubscription: (params: {
     customerId: string;
     planCode: string;
@@ -26,8 +46,11 @@ export interface InferredAPI {
   }) => Promise<{ subscription: Subscription; checkoutUrl: string }>;
 
   // Feature endpoints
-  checkFeature: (params: { customerId: string; feature: string }) => Promise<{ allowed: boolean }>;
-  listFeatures: (params: { customerId: string }) => Promise<PlanFeature[]>;
+  checkFeature: (params: {
+    customerId: string;
+    feature: string;
+  }) => Promise<{ allowed: boolean }>;
+  listFeatures: (params: { customerId: string }) => Promise<FeatureAccess[]>;
 
   // Health check
   health: () => Promise<{ status: "ok"; timestamp: string }>;
@@ -67,7 +90,6 @@ export interface BillSDK<Options extends BillSDKOptions = BillSDKOptions> {
     PlanPrice: PlanPrice;
     Subscription: Subscription;
     Feature: Feature;
-    PlanFeature: PlanFeature;
   };
 
   /**

@@ -31,9 +31,11 @@ export interface EndpointContext<TBody = unknown, TQuery = unknown> {
 /**
  * Endpoint handler function
  */
-export type EndpointHandler<TBody = unknown, TQuery = unknown, TResponse = unknown> = (
-  context: EndpointContext<TBody, TQuery>,
-) => Promise<TResponse> | TResponse;
+export type EndpointHandler<
+  TBody = unknown,
+  TQuery = unknown,
+  TResponse = unknown,
+> = (context: EndpointContext<TBody, TQuery>) => Promise<TResponse> | TResponse;
 
 /**
  * Billing endpoint definition

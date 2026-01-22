@@ -26,10 +26,18 @@ export const featureEndpoints: Record<string, BillingEndpoint> = {
       method: "GET",
       query: checkFeatureQuerySchema,
     },
-    handler: async (context: EndpointContext<unknown, z.infer<typeof checkFeatureQuerySchema>>) => {
+    handler: async (
+      context: EndpointContext<
+        unknown,
+        z.infer<typeof checkFeatureQuerySchema>
+      >,
+    ) => {
       const { ctx, query } = context;
 
-      const result = await ctx.internalAdapter.checkFeatureAccess(query.customerId, query.feature);
+      const result = await ctx.internalAdapter.checkFeatureAccess(
+        query.customerId,
+        query.feature,
+      );
       return result;
     },
   },
@@ -40,23 +48,43 @@ export const featureEndpoints: Record<string, BillingEndpoint> = {
       method: "GET",
       query: listFeaturesQuerySchema,
     },
-    handler: async (context: EndpointContext<unknown, z.infer<typeof listFeaturesQuerySchema>>) => {
+    handler: async (
+      context: EndpointContext<
+        unknown,
+        z.infer<typeof listFeaturesQuerySchema>
+      >,
+    ) => {
       const { ctx, query } = context;
 
       // Find customer
-      const customer = await ctx.internalAdapter.findCustomerByExternalId(query.customerId);
+      const customer = await ctx.internalAdapter.findCustomerByExternalId(
+        query.customerId,
+      );
       if (!customer) {
         return { features: [] };
       }
 
       // Find active subscription
-      const subscription = await ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
+      const subscription =
+        await ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
       if (!subscription) {
         return { features: [] };
       }
 
-      // Get plan features
-      const features = await ctx.internalAdapter.listPlanFeatures(subscription.planId);
+      // Get plan features from config (synchronous)
+      const featureCodes = ctx.internalAdapter.getPlanFeatures(
+        subscription.planCode,
+      );
+      const features = featureCodes.map((code) => {
+        const feature = ctx.internalAdapter.findFeatureByCode(code);
+        return {
+          code,
+          name: feature?.name ?? code,
+          type: feature?.type ?? "boolean",
+          enabled: true,
+        };
+      });
+
       return { features };
     },
   },

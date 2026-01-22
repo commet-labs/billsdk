@@ -11,7 +11,7 @@ const generateId = () => crypto.randomUUID();
 
 /**
  * Base billing schema
- * Defines the core tables for billing functionality
+ * Only tables that need persistence - plans/features come from config
  */
 export const billingSchema: DBSchema = {
   customer: defineTable({
@@ -55,82 +55,6 @@ export const billingSchema: DBSchema = {
     }),
   }),
 
-  plan: defineTable({
-    id: defineField({
-      type: "string",
-      primaryKey: true,
-      defaultValue: generateId,
-      input: false,
-    }),
-    code: defineField({
-      type: "string",
-      unique: true,
-      index: true,
-    }),
-    name: defineField({
-      type: "string",
-    }),
-    description: defineField({
-      type: "string",
-      required: false,
-    }),
-    isPublic: defineField({
-      type: "boolean",
-      defaultValue: true,
-    }),
-    createdAt: defineField({
-      type: "date",
-      defaultValue: () => new Date(),
-      input: false,
-    }),
-    updatedAt: defineField({
-      type: "date",
-      defaultValue: () => new Date(),
-      input: false,
-    }),
-  }),
-
-  planPrice: defineTable({
-    id: defineField({
-      type: "string",
-      primaryKey: true,
-      defaultValue: generateId,
-      input: false,
-    }),
-    planId: defineField({
-      type: "string",
-      index: true,
-      references: {
-        model: "plan",
-        field: "id",
-        onDelete: "cascade",
-      },
-    }),
-    amount: defineField({
-      type: "number",
-    }),
-    currency: defineField({
-      type: "string",
-      defaultValue: "usd",
-    }),
-    interval: defineField({
-      type: "string", // "monthly" | "quarterly" | "yearly"
-    }),
-    isDefault: defineField({
-      type: "boolean",
-      defaultValue: false,
-    }),
-    trialDays: defineField({
-      type: "number",
-      required: false,
-    }),
-    createdAt: defineField({
-      type: "date",
-      defaultValue: () => new Date(),
-      input: false,
-    }),
-  }),
-
   subscription: defineTable({
     id: defineField({
       type: "string",
@@ -147,23 +71,15 @@ export const billingSchema: DBSchema = {
         onDelete: "cascade",
       },
     }),
-    planId: defineField({
+    // Plan code from config (not a foreign key)
+    planCode: defineField({
       type: "string",
       index: true,
-      references: {
-        model: "plan",
-        field: "id",
-        onDelete: "restrict",
-      },
     }),
-    priceId: defineField({
-      type: "string",
-      index: true,
-      references: {
-        model: "planPrice",
-        field: "id",
-        onDelete: "restrict",
-      },
+    // Billing interval
+    interval: defineField({
+      type: "string", // "monthly" | "yearly"
+      defaultValue: "monthly",
     }),
     status: defineField({
       type: "string", // SubscriptionStatus
@@ -217,63 +133,6 @@ export const billingSchema: DBSchema = {
       input: false,
     }),
   }),
-
-  feature: defineTable({
-    id: defineField({
-      type: "string",
-      primaryKey: true,
-      defaultValue: generateId,
-      input: false,
-    }),
-    code: defineField({
-      type: "string",
-      unique: true,
-      index: true,
-    }),
-    name: defineField({
-      type: "string",
-    }),
-    type: defineField({
-      type: "string", // "boolean" | "metered" | "seats"
-      defaultValue: "boolean",
-    }),
-    createdAt: defineField({
-      type: "date",
-      defaultValue: () => new Date(),
-      input: false,
-    }),
-  }),
-
-  planFeature: defineTable({
-    id: defineField({
-      type: "string",
-      primaryKey: true,
-      defaultValue: generateId,
-      input: false,
-    }),
-    planId: defineField({
-      type: "string",
-      index: true,
-      references: {
-        model: "plan",
-        field: "id",
-        onDelete: "cascade",
-      },
-    }),
-    featureCode: defineField({
-      type: "string",
-      index: true,
-    }),
-    enabled: defineField({
-      type: "boolean",
-      defaultValue: true,
-    }),
-    createdAt: defineField({
-      type: "date",
-      defaultValue: () => new Date(),
-      input: false,
-    }),
-  }),
 };
 
 /**
@@ -289,11 +148,7 @@ export function getBillingSchema(): DBSchema {
  */
 export const TABLES = {
   CUSTOMER: "customer",
-  PLAN: "plan",
-  PLAN_PRICE: "planPrice",
   SUBSCRIPTION: "subscription",
-  FEATURE: "feature",
-  PLAN_FEATURE: "planFeature",
 } as const;
 
 export type TableName = (typeof TABLES)[keyof typeof TABLES];

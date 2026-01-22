@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { BillingEndpoint, EndpointContext } from "../../types/api";
 
 /**
- * Plan endpoints
+ * Plan endpoints - plans come from config, not DB
  */
 export const planEndpoints: Record<string, BillingEndpoint> = {
   listPlans: {
@@ -12,8 +12,8 @@ export const planEndpoints: Record<string, BillingEndpoint> = {
     },
     handler: async (context: EndpointContext) => {
       const { ctx } = context;
-
-      const plans = await ctx.internalAdapter.listPlans({ includePrivate: false });
+      // Plans come from config, synchronous
+      const plans = ctx.internalAdapter.listPlans({ includePrivate: false });
       return { plans };
     },
   },
@@ -23,28 +23,20 @@ export const planEndpoints: Record<string, BillingEndpoint> = {
     options: {
       method: "GET",
       query: z.object({
-        id: z.string().optional(),
-        code: z.string().optional(),
+        code: z.string(),
       }),
     },
-    handler: async (context: EndpointContext<unknown, { id?: string; code?: string }>) => {
+    handler: async (context: EndpointContext<unknown, { code: string }>) => {
       const { ctx, query } = context;
-
-      let plan = null;
-      if (query.id) {
-        plan = await ctx.internalAdapter.findPlanById(query.id);
-      } else if (query.code) {
-        plan = await ctx.internalAdapter.findPlanByCode(query.code);
-      }
+      // Plans come from config, synchronous
+      const plan = ctx.internalAdapter.findPlanByCode(query.code);
 
       if (!plan) {
         return { plan: null };
       }
 
-      // Get prices for the plan
-      const prices = await ctx.internalAdapter.listPlanPrices(plan.id);
-
-      return { plan, prices };
+      // Prices are included in the plan from config
+      return { plan };
     },
   },
 };

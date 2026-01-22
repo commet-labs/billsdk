@@ -23,7 +23,9 @@ import { createBillSDK } from "./base";
  * const plans = await billing.api.listPlans();
  * ```
  */
-export function billsdk<Options extends BillSDKOptions>(options: Options): BillSDK<Options> {
+export function billsdk<Options extends BillSDKOptions>(
+  options: Options,
+): BillSDK<Options> {
   return createBillSDK(options, init);
 }
 

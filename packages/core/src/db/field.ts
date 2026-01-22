@@ -104,6 +104,8 @@ export function defineField(attribute: DBFieldAttribute): DBFieldAttribute {
 /**
  * Helper to define a table
  */
-export function defineTable(fields: Record<string, DBFieldAttribute>): DBTableSchema {
+export function defineTable(
+  fields: Record<string, DBFieldAttribute>,
+): DBTableSchema {
   return { fields };
 }

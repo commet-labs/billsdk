@@ -33,17 +33,21 @@ function createAPI(contextPromise: Promise<BillingContext>): InferredAPI {
 
     async listPlans() {
       const ctx = await contextPromise;
+      // Plans come from config, synchronous
       return ctx.internalAdapter.listPlans();
     },
 
     async getPlan(params) {
       const ctx = await contextPromise;
-      return ctx.internalAdapter.findPlanById(params.id);
+      // Plans come from config, synchronous
+      return ctx.internalAdapter.findPlanByCode(params.code);
     },
 
     async getSubscription(params) {
       const ctx = await contextPromise;
-      const customer = await ctx.internalAdapter.findCustomerByExternalId(params.customerId);
+      const customer = await ctx.internalAdapter.findCustomerByExternalId(
+        params.customerId,
+      );
       if (!customer) return null;
       return ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
     },
@@ -56,29 +60,35 @@ function createAPI(contextPromise: Promise<BillingContext>): InferredAPI {
       }
 
       // Find customer
-      const customer = await ctx.internalAdapter.findCustomerByExternalId(params.customerId);
+      const customer = await ctx.internalAdapter.findCustomerByExternalId(
+        params.customerId,
+      );
       if (!customer) {
         throw new Error("Customer not found");
       }
 
-      // Find plan
-      const plan = await ctx.internalAdapter.findPlanByCode(params.planCode);
+      // Find plan (from config, synchronous)
+      const plan = ctx.internalAdapter.findPlanByCode(params.planCode);
       if (!plan) {
         throw new Error("Plan not found");
       }
 
-      // Find price
-      const price = await ctx.internalAdapter.findDefaultPlanPrice(plan.id, params.interval ?? "monthly");
+      // Find price for interval
+      const interval = params.interval ?? "monthly";
+      const price = ctx.internalAdapter.getPlanPrice(params.planCode, interval);
       if (!price) {
-        throw new Error(`No price found for plan ${params.planCode}`);
+        throw new Error(
+          `No price found for plan ${params.planCode} with interval ${interval}`,
+        );
       }
 
-      // Create subscription
+      // Create subscription (using planCode, not planId)
       const subscription = await ctx.internalAdapter.createSubscription({
         customerId: customer.id,
-        planId: plan.id,
-        priceId: price.id,
+        planCode: params.planCode,
+        interval,
         status: "pending_payment",
+        trialDays: price.trialDays,
       });
 
       // Create checkout session
@@ -88,18 +98,29 @@ function createAPI(contextPromise: Promise<BillingContext>): InferredAPI {
           email: customer.email,
           providerCustomerId: customer.providerCustomerId,
         },
-        plan: { id: plan.id, name: plan.name },
-        price: { amount: price.amount, currency: price.currency, interval: price.interval },
+        plan: { code: plan.code, name: plan.name },
+        price: {
+          amount: price.amount,
+          currency: price.currency,
+          interval: price.interval,
+        },
         subscription: { id: subscription.id },
         successUrl: params.successUrl,
         cancelUrl: params.cancelUrl,
         metadata: { subscriptionId: subscription.id },
       });
 
-      // Update subscription with checkout session ID
+      // Update subscription with checkout session ID and provider customer ID
       await ctx.internalAdapter.updateSubscription(subscription.id, {
         providerCheckoutSessionId: checkoutResult.sessionId,
       });
+
+      // Update customer with provider ID if new
+      if (checkoutResult.providerCustomerId && !customer.providerCustomerId) {
+        await ctx.internalAdapter.updateCustomer(customer.id, {
+          providerCustomerId: checkoutResult.providerCustomerId,
+        });
+      }
 
       return {
         subscription,
@@ -109,18 +130,33 @@ function createAPI(contextPromise: Promise<BillingContext>): InferredAPI {
 
     async checkFeature(params) {
       const ctx = await contextPromise;
-      return ctx.internalAdapter.checkFeatureAccess(params.customerId, params.feature);
+      return ctx.internalAdapter.checkFeatureAccess(
+        params.customerId,
+        params.feature,
+      );
     },
 
     async listFeatures(params) {
       const ctx = await contextPromise;
-      const customer = await ctx.internalAdapter.findCustomerByExternalId(params.customerId);
+      const customer = await ctx.internalAdapter.findCustomerByExternalId(
+        params.customerId,
+      );
       if (!customer) return [];
 
-      const subscription = await ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
+      const subscription =
+        await ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
       if (!subscription) return [];
 
-      return ctx.internalAdapter.listPlanFeatures(subscription.planId);
+      // Get features from config (synchronous)
+      const featureCodes = ctx.internalAdapter.getPlanFeatures(
+        subscription.planCode,
+      );
+      return featureCodes.map((code) => {
+        const feature = ctx.internalAdapter.findFeatureByCode(code);
+        return feature
+          ? { code: feature.code, name: feature.name, enabled: true }
+          : { code, name: code, enabled: true };
+      });
     },
 
     async health() {

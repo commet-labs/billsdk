@@ -1,6 +1,18 @@
 import type { DBAdapter, SortBy, Where } from "@billsdk/core";
-import { eq, and, or, gt, gte, lt, lte, ne, like, inArray, desc, asc } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  like,
+  lt,
+  lte,
+  ne,
+} from "drizzle-orm";
 
 /**
  * Drizzle database instance type
@@ -109,7 +121,10 @@ function buildWhereClause(where: Where[], table: any): SQL | undefined {
  * });
  * ```
  */
-export function drizzleAdapter(db: DrizzleDB, config: DrizzleAdapterConfig): DBAdapter {
+export function drizzleAdapter(
+  db: DrizzleDB,
+  config: DrizzleAdapterConfig,
+): DBAdapter {
   const getTable = (model: string) => {
     const table = config.schema[model];
     if (!table) {
@@ -320,7 +335,9 @@ export function drizzleAdapter(db: DrizzleDB, config: DrizzleAdapterConfig): DBA
       return results.length;
     },
 
-    async transaction<R>(callback: (adapter: DBAdapter) => Promise<R>): Promise<R> {
+    async transaction<R>(
+      callback: (adapter: DBAdapter) => Promise<R>,
+    ): Promise<R> {
       if (!db.transaction) {
         // If transactions aren't supported, just run the callback
         return callback(this);

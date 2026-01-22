@@ -1,36 +1,35 @@
 // BillSDK Core - The billing engine for SaaS applications
 
+// Adapters
+export { memoryAdapter } from "./adapters/memory-adapter";
 // Main factory - the only way to create a billing instance
 export { billsdk, default } from "./billsdk";
 
-// Adapters
-export { memoryAdapter } from "./adapters/memory-adapter";
-
 // Types - only what users need
 export type {
+  BillingInterval,
   // Main types
   BillSDK,
   BillSDKOptions,
-  PlanConfig,
-  PlanPriceConfig,
-  FeatureConfig,
+  CheckoutResult,
   // Model types for type inference
   Customer,
-  Plan,
-  PlanPrice,
-  Subscription,
-  Feature,
-  PlanFeature,
-  BillingInterval,
-  SubscriptionStatus,
   // Adapter interface for custom adapters
   DBAdapter,
-  Where,
-  SortBy,
-  WhereOperator,
-  SortDirection,
+  Feature,
+  FeatureConfig,
   // Payment adapter interface
   PaymentAdapter,
-  CheckoutResult,
+  Plan,
+  PlanConfig,
+  PlanFeature,
+  PlanPrice,
+  PlanPriceConfig,
+  SortBy,
+  SortDirection,
+  Subscription,
+  SubscriptionStatus,
   WebhookResult,
+  Where,
+  WhereOperator,
 } from "./types";

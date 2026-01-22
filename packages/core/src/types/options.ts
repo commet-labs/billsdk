@@ -1,5 +1,5 @@
-import type { BillingInterval } from "./models";
 import type { DBAdapter } from "./adapter";
+import type { BillingInterval } from "./models";
 import type { PaymentAdapter } from "./payment";
 import type { BillSDKPlugin } from "./plugins";
 
@@ -104,14 +104,14 @@ export interface BillSDKOptions {
   secret?: string;
 
   /**
-   * Plans to seed on initialization
-   * Plans are created if they don't exist (matched by code)
+   * Plans defined in your application
+   * This is the source of truth - plans are NOT stored in the database
    */
   plans?: PlanConfig[];
 
   /**
-   * Features to seed on initialization
-   * Features are created if they don't exist (matched by code)
+   * Features defined in your application
+   * This is the source of truth - features are NOT stored in the database
    */
   features?: FeatureConfig[];
 
@@ -150,7 +150,12 @@ export type BillingMiddleware = (context: {
  * Resolved options with defaults applied
  */
 export interface ResolvedBillSDKOptions
-  extends Required<Omit<BillSDKOptions, "plugins" | "hooks" | "logger" | "payment" | "plans" | "features">> {
+  extends Required<
+    Omit<
+      BillSDKOptions,
+      "plugins" | "hooks" | "logger" | "payment" | "plans" | "features"
+    >
+  > {
   plugins: BillSDKPlugin[];
   payment?: PaymentAdapter;
   plans?: PlanConfig[];

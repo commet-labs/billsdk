@@ -63,7 +63,9 @@ export function createFetch(config: ClientConfig) {
         .catch(() => ({ error: { message: "Unknown error" } }))) as {
         error?: { message?: string };
       };
-      throw new Error(errorData?.error?.message ?? `Request failed: ${response.status}`);
+      throw new Error(
+        errorData?.error?.message ?? `Request failed: ${response.status}`,
+      );
     }
 
     return response.json() as Promise<T>;

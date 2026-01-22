@@ -48,7 +48,7 @@ export default function PricingPage() {
   async function handleSubscribe(planCode: string, billingInterval: string) {
     // For demo purposes, create a test customer and subscribe
     // In a real app, you'd get the customer from your auth system
-    const customerId = "demo-customer-" + Date.now();
+    const customerId = `demo-customer-${Date.now()}`;
 
     try {
       // First, create the customer
@@ -123,7 +123,9 @@ export default function PricingPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Simple, transparent pricing</h1>
+          <h1 className="text-4xl font-bold mb-4">
+            Simple, transparent pricing
+          </h1>
           <p className="text-muted-foreground text-lg mb-8">
             Choose the plan that works best for you
           </p>
@@ -166,7 +168,10 @@ export default function PricingPage() {
           <p>All plans include a 14-day free trial. No credit card required.</p>
           <p className="mt-2">
             Need a custom plan?{" "}
-            <a href="mailto:sales@example.com" className="text-primary hover:underline">
+            <a
+              href="mailto:sales@example.com"
+              className="text-primary hover:underline"
+            >
               Contact sales
             </a>
           </p>

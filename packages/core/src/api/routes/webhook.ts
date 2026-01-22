@@ -1,5 +1,5 @@
-import type { BillingEndpoint } from "../../types/api";
 import type { BillingContext } from "../../context/create-context";
+import type { BillingEndpoint } from "../../types/api";
 
 /**
  * Webhook endpoints
@@ -20,15 +20,19 @@ export const webhookEndpoints: Record<string, BillingEndpoint> = {
       // Handle webhook from payment provider
       const result = await ctx.paymentAdapter.handleWebhook(request);
 
-      ctx.logger.debug("Webhook received", { type: result.type, data: result.data });
+      ctx.logger.debug("Webhook received", {
+        type: result.type,
+        data: result.data,
+      });
 
       switch (result.type) {
         case "checkout.completed": {
           // Find subscription by checkout session ID
           if (result.data.sessionId) {
-            const subscription = await ctx.internalAdapter.findSubscriptionByProviderSessionId(
-              result.data.sessionId,
-            );
+            const subscription =
+              await ctx.internalAdapter.findSubscriptionByProviderSessionId(
+                result.data.sessionId,
+              );
 
             if (subscription) {
               // Update subscription to active
@@ -39,7 +43,9 @@ export const webhookEndpoints: Record<string, BillingEndpoint> = {
 
               // Update customer provider ID if present
               if (result.data.providerCustomerId) {
-                const customer = await ctx.internalAdapter.findCustomerById(subscription.customerId);
+                const customer = await ctx.internalAdapter.findCustomerById(
+                  subscription.customerId,
+                );
                 if (customer && !customer.providerCustomerId) {
                   await ctx.internalAdapter.updateCustomer(customer.id, {
                     providerCustomerId: result.data.providerCustomerId,

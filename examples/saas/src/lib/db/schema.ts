@@ -1,12 +1,4 @@
-import {
-  pgTable,
-  text,
-  timestamp,
-  boolean,
-  integer,
-  jsonb,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Customer table - who pays
@@ -23,48 +15,18 @@ export const customer = pgTable("customer", {
 });
 
 /**
- * Plan table - pricing packages
- */
-export const plan = pgTable("plan", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  code: text("code").unique().notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  isPublic: boolean("is_public").default(true).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-/**
- * Plan Price table - pricing per interval
- */
-export const planPrice = pgTable("plan_price", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  planId: uuid("plan_id")
-    .references(() => plan.id, { onDelete: "cascade" })
-    .notNull(),
-  amount: integer("amount").notNull(), // In cents
-  currency: text("currency").default("usd").notNull(),
-  interval: text("interval").notNull(), // "monthly" | "quarterly" | "yearly"
-  isDefault: boolean("is_default").default(false).notNull(),
-  trialDays: integer("trial_days"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-/**
  * Subscription table - customer-plan contract
+ * Note: plan info comes from config, not DB
  */
 export const subscription = pgTable("subscription", {
   id: uuid("id").primaryKey().defaultRandom(),
   customerId: uuid("customer_id")
     .references(() => customer.id, { onDelete: "cascade" })
     .notNull(),
-  planId: uuid("plan_id")
-    .references(() => plan.id, { onDelete: "restrict" })
-    .notNull(),
-  priceId: uuid("price_id")
-    .references(() => planPrice.id, { onDelete: "restrict" })
-    .notNull(),
+  // Plan code references config, not a DB table
+  planCode: text("plan_code").notNull(),
+  // Billing interval
+  interval: text("interval").default("monthly").notNull(),
   status: text("status").default("active").notNull(),
   providerSubscriptionId: text("provider_subscription_id"),
   providerCheckoutSessionId: text("provider_checkout_session_id"),
@@ -77,28 +39,4 @@ export const subscription = pgTable("subscription", {
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-/**
- * Feature table - product capabilities
- */
-export const feature = pgTable("feature", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  code: text("code").unique().notNull(),
-  name: text("name").notNull(),
-  type: text("type").default("boolean").notNull(), // "boolean" | "metered" | "seats"
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-/**
- * Plan Feature table - features per plan
- */
-export const planFeature = pgTable("plan_feature", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  planId: uuid("plan_id")
-    .references(() => plan.id, { onDelete: "cascade" })
-    .notNull(),
-  featureCode: text("feature_code").notNull(),
-  enabled: boolean("enabled").default(true).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
 });

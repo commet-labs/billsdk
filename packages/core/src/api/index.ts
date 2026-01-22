@@ -10,7 +10,9 @@ import { webhookEndpoints } from "./routes/webhook";
 /**
  * Collect all endpoints
  */
-export function getEndpoints(ctx: BillingContext): Record<string, BillingEndpoint> {
+export function getEndpoints(
+  ctx: BillingContext,
+): Record<string, BillingEndpoint> {
   const baseEndpoints: Record<string, BillingEndpoint> = {
     ...healthEndpoint,
     ...customerEndpoints,
@@ -34,7 +36,10 @@ export function getEndpoints(ctx: BillingContext): Record<string, BillingEndpoin
 /**
  * Parse URL to get path and query params
  */
-function parseUrl(url: string, basePath: string): { path: string; query: URLSearchParams } {
+function parseUrl(
+  url: string,
+  basePath: string,
+): { path: string; query: URLSearchParams } {
   const urlObj = new URL(url);
   let path = urlObj.pathname;
 
@@ -141,7 +146,11 @@ export function createRouter(ctx: BillingContext): {
     });
 
     if (!endpointKey) {
-      return errorResponse("NOT_FOUND", `No endpoint found for ${method} ${path}`, 404);
+      return errorResponse(
+        "NOT_FOUND",
+        `No endpoint found for ${method} ${path}`,
+        404,
+      );
     }
 
     const endpoint = endpoints[endpointKey]!;
@@ -167,7 +176,9 @@ export function createRouter(ctx: BillingContext): {
           const issues = "issues" in result.error ? result.error.issues : [];
           return errorResponse(
             "VALIDATION_ERROR",
-            (issues as Array<{ message: string }>).map((e) => e.message).join(", "),
+            (issues as Array<{ message: string }>)
+              .map((e) => e.message)
+              .join(", "),
             400,
           );
         }
@@ -182,7 +193,9 @@ export function createRouter(ctx: BillingContext): {
           const issues = "issues" in result.error ? result.error.issues : [];
           return errorResponse(
             "VALIDATION_ERROR",
-            (issues as Array<{ message: string }>).map((e) => e.message).join(", "),
+            (issues as Array<{ message: string }>)
+              .map((e) => e.message)
+              .join(", "),
             400,
           );
         }
@@ -243,7 +256,11 @@ export function createRouter(ctx: BillingContext): {
         return errorResponse("INTERNAL_ERROR", error.message, 500);
       }
 
-      return errorResponse("INTERNAL_ERROR", "An unexpected error occurred", 500);
+      return errorResponse(
+        "INTERNAL_ERROR",
+        "An unexpected error occurred",
+        500,
+      );
     }
   };
 

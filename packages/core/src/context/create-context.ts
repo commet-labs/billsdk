@@ -1,7 +1,10 @@
-import { createInternalAdapter, type InternalAdapter } from "../db/internal-adapter";
+import {
+  createInternalAdapter,
+  type InternalAdapter,
+} from "../db/internal-adapter";
 import { type DBSchema, getBillingSchema } from "../db/schema";
 import type { DBAdapter } from "../types/adapter";
-import type { BillSDKOptions, FeatureConfig, PlanConfig, ResolvedBillSDKOptions } from "../types/options";
+import type { BillSDKOptions, ResolvedBillSDKOptions } from "../types/options";
 import type { PaymentAdapter } from "../types/payment";
 import type { BillSDKPlugin } from "../types/plugins";
 
@@ -114,7 +117,10 @@ function createLogger(options: BillSDKOptions["logger"]): Logger {
 /**
  * Resolve options with defaults
  */
-function resolveOptions(options: BillSDKOptions, adapter: DBAdapter): ResolvedBillSDKOptions {
+function resolveOptions(
+  options: BillSDKOptions,
+  adapter: DBAdapter,
+): ResolvedBillSDKOptions {
   return {
     database: adapter,
     payment: options.payment,
@@ -132,91 +138,6 @@ function resolveOptions(options: BillSDKOptions, adapter: DBAdapter): ResolvedBi
 }
 
 /**
- * Seed features from configuration
- */
-async function seedFeatures(
-  features: FeatureConfig[],
-  internalAdapter: InternalAdapter,
-  logger: Logger,
-): Promise<void> {
-  for (const featureConfig of features) {
-    const existing = await internalAdapter.findFeatureByCode(featureConfig.code);
-    if (!existing) {
-      await internalAdapter.createFeature({
-        code: featureConfig.code,
-        name: featureConfig.name,
-        type: featureConfig.type ?? "boolean",
-      });
-      logger.debug(`Created feature: ${featureConfig.code}`);
-    }
-  }
-}
-
-/**
- * Seed plans from configuration
- */
-async function seedPlans(
-  plans: PlanConfig[],
-  internalAdapter: InternalAdapter,
-  logger: Logger,
-): Promise<void> {
-  for (const planConfig of plans) {
-    let plan = await internalAdapter.findPlanByCode(planConfig.code);
-
-    if (!plan) {
-      plan = await internalAdapter.createPlan({
-        code: planConfig.code,
-        name: planConfig.name,
-        description: planConfig.description,
-        isPublic: planConfig.isPublic ?? true,
-      });
-      logger.debug(`Created plan: ${planConfig.code}`);
-    }
-
-    // Create prices if they don't exist
-    const existingPrices = await internalAdapter.listPlanPrices(plan.id);
-
-    for (const priceConfig of planConfig.prices) {
-      const existingPrice = existingPrices.find(
-        (p) => p.interval === priceConfig.interval && p.currency === (priceConfig.currency ?? "usd"),
-      );
-
-      if (!existingPrice) {
-        await internalAdapter.createPlanPrice({
-          planId: plan.id,
-          amount: priceConfig.amount,
-          currency: priceConfig.currency ?? "usd",
-          interval: priceConfig.interval,
-          isDefault: true,
-          trialDays: priceConfig.trialDays,
-        });
-        logger.debug(`Created price for ${planConfig.code}: ${priceConfig.interval}`);
-      }
-    }
-
-    // Create plan features
-    if (planConfig.features) {
-      const existingPlanFeatures = await internalAdapter.listPlanFeatures(plan.id);
-
-      for (const featureCode of planConfig.features) {
-        const existingPlanFeature = existingPlanFeatures.find(
-          (pf) => pf.featureCode === featureCode,
-        );
-
-        if (!existingPlanFeature) {
-          await internalAdapter.createPlanFeature({
-            planId: plan.id,
-            featureCode,
-            enabled: true,
-          });
-          logger.debug(`Enabled feature ${featureCode} for plan ${planConfig.code}`);
-        }
-      }
-    }
-  }
-}
-
-/**
  * Generate a default secret (for development only)
  */
 function generateDefaultSecret(): string {
@@ -226,6 +147,7 @@ function generateDefaultSecret(): string {
 
 /**
  * Create the billing context
+ * Plans and features are read from config, not seeded to DB
  */
 export async function createBillingContext(
   adapter: DBAdapter,
@@ -245,8 +167,12 @@ export async function createBillingContext(
     }
   }
 
-  // Create internal adapter
-  const internalAdapter = createInternalAdapter(adapter);
+  // Create internal adapter with config (no DB seeding needed!)
+  const internalAdapter = createInternalAdapter(
+    adapter,
+    options.plans ?? [],
+    options.features ?? [],
+  );
 
   // Build context
   const context: BillingContext = {
@@ -279,16 +205,6 @@ export async function createBillingContext(
     if (plugin.init) {
       await plugin.init(context);
     }
-  }
-
-  // Seed features from configuration
-  if (options.features && options.features.length > 0) {
-    await seedFeatures(options.features, internalAdapter, logger);
-  }
-
-  // Seed plans from configuration
-  if (options.plans && options.plans.length > 0) {
-    await seedPlans(options.plans, internalAdapter, logger);
   }
 
   logger.debug("BillingContext created", {

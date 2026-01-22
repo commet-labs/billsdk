@@ -85,7 +85,10 @@ export function asyncAtom<T>(
 /**
  * Computed atom that derives from other atoms
  */
-export function computed<T, R>(sourceAtom: Atom<T>, transform: (value: T) => R): Atom<R> {
+export function computed<T, R>(
+  sourceAtom: Atom<T>,
+  transform: (value: T) => R,
+): Atom<R> {
   const computedAtom = atom(transform(sourceAtom.get()));
 
   sourceAtom.subscribe((value) => {

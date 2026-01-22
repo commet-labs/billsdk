@@ -1,5 +1,5 @@
 /**
- * Customer - represents a billable entity
+ * Customer - represents a billable entity (stored in DB)
  */
 export interface Customer {
   [key: string]: unknown;
@@ -35,11 +35,14 @@ export interface Customer {
 }
 
 /**
- * Plan - a pricing template
+ * Billing interval for prices
+ */
+export type BillingInterval = "monthly" | "quarterly" | "yearly";
+
+/**
+ * Plan - a pricing template (from config, not DB)
  */
 export interface Plan {
-  [key: string]: unknown;
-  id: string;
   /**
    * Unique code for the plan (e.g., "pro", "enterprise")
    */
@@ -57,30 +60,19 @@ export interface Plan {
    */
   isPublic: boolean;
   /**
-   * Timestamp when the plan was created
+   * Prices for different billing intervals
    */
-  createdAt: Date;
+  prices: PlanPrice[];
   /**
-   * Timestamp when the plan was last updated
+   * Feature codes enabled for this plan
    */
-  updatedAt: Date;
+  features: string[];
 }
 
 /**
- * Billing interval for prices
- */
-export type BillingInterval = "monthly" | "quarterly" | "yearly";
-
-/**
- * PlanPrice - a specific price for a plan
+ * PlanPrice - a specific price for a plan (from config, not DB)
  */
 export interface PlanPrice {
-  [key: string]: unknown;
-  id: string;
-  /**
-   * Associated plan ID
-   */
-  planId: string;
   /**
    * Price amount in cents
    */
@@ -94,17 +86,9 @@ export interface PlanPrice {
    */
   interval: BillingInterval;
   /**
-   * Whether this is the default price for the plan
-   */
-  isDefault: boolean;
-  /**
    * Trial period in days
    */
   trialDays?: number;
-  /**
-   * Timestamp when the price was created
-   */
-  createdAt: Date;
 }
 
 /**
@@ -120,7 +104,7 @@ export type SubscriptionStatus =
   | "pending_payment";
 
 /**
- * Subscription - customer-plan relationship
+ * Subscription - customer-plan relationship (stored in DB)
  */
 export interface Subscription {
   [key: string]: unknown;
@@ -130,13 +114,13 @@ export interface Subscription {
    */
   customerId: string;
   /**
-   * Associated plan ID
+   * Plan code (references config, not DB)
    */
-  planId: string;
+  planCode: string;
   /**
-   * Associated price ID
+   * Billing interval for this subscription
    */
-  priceId: string;
+  interval: BillingInterval;
   /**
    * Current subscription status
    */
@@ -188,11 +172,9 @@ export interface Subscription {
 }
 
 /**
- * Feature - a capability that can be included in plans
+ * Feature - a capability that can be included in plans (from config)
  */
 export interface Feature {
-  [key: string]: unknown;
-  id: string;
   /**
    * Unique code for the feature (e.g., "api_access", "export")
    */
@@ -205,34 +187,6 @@ export interface Feature {
    * Feature type: boolean (on/off), metered (usage-based), seats (per-user)
    */
   type: "boolean" | "metered" | "seats";
-  /**
-   * Timestamp when the feature was created
-   */
-  createdAt: Date;
-}
-
-/**
- * PlanFeature - configuration of a feature for a specific plan
- */
-export interface PlanFeature {
-  [key: string]: unknown;
-  id: string;
-  /**
-   * Associated plan ID
-   */
-  planId: string;
-  /**
-   * Feature code
-   */
-  featureCode: string;
-  /**
-   * Whether the feature is enabled for this plan
-   */
-  enabled: boolean;
-  /**
-   * Timestamp when the plan feature was created
-   */
-  createdAt: Date;
 }
 
 /**
@@ -253,26 +207,10 @@ export interface UpdateCustomerInput {
   metadata?: Record<string, unknown>;
 }
 
-export interface CreatePlanInput {
-  code: string;
-  name: string;
-  description?: string;
-  isPublic?: boolean;
-}
-
-export interface CreatePlanPriceInput {
-  planId: string;
-  amount: number;
-  currency: string;
-  interval: BillingInterval;
-  isDefault?: boolean;
-  trialDays?: number;
-}
-
 export interface CreateSubscriptionInput {
   customerId: string;
-  planId: string;
-  priceId: string;
+  planCode: string;
+  interval?: BillingInterval;
   status?: SubscriptionStatus;
   providerSubscriptionId?: string;
   providerCheckoutSessionId?: string;
@@ -280,14 +218,9 @@ export interface CreateSubscriptionInput {
   metadata?: Record<string, unknown>;
 }
 
-export interface CreateFeatureInput {
-  code: string;
-  name: string;
-  type?: "boolean" | "metered" | "seats";
-}
-
-export interface CreatePlanFeatureInput {
-  planId: string;
+// Legacy types kept for backwards compatibility but not used
+export interface PlanFeature {
+  planCode: string;
   featureCode: string;
-  enabled?: boolean;
+  enabled: boolean;
 }

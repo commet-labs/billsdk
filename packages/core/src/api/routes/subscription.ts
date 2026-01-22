@@ -30,25 +30,36 @@ export const subscriptionEndpoints: Record<string, BillingEndpoint> = {
       query: getSubscriptionQuerySchema,
     },
     handler: async (
-      context: EndpointContext<unknown, z.infer<typeof getSubscriptionQuerySchema>>,
+      context: EndpointContext<
+        unknown,
+        z.infer<typeof getSubscriptionQuerySchema>
+      >,
     ) => {
       const { ctx, query } = context;
 
       // Find customer by external ID
-      const customer = await ctx.internalAdapter.findCustomerByExternalId(query.customerId);
+      const customer = await ctx.internalAdapter.findCustomerByExternalId(
+        query.customerId,
+      );
       if (!customer) {
         return { subscription: null };
       }
 
       // Find active subscription
-      const subscription = await ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
+      const subscription =
+        await ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
       if (!subscription) {
         return { subscription: null };
       }
 
-      // Get plan and price details
-      const plan = await ctx.internalAdapter.findPlanById(subscription.planId);
-      const price = await ctx.internalAdapter.findPlanPriceById(subscription.priceId);
+      // Get plan from config (synchronous)
+      const plan = ctx.internalAdapter.findPlanByCode(subscription.planCode);
+      const price = plan
+        ? ctx.internalAdapter.getPlanPrice(
+            subscription.planCode,
+            subscription.interval,
+          )
+        : null;
 
       return {
         subscription,
@@ -64,7 +75,9 @@ export const subscriptionEndpoints: Record<string, BillingEndpoint> = {
       method: "POST",
       body: createSubscriptionSchema,
     },
-    handler: async (context: EndpointContext<z.infer<typeof createSubscriptionSchema>>) => {
+    handler: async (
+      context: EndpointContext<z.infer<typeof createSubscriptionSchema>>,
+    ) => {
       const { ctx, body } = context;
 
       // Check if payment adapter is configured
@@ -73,29 +86,37 @@ export const subscriptionEndpoints: Record<string, BillingEndpoint> = {
       }
 
       // Find customer
-      const customer = await ctx.internalAdapter.findCustomerByExternalId(body.customerId);
+      const customer = await ctx.internalAdapter.findCustomerByExternalId(
+        body.customerId,
+      );
       if (!customer) {
         throw new Error("Customer not found");
       }
 
-      // Find plan
-      const plan = await ctx.internalAdapter.findPlanByCode(body.planCode);
+      // Find plan from config (synchronous)
+      const plan = ctx.internalAdapter.findPlanByCode(body.planCode);
       if (!plan) {
         throw new Error("Plan not found");
       }
 
-      // Find price for interval
-      const price = await ctx.internalAdapter.findDefaultPlanPrice(plan.id, body.interval);
+      // Find price for interval (synchronous)
+      const price = ctx.internalAdapter.getPlanPrice(
+        body.planCode,
+        body.interval,
+      );
       if (!price) {
-        throw new Error(`No price found for plan ${body.planCode} with interval ${body.interval}`);
+        throw new Error(
+          `No price found for plan ${body.planCode} with interval ${body.interval}`,
+        );
       }
 
       // Create subscription in pending state
       const subscription = await ctx.internalAdapter.createSubscription({
         customerId: customer.id,
-        planId: plan.id,
-        priceId: price.id,
+        planCode: body.planCode,
+        interval: body.interval,
         status: "pending_payment",
+        trialDays: price.trialDays,
       });
 
       // Create checkout session
@@ -106,7 +127,7 @@ export const subscriptionEndpoints: Record<string, BillingEndpoint> = {
           providerCustomerId: customer.providerCustomerId,
         },
         plan: {
-          id: plan.id,
+          code: plan.code,
           name: plan.name,
         },
         price: {

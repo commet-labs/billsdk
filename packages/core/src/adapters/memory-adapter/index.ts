@@ -35,11 +35,17 @@ function applyWhere(record: Record<string, unknown>, where: Where[]): boolean {
       case "in":
         return Array.isArray(clause.value) && clause.value.includes(value);
       case "contains":
-        return typeof value === "string" && value.includes(clause.value as string);
+        return (
+          typeof value === "string" && value.includes(clause.value as string)
+        );
       case "startsWith":
-        return typeof value === "string" && value.startsWith(clause.value as string);
+        return (
+          typeof value === "string" && value.startsWith(clause.value as string)
+        );
       case "endsWith":
-        return typeof value === "string" && value.endsWith(clause.value as string);
+        return (
+          typeof value === "string" && value.endsWith(clause.value as string)
+        );
       default:
         return true;
     }
@@ -49,7 +55,10 @@ function applyWhere(record: Record<string, unknown>, where: Where[]): boolean {
 /**
  * Apply sorting to records
  */
-function applySorting<T extends Record<string, unknown>>(records: T[], sortBy?: SortBy): T[] {
+function applySorting<T extends Record<string, unknown>>(
+  records: T[],
+  sortBy?: SortBy,
+): T[] {
   if (!sortBy) return records;
 
   return [...records].sort((a, b) => {
@@ -68,7 +77,10 @@ function applySorting<T extends Record<string, unknown>>(records: T[], sortBy?: 
 /**
  * Select specific fields from a record
  */
-function selectFields<T extends Record<string, unknown>>(record: T, select?: string[]): T {
+function selectFields<T extends Record<string, unknown>>(
+  record: T,
+  select?: string[],
+): T {
   if (!select || select.length === 0) return record;
 
   const result: Record<string, unknown> = {};
@@ -240,7 +252,9 @@ export function memoryAdapter(): DBAdapter {
       return count;
     },
 
-    async transaction<R>(callback: (adapter: DBAdapter) => Promise<R>): Promise<R> {
+    async transaction<R>(
+      callback: (adapter: DBAdapter) => Promise<R>,
+    ): Promise<R> {
       // Memory adapter doesn't need real transactions
       // Just execute the callback directly
       return callback(this);

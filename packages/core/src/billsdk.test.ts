@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { billsdk } from "./billsdk";
+import { beforeEach, describe, expect, it } from "vitest";
 import { memoryAdapter } from "./adapters/memory-adapter";
+import { billsdk } from "./billsdk";
 
 describe("BillSDK", () => {
   describe("Basic API", () => {
@@ -39,14 +39,18 @@ describe("BillSDK", () => {
         email: "test2@example.com",
       });
 
-      const customer = await billing.api.getCustomer({ externalId: "user_456" });
+      const customer = await billing.api.getCustomer({
+        externalId: "user_456",
+      });
 
       expect(customer).toBeDefined();
       expect(customer?.externalId).toBe("user_456");
     });
 
     it("should return null for non-existent customer", async () => {
-      const customer = await billing.api.getCustomer({ externalId: "non_existent" });
+      const customer = await billing.api.getCustomer({
+        externalId: "non_existent",
+      });
       expect(customer).toBeNull();
     });
 
@@ -118,8 +122,8 @@ describe("BillSDK", () => {
     });
   });
 
-  describe("Declarative Configuration", () => {
-    it("should seed plans from configuration", async () => {
+  describe("Config as Source of Truth", () => {
+    it("should load plans from configuration", async () => {
       const billing = billsdk({
         database: memoryAdapter(),
         logger: { disabled: true },
@@ -185,39 +189,29 @@ describe("BillSDK", () => {
       expect(noSubResult.allowed).toBe(false);
     });
 
-    it("should not duplicate plans on re-initialization", async () => {
-      const adapter = memoryAdapter();
-
-      // First init
-      const billing1 = billsdk({
-        database: adapter,
+    it("should return same plans across multiple instances with same config", async () => {
+      const config = {
         logger: { disabled: true },
         plans: [
           {
             code: "team",
             name: "Team",
-            prices: [{ amount: 4999, interval: "monthly" }],
+            prices: [{ amount: 4999, interval: "monthly" as const }],
           },
         ],
-      });
-      await billing1.$context;
+      };
 
-      // Second init with same adapter
-      const billing2 = billsdk({
-        database: adapter,
-        logger: { disabled: true },
-        plans: [
-          {
-            code: "team",
-            name: "Team",
-            prices: [{ amount: 4999, interval: "monthly" }],
-          },
-        ],
-      });
-      await billing2.$context;
+      // Different adapters, same config
+      const billing1 = billsdk({ database: memoryAdapter(), ...config });
+      const billing2 = billsdk({ database: memoryAdapter(), ...config });
 
-      const plans = await billing2.api.listPlans();
-      expect(plans.length).toBe(1);
+      const plans1 = await billing1.api.listPlans();
+      const plans2 = await billing2.api.listPlans();
+
+      // Both return the same plans from config
+      expect(plans1.length).toBe(1);
+      expect(plans2.length).toBe(1);
+      expect(plans1[0]?.code).toBe(plans2[0]?.code);
     });
 
     it("should support multiple price intervals", async () => {
@@ -239,8 +233,39 @@ describe("BillSDK", () => {
       const plans = await billing.api.listPlans();
       expect(plans.length).toBe(1);
 
-      const plan = await billing.api.getPlan({ id: plans[0]!.id });
+      // Get plan by code (not id - plans don't have IDs anymore)
+      const plan = await billing.api.getPlan({ code: "business" });
       expect(plan).toBeDefined();
+      expect(plan?.prices.length).toBe(2);
+    });
+
+    it("should include prices in plan response", async () => {
+      const billing = billsdk({
+        database: memoryAdapter(),
+        logger: { disabled: true },
+        plans: [
+          {
+            code: "pro",
+            name: "Pro",
+            prices: [
+              { amount: 2900, interval: "monthly" },
+              { amount: 29000, interval: "yearly" },
+            ],
+          },
+        ],
+      });
+
+      const plan = await billing.api.getPlan({ code: "pro" });
+
+      expect(plan).toBeDefined();
+      expect(plan?.prices).toBeDefined();
+      expect(plan?.prices.length).toBe(2);
+      expect(plan?.prices.find((p) => p.interval === "monthly")?.amount).toBe(
+        2900,
+      );
+      expect(plan?.prices.find((p) => p.interval === "yearly")?.amount).toBe(
+        29000,
+      );
     });
   });
 
@@ -283,7 +308,13 @@ describe("BillSDK", () => {
               { amount: 9900, interval: "monthly" },
               { amount: 99000, interval: "yearly" },
             ],
-            features: ["projects", "team_members", "api_access", "sso", "priority_support"],
+            features: [
+              "projects",
+              "team_members",
+              "api_access",
+              "sso",
+              "priority_support",
+            ],
           },
         ],
       });

@@ -17,7 +17,7 @@ export interface PaymentAdapter {
       providerCustomerId?: string;
     };
     plan: {
-      id: string;
+      code: string;
       name: string;
     };
     price: {
