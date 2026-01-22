@@ -175,9 +175,11 @@ function createAPI(contextPromise: Promise<BillingContext>): InferredAPI {
  * @param initFn - Initialization function that creates the context
  * @returns BillSDK instance
  */
-export function createBillSDK<Options extends BillSDKOptions>(
+// biome-ignore lint/suspicious/noExplicitAny: Generic constraint flexibility for readonly/mutable arrays
+export function createBillSDK<Options extends BillSDKOptions<any>>(
   options: Options,
-  initFn: (options: Options) => Promise<BillingContext>,
+  // biome-ignore lint/suspicious/noExplicitAny: Init function accepts any valid options
+  initFn: (options: any) => Promise<BillingContext>,
 ): BillSDK<Options> {
   // Lazy initialization - context is created only when needed
   const contextPromise = initFn(options);

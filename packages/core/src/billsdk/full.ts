@@ -1,6 +1,6 @@
 import { init } from "../context/init";
 import type { BillSDK } from "../types/billsdk";
-import type { BillSDKOptions } from "../types/options";
+import type { BillSDKOptions, FeatureConfig } from "../types/options";
 import { createBillSDK } from "./base";
 
 /**
@@ -14,19 +14,20 @@ import { createBillSDK } from "./base";
  * export const billing = billsdk({
  *   database: memoryAdapter(),
  *   basePath: "/api/billing",
+ *   features: [
+ *     { code: "export", name: "Export" },
+ *   ],
+ *   plans: [
+ *     { code: "pro", features: ["export"] }, // Validated!
+ *   ],
  * });
- *
- * // Mount in Next.js
- * export const { GET, POST } = billing.handler;
- *
- * // Direct API access
- * const plans = await billing.api.listPlans();
  * ```
  */
-export function billsdk<Options extends BillSDKOptions>(
-  options: Options,
-): BillSDK<Options> {
-  return createBillSDK(options, init);
+export function billsdk<
+  const TFeatures extends readonly FeatureConfig<string>[],
+>(options: BillSDKOptions<TFeatures>): BillSDK<BillSDKOptions<TFeatures>> {
+  // biome-ignore lint/suspicious/noExplicitAny: Type coercion needed for generic constraint compatibility
+  return createBillSDK(options as any, init) as any;
 }
 
 export default billsdk;

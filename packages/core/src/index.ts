@@ -16,6 +16,7 @@ export type {
   Customer,
   // Adapter interface for custom adapters
   DBAdapter,
+  ExtractFeatureCodes,
   Feature,
   FeatureConfig,
   // Payment adapter interface

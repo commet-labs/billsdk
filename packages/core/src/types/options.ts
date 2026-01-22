@@ -28,8 +28,9 @@ export interface PlanPriceConfig {
 
 /**
  * Plan definition for declarative configuration
+ * @typeParam TFeatureCode - Feature codes that are valid for this plan
  */
-export interface PlanConfig {
+export interface PlanConfig<TFeatureCode extends string = string> {
   /**
    * Unique plan code (e.g., "free", "pro", "enterprise")
    */
@@ -53,18 +54,19 @@ export interface PlanConfig {
   prices: PlanPriceConfig[];
   /**
    * Feature codes enabled for this plan
+   * Only accepts codes from defined features
    */
-  features?: string[];
+  features?: TFeatureCode[];
 }
 
 /**
  * Feature definition for declarative configuration
  */
-export interface FeatureConfig {
+export interface FeatureConfig<TCode extends string = string> {
   /**
    * Unique feature code (e.g., "api_access", "export")
    */
-  code: string;
+  code: TCode;
   /**
    * Display name
    */
@@ -77,9 +79,22 @@ export interface FeatureConfig {
 }
 
 /**
- * Configuration options for BillSDK
+ * Helper type to extract feature codes from an array of features
  */
-export interface BillSDKOptions {
+export type ExtractFeatureCodes<
+  T extends readonly FeatureConfig<string>[] | FeatureConfig<string>[],
+> = T[number]["code"];
+
+/**
+ * Configuration options for BillSDK
+ *
+ * @typeParam TFeatures - Array of feature configurations
+ */
+export interface BillSDKOptions<
+  TFeatures extends
+    | readonly FeatureConfig<string>[]
+    | FeatureConfig<string>[] = FeatureConfig[],
+> {
   /**
    * Database adapter for persistence
    * If not provided, uses in-memory storage
@@ -102,18 +117,9 @@ export interface BillSDKOptions {
    * Required in production
    */
   secret?: string;
+  features?: TFeatures;
 
-  /**
-   * Plans defined in your application
-   * This is the source of truth - plans are NOT stored in the database
-   */
-  plans?: PlanConfig[];
-
-  /**
-   * Features defined in your application
-   * This is the source of truth - features are NOT stored in the database
-   */
-  features?: FeatureConfig[];
+  plans?: PlanConfig<ExtractFeatureCodes<TFeatures>>[];
 
   /**
    * Plugins to extend functionality
@@ -149,17 +155,20 @@ export type BillingMiddleware = (context: {
 /**
  * Resolved options with defaults applied
  */
-export interface ResolvedBillSDKOptions
-  extends Required<
+export interface ResolvedBillSDKOptions<
+  TFeatures extends
+    | readonly FeatureConfig<string>[]
+    | FeatureConfig<string>[] = FeatureConfig[],
+> extends Required<
     Omit<
-      BillSDKOptions,
+      BillSDKOptions<TFeatures>,
       "plugins" | "hooks" | "logger" | "payment" | "plans" | "features"
     >
   > {
   plugins: BillSDKPlugin[];
   payment?: PaymentAdapter;
-  plans?: PlanConfig[];
-  features?: FeatureConfig[];
+  plans?: PlanConfig<ExtractFeatureCodes<TFeatures>>[];
+  features?: TFeatures;
   hooks: {
     before?: BillingMiddleware;
     after?: BillingMiddleware;

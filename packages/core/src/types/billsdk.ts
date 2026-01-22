@@ -59,7 +59,8 @@ export interface InferredAPI {
 /**
  * The main BillSDK instance type
  */
-export interface BillSDK<Options extends BillSDKOptions = BillSDKOptions> {
+// biome-ignore lint/suspicious/noExplicitAny: Generic constraint needs flexibility for readonly/mutable arrays
+export interface BillSDK<Options extends BillSDKOptions<any> = BillSDKOptions> {
   /**
    * Request handler for mounting to a framework
    * Compatible with Web Standard Request/Response

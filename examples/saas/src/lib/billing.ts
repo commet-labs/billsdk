@@ -22,15 +22,12 @@ export const billing = billsdk({
 
   secret: process.env.BILLSDK_SECRET || "dev-secret-change-in-production",
 
-  // Boolean features only (MVP)
   features: [
     { code: "export", name: "Export Data" },
     { code: "api_access", name: "API Access" },
     { code: "custom_domain", name: "Custom Domain" },
     { code: "priority_support", name: "Priority Support" },
   ],
-
-  // Simple pricing: Free + $20 Pro
   plans: [
     {
       code: "free",
