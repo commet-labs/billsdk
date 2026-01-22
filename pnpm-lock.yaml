@@ -9,39 +9,39 @@ importers:
   .:
     devDependencies:
       '@biomejs/biome':
-        specifier: latest
+        specifier: 2.3.11
         version: 2.3.11
       turbo:
-        specifier: latest
+        specifier: 2.7.5
         version: 2.7.5
       typescript:
-        specifier: latest
+        specifier: 5.9.3
         version: 5.9.3
 
   packages/billsdk:
     dependencies:
       defu:
-        specifier: latest
+        specifier: 6.1.4
         version: 6.1.4
       zod:
-        specifier: latest
+        specifier: 4.3.5
         version: 4.3.5
     devDependencies:
       '@biomejs/biome':
-        specifier: latest
+        specifier: 2.3.11
         version: 2.3.11
       '@types/node':
-        specifier: latest
-        version: 25.0.10
+        specifier: 22.15.29
+        version: 22.15.29
       tsup:
-        specifier: latest
+        specifier: 8.5.1
         version: 8.5.1(postcss@8.5.6)(typescript@5.9.3)
       typescript:
-        specifier: latest
+        specifier: 5.9.3
         version: 5.9.3
       vitest:
-        specifier: latest
-        version: 4.0.17(@types/node@25.0.10)
+        specifier: 4.0.17
+        version: 4.0.17(@types/node@22.15.29)
 
 packages:
 
@@ -404,8 +404,8 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
-  '@types/node@25.0.10':
-    resolution: {integrity: sha512-zWW5KPngR/yvakJgGOmZ5vTBemDoSqF3AcV/LrO5u5wTWyEAVVh+IT39G4gtyAkh3CtTZs8aX/yRM82OfzHJRg==}
+  '@types/node@22.15.29':
+    resolution: {integrity: sha512-LNdjOkUDlU1RZb8e1kOIUpN1qQUlzGkEtbVNo53vbrwDg5om6oduhm4SiUaPW5ASTXhAiP0jInWG8Qx9fVlOeQ==}
 
   '@vitest/expect@4.0.17':
     resolution: {integrity: sha512-mEoqP3RqhKlbmUmntNDDCJeTDavDR+fVYkSOw8qRwJFaW/0/5zA9zFeTrHqNtcmwh6j26yMmwx2PqUDPzt5ZAQ==}
@@ -727,8 +727,8 @@ packages:
   ufo@1.6.3:
     resolution: {integrity: sha512-yDJTmhydvl5lJzBmy/hyOAA0d+aqCBuwl818haVdYCRrWV84o7YyeVm4QlVHStqNrrJSTb6jKuFAVqAFsr+K3Q==}
 
-  undici-types@7.16.0:
-    resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
+  undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
   vite@7.3.1:
     resolution: {integrity: sha512-w+N7Hifpc3gRjZ63vYBXA56dvvRlNWRczTdmCBBa+CotUzAPf5b7YMdMR/8CQoeYE5LX3W4wj6RYTgonm1b9DA==}
@@ -1027,9 +1027,9 @@ snapshots:
 
   '@types/estree@1.0.8': {}
 
-  '@types/node@25.0.10':
+  '@types/node@22.15.29':
     dependencies:
-      undici-types: 7.16.0
+      undici-types: 6.21.0
 
   '@vitest/expect@4.0.17':
     dependencies:
@@ -1040,13 +1040,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.0.3
 
-  '@vitest/mocker@4.0.17(vite@7.3.1(@types/node@25.0.10))':
+  '@vitest/mocker@4.0.17(vite@7.3.1(@types/node@22.15.29))':
     dependencies:
       '@vitest/spy': 4.0.17
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.3.1(@types/node@25.0.10)
+      vite: 7.3.1(@types/node@22.15.29)
 
   '@vitest/pretty-format@4.0.17':
     dependencies:
@@ -1349,9 +1349,9 @@ snapshots:
 
   ufo@1.6.3: {}
 
-  undici-types@7.16.0: {}
+  undici-types@6.21.0: {}
 
-  vite@7.3.1(@types/node@25.0.10):
+  vite@7.3.1(@types/node@22.15.29):
     dependencies:
       esbuild: 0.27.2
       fdir: 6.5.0(picomatch@4.0.3)
@@ -1360,13 +1360,13 @@ snapshots:
       rollup: 4.56.0
       tinyglobby: 0.2.15
     optionalDependencies:
-      '@types/node': 25.0.10
+      '@types/node': 22.15.29
       fsevents: 2.3.3
 
-  vitest@4.0.17(@types/node@25.0.10):
+  vitest@4.0.17(@types/node@22.15.29):
     dependencies:
       '@vitest/expect': 4.0.17
-      '@vitest/mocker': 4.0.17(vite@7.3.1(@types/node@25.0.10))
+      '@vitest/mocker': 4.0.17(vite@7.3.1(@types/node@22.15.29))
       '@vitest/pretty-format': 4.0.17
       '@vitest/runner': 4.0.17
       '@vitest/snapshot': 4.0.17
@@ -1383,10 +1383,10 @@ snapshots:
       tinyexec: 1.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vite: 7.3.1(@types/node@25.0.10)
+      vite: 7.3.1(@types/node@22.15.29)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 25.0.10
+      '@types/node': 22.15.29
     transitivePeerDependencies:
       - jiti
       - less

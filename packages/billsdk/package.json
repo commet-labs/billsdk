@@ -35,15 +35,15 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "zod": "latest",
-    "defu": "latest"
+    "defu": "6.1.4",
+    "zod": "4.3.5"
   },
   "devDependencies": {
-    "typescript": "latest",
-    "tsup": "latest",
-    "vitest": "latest",
-    "@types/node": "latest",
-    "@biomejs/biome": "latest"
+    "@biomejs/biome": "2.3.11",
+    "@types/node": "22.15.29",
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "4.0.17"
   },
   "keywords": [
     "billing",

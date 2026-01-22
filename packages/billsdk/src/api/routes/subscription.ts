@@ -5,7 +5,7 @@ import type { BillingEndpoint, EndpointContext } from "../../types/api";
  * Get subscription query schema
  */
 const getSubscriptionQuerySchema = z.object({
-  customerId: z.string().min(1, "customerId is required"),
+  customerId: z.string().min(1),
 });
 
 /**
