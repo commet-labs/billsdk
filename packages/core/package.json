@@ -1,25 +1,13 @@
 {
   "name": "@billsdk/core",
   "version": "0.1.0",
-  "description": "Core billing engine - types, schema, internal adapter, API",
+  "description": "Core billing engine for SaaS applications",
   "type": "module",
   "license": "MIT",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./db": {
-      "types": "./dist/db/index.d.ts",
-      "default": "./dist/db/index.js"
-    },
-    "./api": {
-      "types": "./dist/api/index.d.ts",
-      "default": "./dist/api/index.js"
-    },
-    "./adapters/memory": {
-      "types": "./dist/adapters/memory-adapter/index.d.ts",
-      "default": "./dist/adapters/memory-adapter/index.js"
     },
     "./client": {
       "types": "./dist/client/index.d.ts",
