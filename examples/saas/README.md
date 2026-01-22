@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BillSDK SaaS Example
+
+A simple SaaS pricing page example using BillSDK with Next.js, Drizzle ORM, and Stripe.
+
+## Features
+
+- Pricing page with monthly/yearly toggle
+- Stripe checkout integration
+- PostgreSQL database with Drizzle ORM
+- shadcn/ui components
 
 ## Getting Started
 
-First, run the development server:
+### 1. Start PostgreSQL
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Configure Environment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy the example environment file and add your Stripe keys:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cp .env.example .env.local
+```
 
-## Learn More
+Edit `.env.local` with your Stripe credentials:
+- `STRIPE_SECRET_KEY` - Your Stripe secret key (starts with `sk_test_`)
+- `STRIPE_WEBHOOK_SECRET` - Your Stripe webhook secret (starts with `whsec_`)
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Install Dependencies
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+From the monorepo root:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm install
+```
 
-## Deploy on Vercel
+### 4. Push Database Schema
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+pnpm db:push
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 5. Run Development Server
+
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to see the pricing page.
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start development server |
+| `pnpm build` | Build for production |
+| `pnpm db:generate` | Generate Drizzle migrations |
+| `pnpm db:migrate` | Run Drizzle migrations |
+| `pnpm db:push` | Push schema to database (development) |
+| `pnpm db:studio` | Open Drizzle Studio |
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── api/
+│   │   └── billing/
+│   │       └── [...path]/
+│   │           └── route.ts      # BillSDK API handler
+│   ├── pricing/
+│   │   └── page.tsx              # Pricing page
+│   ├── success/
+│   │   └── page.tsx              # Checkout success
+│   ├── cancel/
+│   │   └── page.tsx              # Checkout canceled
+│   └── page.tsx                  # Redirects to /pricing
+├── components/
+│   ├── ui/                       # shadcn/ui components
+│   └── pricing-card.tsx          # Pricing card component
+└── lib/
+    ├── billing.ts                # BillSDK instance
+    ├── db/
+    │   ├── index.ts              # Drizzle client
+    │   └── schema.ts             # Database schema
+    └── utils.ts                  # Utility functions
+```
+
+## Plans
+
+The example includes three plans:
+
+| Plan | Monthly | Yearly | Features |
+|------|---------|--------|----------|
+| Free | $0 | - | API Calls |
+| Pro | $29 | $290 | API Calls, Custom Domain |
+| Enterprise | $99 | $990 | API Calls, Custom Domain, Priority Support |
+
+## Testing Stripe
+
+For testing, use Stripe's test card numbers:
+- Success: `4242 4242 4242 4242`
+- Decline: `4000 0000 0000 0002`
+
+See [Stripe Testing](https://stripe.com/docs/testing) for more test cards.
