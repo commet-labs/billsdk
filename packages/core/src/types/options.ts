@@ -1,4 +1,5 @@
 import type { DBAdapter } from "./adapter";
+import type { PaymentAdapter } from "./payment";
 import type { BillSDKPlugin } from "./plugins";
 
 /**
@@ -10,6 +11,11 @@ export interface BillSDKOptions {
    * If not provided, uses in-memory storage
    */
   database?: DBAdapter;
+
+  /**
+   * Payment adapter for processing payments
+   */
+  payment?: PaymentAdapter;
 
   /**
    * Base path for the billing API
@@ -58,8 +64,9 @@ export type BillingMiddleware = (context: {
  * Resolved options with defaults applied
  */
 export interface ResolvedBillSDKOptions
-  extends Required<Omit<BillSDKOptions, "plugins" | "hooks" | "logger">> {
+  extends Required<Omit<BillSDKOptions, "plugins" | "hooks" | "logger" | "payment">> {
   plugins: BillSDKPlugin[];
+  payment?: PaymentAdapter;
   hooks: {
     before?: BillingMiddleware;
     after?: BillingMiddleware;

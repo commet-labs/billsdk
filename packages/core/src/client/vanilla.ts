@@ -48,7 +48,7 @@ export interface BillingClient {
  *
  * @example
  * ```typescript
- * import { createBillingClient } from "billsdk/client";
+ * import { createBillingClient } from "@billsdk/core/client";
  *
  * const billing = createBillingClient({
  *   baseURL: "/api/billing",

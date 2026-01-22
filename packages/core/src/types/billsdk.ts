@@ -1,6 +1,7 @@
 import type { BillingContext } from "../context/create-context";
-import type { Customer, Plan, PlanPrice, Subscription } from "./models";
+import type { Customer, Feature, Plan, PlanFeature, PlanPrice, Subscription } from "./models";
 import type { BillSDKOptions } from "./options";
+import type { CheckoutResult } from "./payment";
 
 /**
  * Inferred API type from endpoints
@@ -16,6 +17,17 @@ export interface InferredAPI {
 
   // Subscription endpoints
   getSubscription: (params: { customerId: string }) => Promise<Subscription | null>;
+  createSubscription: (params: {
+    customerId: string;
+    planCode: string;
+    interval?: "monthly" | "yearly";
+    successUrl: string;
+    cancelUrl: string;
+  }) => Promise<{ subscription: Subscription; checkoutUrl: string }>;
+
+  // Feature endpoints
+  checkFeature: (params: { customerId: string; feature: string }) => Promise<{ allowed: boolean }>;
+  listFeatures: (params: { customerId: string }) => Promise<PlanFeature[]>;
 
   // Health check
   health: () => Promise<{ status: "ok"; timestamp: string }>;
@@ -54,6 +66,8 @@ export interface BillSDK<Options extends BillSDKOptions = BillSDKOptions> {
     Plan: Plan;
     PlanPrice: PlanPrice;
     Subscription: Subscription;
+    Feature: Feature;
+    PlanFeature: PlanFeature;
   };
 
   /**
@@ -63,6 +77,8 @@ export interface BillSDK<Options extends BillSDKOptions = BillSDKOptions> {
     CUSTOMER_NOT_FOUND: "CUSTOMER_NOT_FOUND";
     PLAN_NOT_FOUND: "PLAN_NOT_FOUND";
     SUBSCRIPTION_NOT_FOUND: "SUBSCRIPTION_NOT_FOUND";
+    FEATURE_NOT_FOUND: "FEATURE_NOT_FOUND";
+    PAYMENT_ADAPTER_NOT_CONFIGURED: "PAYMENT_ADAPTER_NOT_CONFIGURED";
     INVALID_REQUEST: "INVALID_REQUEST";
     INTERNAL_ERROR: "INTERNAL_ERROR";
   };

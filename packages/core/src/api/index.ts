@@ -1,9 +1,11 @@
 import type { BillingContext } from "../context/create-context";
 import type { BillingEndpoint } from "../types/api";
 import { customerEndpoints } from "./routes/customer";
+import { featureEndpoints } from "./routes/features";
 import { healthEndpoint } from "./routes/health";
 import { planEndpoints } from "./routes/plan";
 import { subscriptionEndpoints } from "./routes/subscription";
+import { webhookEndpoints } from "./routes/webhook";
 
 /**
  * Collect all endpoints
@@ -14,6 +16,8 @@ export function getEndpoints(ctx: BillingContext): Record<string, BillingEndpoin
     ...customerEndpoints,
     ...planEndpoints,
     ...subscriptionEndpoints,
+    ...featureEndpoints,
+    ...webhookEndpoints,
   };
 
   // Add plugin endpoints

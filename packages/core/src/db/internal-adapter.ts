@@ -1,11 +1,15 @@
 import type { DBAdapter, Where } from "../types/adapter";
 import type {
   CreateCustomerInput,
+  CreateFeatureInput,
+  CreatePlanFeatureInput,
   CreatePlanInput,
   CreatePlanPriceInput,
   CreateSubscriptionInput,
   Customer,
+  Feature,
   Plan,
+  PlanFeature,
   PlanPrice,
   Subscription,
 } from "../types/models";
@@ -35,6 +39,7 @@ export interface InternalAdapter {
   // Plan Price operations
   createPlanPrice(data: CreatePlanPriceInput): Promise<PlanPrice>;
   findPlanPriceById(id: string): Promise<PlanPrice | null>;
+  findDefaultPlanPrice(planId: string, interval?: string): Promise<PlanPrice | null>;
   listPlanPrices(planId: string): Promise<PlanPrice[]>;
   deletePlanPrice(id: string): Promise<void>;
 
@@ -42,9 +47,24 @@ export interface InternalAdapter {
   createSubscription(data: CreateSubscriptionInput): Promise<Subscription>;
   findSubscriptionById(id: string): Promise<Subscription | null>;
   findSubscriptionByCustomerId(customerId: string): Promise<Subscription | null>;
+  findSubscriptionByProviderSessionId(sessionId: string): Promise<Subscription | null>;
   updateSubscription(id: string, data: Partial<Subscription>): Promise<Subscription | null>;
   cancelSubscription(id: string, cancelAt?: Date): Promise<Subscription | null>;
   listSubscriptions(customerId: string): Promise<Subscription[]>;
+
+  // Feature operations
+  createFeature(data: CreateFeatureInput): Promise<Feature>;
+  findFeatureByCode(code: string): Promise<Feature | null>;
+  listFeatures(): Promise<Feature[]>;
+
+  // Plan Feature operations
+  createPlanFeature(data: CreatePlanFeatureInput): Promise<PlanFeature>;
+  findPlanFeature(planId: string, featureCode: string): Promise<PlanFeature | null>;
+  listPlanFeatures(planId: string): Promise<PlanFeature[]>;
+  deletePlanFeature(id: string): Promise<void>;
+
+  // Feature access check
+  checkFeatureAccess(customerId: string, featureCode: string): Promise<{ allowed: boolean }>;
 }
 
 /**
@@ -177,6 +197,29 @@ export function createInternalAdapter(adapter: DBAdapter): InternalAdapter {
       });
     },
 
+    async findDefaultPlanPrice(planId: string, interval = "monthly"): Promise<PlanPrice | null> {
+      // First try to find default price for the interval
+      const defaultPrice = await adapter.findOne<PlanPrice>({
+        model: TABLES.PLAN_PRICE,
+        where: [
+          { field: "planId", operator: "eq", value: planId },
+          { field: "interval", operator: "eq", value: interval },
+          { field: "isDefault", operator: "eq", value: true },
+        ],
+      });
+
+      if (defaultPrice) return defaultPrice;
+
+      // Fallback to any price for that interval
+      return adapter.findOne<PlanPrice>({
+        model: TABLES.PLAN_PRICE,
+        where: [
+          { field: "planId", operator: "eq", value: planId },
+          { field: "interval", operator: "eq", value: interval },
+        ],
+      });
+    },
+
     async listPlanPrices(planId: string): Promise<PlanPrice[]> {
       return adapter.findMany<PlanPrice>({
         model: TABLES.PLAN_PRICE,
@@ -199,7 +242,7 @@ export function createInternalAdapter(adapter: DBAdapter): InternalAdapter {
 
       let trialStart: Date | undefined;
       let trialEnd: Date | undefined;
-      let status = data.status ?? "active";
+      let status = data.status ?? "pending_payment";
 
       if (data.trialDays && data.trialDays > 0) {
         trialStart = now;
@@ -215,6 +258,8 @@ export function createInternalAdapter(adapter: DBAdapter): InternalAdapter {
           planId: data.planId,
           priceId: data.priceId,
           status,
+          providerSubscriptionId: data.providerSubscriptionId,
+          providerCheckoutSessionId: data.providerCheckoutSessionId,
           currentPeriodStart: now,
           currentPeriodEnd: trialEnd ?? currentPeriodEnd,
           trialStart,
@@ -238,8 +283,15 @@ export function createInternalAdapter(adapter: DBAdapter): InternalAdapter {
         model: TABLES.SUBSCRIPTION,
         where: [
           { field: "customerId", operator: "eq", value: customerId },
-          { field: "status", operator: "in", value: ["active", "trialing", "past_due"] },
+          { field: "status", operator: "in", value: ["active", "trialing", "past_due", "pending_payment"] },
         ],
+      });
+    },
+
+    async findSubscriptionByProviderSessionId(sessionId: string): Promise<Subscription | null> {
+      return adapter.findOne<Subscription>({
+        model: TABLES.SUBSCRIPTION,
+        where: [{ field: "providerCheckoutSessionId", operator: "eq", value: sessionId }],
       });
     },
 
@@ -274,6 +326,108 @@ export function createInternalAdapter(adapter: DBAdapter): InternalAdapter {
         where: [{ field: "customerId", operator: "eq", value: customerId }],
         sortBy: { field: "createdAt", direction: "desc" },
       });
+    },
+
+    // Feature operations
+    async createFeature(data: CreateFeatureInput): Promise<Feature> {
+      return adapter.create<Feature>({
+        model: TABLES.FEATURE,
+        data: {
+          ...data,
+          type: data.type ?? "boolean",
+          createdAt: new Date(),
+        } as Omit<Feature, "id">,
+      });
+    },
+
+    async findFeatureByCode(code: string): Promise<Feature | null> {
+      return adapter.findOne<Feature>({
+        model: TABLES.FEATURE,
+        where: [{ field: "code", operator: "eq", value: code }],
+      });
+    },
+
+    async listFeatures(): Promise<Feature[]> {
+      return adapter.findMany<Feature>({
+        model: TABLES.FEATURE,
+        sortBy: { field: "createdAt", direction: "desc" },
+      });
+    },
+
+    // Plan Feature operations
+    async createPlanFeature(data: CreatePlanFeatureInput): Promise<PlanFeature> {
+      return adapter.create<PlanFeature>({
+        model: TABLES.PLAN_FEATURE,
+        data: {
+          ...data,
+          enabled: data.enabled ?? true,
+          createdAt: new Date(),
+        } as Omit<PlanFeature, "id">,
+      });
+    },
+
+    async findPlanFeature(planId: string, featureCode: string): Promise<PlanFeature | null> {
+      return adapter.findOne<PlanFeature>({
+        model: TABLES.PLAN_FEATURE,
+        where: [
+          { field: "planId", operator: "eq", value: planId },
+          { field: "featureCode", operator: "eq", value: featureCode },
+        ],
+      });
+    },
+
+    async listPlanFeatures(planId: string): Promise<PlanFeature[]> {
+      return adapter.findMany<PlanFeature>({
+        model: TABLES.PLAN_FEATURE,
+        where: [{ field: "planId", operator: "eq", value: planId }],
+      });
+    },
+
+    async deletePlanFeature(id: string): Promise<void> {
+      await adapter.delete({
+        model: TABLES.PLAN_FEATURE,
+        where: [{ field: "id", operator: "eq", value: id }],
+      });
+    },
+
+    // Feature access check
+    async checkFeatureAccess(
+      customerId: string,
+      featureCode: string,
+    ): Promise<{ allowed: boolean }> {
+      // Find customer by external ID
+      const customer = await adapter.findOne<Customer>({
+        model: TABLES.CUSTOMER,
+        where: [{ field: "externalId", operator: "eq", value: customerId }],
+      });
+
+      if (!customer) {
+        return { allowed: false };
+      }
+
+      // Find active subscription
+      const subscription = await adapter.findOne<Subscription>({
+        model: TABLES.SUBSCRIPTION,
+        where: [
+          { field: "customerId", operator: "eq", value: customer.id },
+          { field: "status", operator: "in", value: ["active", "trialing"] },
+        ],
+      });
+
+      if (!subscription) {
+        return { allowed: false };
+      }
+
+      // Find plan feature
+      const planFeature = await adapter.findOne<PlanFeature>({
+        model: TABLES.PLAN_FEATURE,
+        where: [
+          { field: "planId", operator: "eq", value: subscription.planId },
+          { field: "featureCode", operator: "eq", value: featureCode },
+        ],
+      });
+
+      return { allowed: planFeature?.enabled ?? false };
     },
   };
 }

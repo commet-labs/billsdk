@@ -34,6 +34,11 @@ export const billingSchema: DBSchema = {
       type: "string",
       required: false,
     }),
+    providerCustomerId: defineField({
+      type: "string",
+      required: false,
+      index: true,
+    }),
     metadata: defineField({
       type: "json",
       required: false,
@@ -164,6 +169,16 @@ export const billingSchema: DBSchema = {
       type: "string", // SubscriptionStatus
       defaultValue: "active",
     }),
+    providerSubscriptionId: defineField({
+      type: "string",
+      required: false,
+      index: true,
+    }),
+    providerCheckoutSessionId: defineField({
+      type: "string",
+      required: false,
+      index: true,
+    }),
     currentPeriodStart: defineField({
       type: "date",
       defaultValue: () => new Date(),
@@ -202,6 +217,63 @@ export const billingSchema: DBSchema = {
       input: false,
     }),
   }),
+
+  feature: defineTable({
+    id: defineField({
+      type: "string",
+      primaryKey: true,
+      defaultValue: generateId,
+      input: false,
+    }),
+    code: defineField({
+      type: "string",
+      unique: true,
+      index: true,
+    }),
+    name: defineField({
+      type: "string",
+    }),
+    type: defineField({
+      type: "string", // "boolean" | "metered" | "seats"
+      defaultValue: "boolean",
+    }),
+    createdAt: defineField({
+      type: "date",
+      defaultValue: () => new Date(),
+      input: false,
+    }),
+  }),
+
+  planFeature: defineTable({
+    id: defineField({
+      type: "string",
+      primaryKey: true,
+      defaultValue: generateId,
+      input: false,
+    }),
+    planId: defineField({
+      type: "string",
+      index: true,
+      references: {
+        model: "plan",
+        field: "id",
+        onDelete: "cascade",
+      },
+    }),
+    featureCode: defineField({
+      type: "string",
+      index: true,
+    }),
+    enabled: defineField({
+      type: "boolean",
+      defaultValue: true,
+    }),
+    createdAt: defineField({
+      type: "date",
+      defaultValue: () => new Date(),
+      input: false,
+    }),
+  }),
 };
 
 /**
@@ -220,6 +292,8 @@ export const TABLES = {
   PLAN: "plan",
   PLAN_PRICE: "planPrice",
   SUBSCRIPTION: "subscription",
+  FEATURE: "feature",
+  PLAN_FEATURE: "planFeature",
 } as const;
 
 export type TableName = (typeof TABLES)[keyof typeof TABLES];

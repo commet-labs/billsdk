@@ -8,8 +8,8 @@ import { createBillSDK } from "./base";
  *
  * @example
  * ```typescript
- * import { billsdk } from "billsdk";
- * import { memoryAdapter } from "billsdk/adapters/memory";
+ * import { billsdk } from "@billsdk/core";
+ * import { memoryAdapter } from "@billsdk/core/adapters/memory";
  *
  * export const billing = billsdk({
  *   database: memoryAdapter(),

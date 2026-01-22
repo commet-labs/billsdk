@@ -2,6 +2,13 @@
 
 > **The billing SDK for modern apps. Own your billing logic. Use any payment provider.**
 
+## Packages
+
+- `billsdk` - Main package (re-exports @billsdk/core)
+- `@billsdk/core` - Core billing engine
+- `@billsdk/drizzle` - Drizzle ORM adapter
+- `@billsdk/stripe` - Stripe payment adapter
+
 ## The Problem
 
 Building billing is hard. Really hard.

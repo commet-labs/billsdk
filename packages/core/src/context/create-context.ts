@@ -2,6 +2,7 @@ import { createInternalAdapter, type InternalAdapter } from "../db/internal-adap
 import { type DBSchema, getBillingSchema } from "../db/schema";
 import type { DBAdapter } from "../types/adapter";
 import type { BillSDKOptions, ResolvedBillSDKOptions } from "../types/options";
+import type { PaymentAdapter } from "../types/payment";
 import type { BillSDKPlugin } from "../types/plugins";
 
 /**
@@ -32,6 +33,11 @@ export interface BillingContext {
    * Database adapter
    */
   adapter: DBAdapter;
+
+  /**
+   * Payment adapter (optional)
+   */
+  paymentAdapter?: PaymentAdapter;
 
   /**
    * Internal adapter with business logic
@@ -111,6 +117,7 @@ function createLogger(options: BillSDKOptions["logger"]): Logger {
 function resolveOptions(options: BillSDKOptions, adapter: DBAdapter): ResolvedBillSDKOptions {
   return {
     database: adapter,
+    payment: options.payment,
     basePath: options.basePath ?? "/api/billing",
     secret: options.secret ?? generateDefaultSecret(),
     plugins: options.plugins ?? [],
@@ -159,6 +166,7 @@ export async function createBillingContext(
     options: resolvedOptions,
     basePath: resolvedOptions.basePath,
     adapter,
+    paymentAdapter: options.payment,
     internalAdapter,
     schema,
     plugins,
@@ -189,6 +197,7 @@ export async function createBillingContext(
   logger.debug("BillingContext created", {
     basePath: context.basePath,
     plugins: plugins.map((p) => p.id),
+    hasPaymentAdapter: !!context.paymentAdapter,
   });
 
   return context;

@@ -17,6 +17,10 @@ export interface Customer {
    */
   name?: string;
   /**
+   * Payment provider customer ID (e.g., Stripe customer ID)
+   */
+  providerCustomerId?: string;
+  /**
    * Additional metadata
    */
   metadata?: Record<string, unknown>;
@@ -112,7 +116,8 @@ export type SubscriptionStatus =
   | "past_due"
   | "canceled"
   | "paused"
-  | "incomplete";
+  | "incomplete"
+  | "pending_payment";
 
 /**
  * Subscription - customer-plan relationship
@@ -136,6 +141,14 @@ export interface Subscription {
    * Current subscription status
    */
   status: SubscriptionStatus;
+  /**
+   * Payment provider subscription ID (e.g., Stripe subscription ID)
+   */
+  providerSubscriptionId?: string;
+  /**
+   * Payment provider checkout session ID
+   */
+  providerCheckoutSessionId?: string;
   /**
    * Start of the current billing period
    */
@@ -175,18 +188,68 @@ export interface Subscription {
 }
 
 /**
+ * Feature - a capability that can be included in plans
+ */
+export interface Feature {
+  [key: string]: unknown;
+  id: string;
+  /**
+   * Unique code for the feature (e.g., "api_access", "export")
+   */
+  code: string;
+  /**
+   * Display name
+   */
+  name: string;
+  /**
+   * Feature type: boolean (on/off), metered (usage-based), seats (per-user)
+   */
+  type: "boolean" | "metered" | "seats";
+  /**
+   * Timestamp when the feature was created
+   */
+  createdAt: Date;
+}
+
+/**
+ * PlanFeature - configuration of a feature for a specific plan
+ */
+export interface PlanFeature {
+  [key: string]: unknown;
+  id: string;
+  /**
+   * Associated plan ID
+   */
+  planId: string;
+  /**
+   * Feature code
+   */
+  featureCode: string;
+  /**
+   * Whether the feature is enabled for this plan
+   */
+  enabled: boolean;
+  /**
+   * Timestamp when the plan feature was created
+   */
+  createdAt: Date;
+}
+
+/**
  * Input types for creating/updating models
  */
 export interface CreateCustomerInput {
   externalId: string;
   email: string;
   name?: string;
+  providerCustomerId?: string;
   metadata?: Record<string, unknown>;
 }
 
 export interface UpdateCustomerInput {
   email?: string;
   name?: string;
+  providerCustomerId?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -211,6 +274,20 @@ export interface CreateSubscriptionInput {
   planId: string;
   priceId: string;
   status?: SubscriptionStatus;
+  providerSubscriptionId?: string;
+  providerCheckoutSessionId?: string;
   trialDays?: number;
   metadata?: Record<string, unknown>;
+}
+
+export interface CreateFeatureInput {
+  code: string;
+  name: string;
+  type?: "boolean" | "metered" | "seats";
+}
+
+export interface CreatePlanFeatureInput {
+  planId: string;
+  featureCode: string;
+  enabled?: boolean;
 }

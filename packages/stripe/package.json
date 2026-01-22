@@ -1,17 +1,13 @@
 {
-  "name": "billsdk",
+  "name": "@billsdk/stripe",
   "version": "0.1.0",
-  "description": "The billing SDK for SaaS applications",
+  "description": "Stripe payment adapter for BillSDK",
   "type": "module",
   "license": "MIT",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./client": {
-      "types": "./dist/client.d.ts",
-      "default": "./dist/client.js"
     }
   },
   "main": "./dist/index.js",
@@ -30,12 +26,15 @@
     "lint:fix": "biome check . --write",
     "clean": "rm -rf dist .turbo"
   },
-  "dependencies": {
-    "@billsdk/core": "workspace:*"
+  "peerDependencies": {
+    "@billsdk/core": "workspace:*",
+    "stripe": ">=14.0.0"
   },
   "devDependencies": {
+    "@billsdk/core": "workspace:*",
     "@biomejs/biome": "2.3.11",
     "@types/node": "22.15.29",
+    "stripe": "14.0.0",
     "tsup": "8.5.1",
     "typescript": "5.9.3",
     "vitest": "4.0.17"
@@ -43,9 +42,8 @@
   "keywords": [
     "billing",
     "sdk",
-    "saas",
-    "subscriptions",
+    "stripe",
     "payments",
-    "typescript"
+    "adapter"
   ]
 }

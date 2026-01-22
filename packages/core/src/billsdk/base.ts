@@ -10,6 +10,8 @@ const BASE_ERROR_CODES = {
   CUSTOMER_NOT_FOUND: "CUSTOMER_NOT_FOUND",
   PLAN_NOT_FOUND: "PLAN_NOT_FOUND",
   SUBSCRIPTION_NOT_FOUND: "SUBSCRIPTION_NOT_FOUND",
+  FEATURE_NOT_FOUND: "FEATURE_NOT_FOUND",
+  PAYMENT_ADAPTER_NOT_CONFIGURED: "PAYMENT_ADAPTER_NOT_CONFIGURED",
   INVALID_REQUEST: "INVALID_REQUEST",
   INTERNAL_ERROR: "INTERNAL_ERROR",
 } as const;
@@ -44,6 +46,81 @@ function createAPI(contextPromise: Promise<BillingContext>): InferredAPI {
       const customer = await ctx.internalAdapter.findCustomerByExternalId(params.customerId);
       if (!customer) return null;
       return ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
+    },
+
+    async createSubscription(params) {
+      const ctx = await contextPromise;
+
+      if (!ctx.paymentAdapter) {
+        throw new Error("Payment adapter not configured");
+      }
+
+      // Find customer
+      const customer = await ctx.internalAdapter.findCustomerByExternalId(params.customerId);
+      if (!customer) {
+        throw new Error("Customer not found");
+      }
+
+      // Find plan
+      const plan = await ctx.internalAdapter.findPlanByCode(params.planCode);
+      if (!plan) {
+        throw new Error("Plan not found");
+      }
+
+      // Find price
+      const price = await ctx.internalAdapter.findDefaultPlanPrice(plan.id, params.interval ?? "monthly");
+      if (!price) {
+        throw new Error(`No price found for plan ${params.planCode}`);
+      }
+
+      // Create subscription
+      const subscription = await ctx.internalAdapter.createSubscription({
+        customerId: customer.id,
+        planId: plan.id,
+        priceId: price.id,
+        status: "pending_payment",
+      });
+
+      // Create checkout session
+      const checkoutResult = await ctx.paymentAdapter.createCheckoutSession({
+        customer: {
+          id: customer.id,
+          email: customer.email,
+          providerCustomerId: customer.providerCustomerId,
+        },
+        plan: { id: plan.id, name: plan.name },
+        price: { amount: price.amount, currency: price.currency, interval: price.interval },
+        subscription: { id: subscription.id },
+        successUrl: params.successUrl,
+        cancelUrl: params.cancelUrl,
+        metadata: { subscriptionId: subscription.id },
+      });
+
+      // Update subscription with checkout session ID
+      await ctx.internalAdapter.updateSubscription(subscription.id, {
+        providerCheckoutSessionId: checkoutResult.sessionId,
+      });
+
+      return {
+        subscription,
+        checkoutUrl: checkoutResult.url,
+      };
+    },
+
+    async checkFeature(params) {
+      const ctx = await contextPromise;
+      return ctx.internalAdapter.checkFeatureAccess(params.customerId, params.feature);
+    },
+
+    async listFeatures(params) {
+      const ctx = await contextPromise;
+      const customer = await ctx.internalAdapter.findCustomerByExternalId(params.customerId);
+      if (!customer) return [];
+
+      const subscription = await ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
+      if (!subscription) return [];
+
+      return ctx.internalAdapter.listPlanFeatures(subscription.planId);
     },
 
     async health() {
