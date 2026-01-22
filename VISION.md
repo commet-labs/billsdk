@@ -512,58 +512,6 @@ await billing.process();
 
 ---
 
-## Roadmap
-
-### Phase 1: Core Foundation
-- [x] Base structure (types, context, factory)
-- [x] Memory adapter for testing
-- [ ] Drizzle adapter
-- [ ] Core tables (customer, plan, plan_price, subscription, payment)
-- [ ] Basic CRUD operations
-- [ ] Subscription lifecycle (draft → active → canceled)
-
-### Phase 2: Tracking (inputs for billing calculation)
-- [ ] Usage tracking & reporting
-- [ ] Seats management (add, remove, types)
-- [ ] Feature checks (boolean, metered, seats)
-- [ ] Usage aggregation per billing period
-
-### Phase 3: Billing Engine (uses tracked data)
-- [ ] Billing calculation (base + usage + seats)
-- [ ] Proration calculator (upgrades/downgrades)
-- [ ] Trials & automatic conversion
-- [ ] `billing.process()` for cron
-- [ ] Stripe payment adapter
-- [ ] Payment recording with breakdown
-
-### Phase 4: Advanced Features
-- [ ] Credits & balance
-- [ ] Discounts & introductory offers
-- [ ] Webhook handling
-- [ ] Pause/resume subscriptions
-- [ ] Grace periods for failed payments
-
-### Phase 5: Ecosystem
-- [ ] React hooks (`useBilling`)
-- [ ] Vue composables
-- [ ] Customer Portal component
-- [ ] CLI for migrations
-- [ ] More payment adapters (Paddle, PayPal, MercadoPago)
-
-### Phase 6: Plugins
-- [ ] `@billsdk/invoices` - Legal invoices with PDF
-- [ ] `@billsdk/analytics` - MRR, churn, LTV
-- [ ] `@billsdk/webhooks` - Event notifications
-- [ ] `@billsdk/portal` - Pre-built customer portal UI
-
-### Phase 7: Enterprise
-- [ ] Multi-currency support
-- [ ] Tax integration plugins
-- [ ] Audit logs
-- [ ] Multi-tenancy helpers
-
----
-
 ## The Goal
 
 > **When someone asks "what should I use for billing?", the answer is BillSDK.**
