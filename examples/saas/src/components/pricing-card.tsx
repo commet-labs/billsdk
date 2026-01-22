@@ -1,9 +1,5 @@
-"use client";
-
 import { Check } from "lucide-react";
-import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -15,12 +11,10 @@ import {
 
 interface PricingCardProps {
   plan: {
-    id: string;
     code: string;
     name: string;
-    description: string | null;
+    description?: string;
     prices: Array<{
-      id: string;
       amount: number;
       interval: string;
       currency: string;
@@ -29,17 +23,15 @@ interface PricingCardProps {
   };
   interval: "monthly" | "yearly";
   isPopular?: boolean;
-  onSubscribe: (planCode: string, interval: string) => Promise<void>;
+  children: React.ReactNode; // SubscribeButton slot
 }
 
 export function PricingCard({
   plan,
   interval,
   isPopular,
-  onSubscribe,
+  children,
 }: PricingCardProps) {
-  const [loading, setLoading] = useState(false);
-
   const price = plan.prices.find((p) => p.interval === interval);
   const amount = price?.amount ?? 0;
   const formattedPrice = new Intl.NumberFormat("en-US", {
@@ -47,15 +39,6 @@ export function PricingCard({
     currency: price?.currency ?? "usd",
     minimumFractionDigits: 0,
   }).format(amount / 100);
-
-  const handleSubscribe = async () => {
-    setLoading(true);
-    try {
-      await onSubscribe(plan.code, interval);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Card className={isPopular ? "border-primary shadow-lg" : ""}>
@@ -87,16 +70,7 @@ export function PricingCard({
           ))}
         </ul>
       </CardContent>
-      <CardFooter>
-        <Button
-          className="w-full"
-          variant={isPopular ? "default" : "outline"}
-          onClick={handleSubscribe}
-          disabled={loading || amount === 0}
-        >
-          {loading ? "Loading..." : amount === 0 ? "Current Plan" : "Subscribe"}
-        </Button>
-      </CardFooter>
+      <CardFooter>{children}</CardFooter>
     </Card>
   );
 }
