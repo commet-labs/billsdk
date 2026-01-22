@@ -9,6 +9,17 @@
 - `@billsdk/drizzle` - Drizzle ORM adapter
 - `@billsdk/stripe` - Stripe payment adapter
 
+## Roadmap
+
+| Phase | Features | Status |
+|-------|----------|--------|
+| **MVP** | Fixed-price plans, boolean features, Stripe Checkout | ✅ Done |
+| **v0.2** | Metered usage, usage tracking | 🔜 Next |
+| **v0.3** | Seats (per-user licensing) | Planned |
+| **v0.4** | Credits & Balance, prepaid models | Planned |
+| **v0.5** | Proration, plan changes mid-cycle | Planned |
+| **v1.0** | Stable API, multiple payment adapters | Planned |
+
 ## The Problem
 
 Building billing is hard. Really hard.
@@ -69,35 +80,41 @@ Until now.
 
 ### Core Billing Logic
 
-| Feature | Description |
-|---------|-------------|
-| **Subscriptions** | Full lifecycle: draft → trial → active → paused → canceled |
-| **Plans** | Pricing packages with base price + configured features |
-| **Features** | Boolean (on/off), Metered (usage-based), Seats (per-user) |
-| **Usage Tracking** | Report and track consumption for metered billing |
-| **Seats** | Per-user licensing with seat types (admin, member, viewer) |
-| **Credits & Balance** | Prepaid models, credit packs, consumption blocking |
-| **Billing Calculation** | Calculate what to charge (base + usage + seats + proration) |
-| **Payments** | Record charges with breakdown, handle via payment adapter |
-| **Proration** | Correct calculations for upgrades/downgrades mid-cycle |
-| **Trials** | Configurable trial periods with automatic conversion |
-| **Discounts** | Percentage or fixed discounts, introductory offers |
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Subscriptions** | Lifecycle: pending → trialing → active → canceled | ✅ MVP |
+| **Plans** | Pricing packages defined in code | ✅ MVP |
+| **Boolean Features** | On/off access control per plan | ✅ MVP |
+| **Stripe Checkout** | Redirect to hosted payment page | ✅ MVP |
+| **Webhooks** | Handle payment confirmation from Stripe | ✅ MVP |
+| **Trials** | Configurable trial periods | ✅ MVP |
+| **Metered Features** | Usage-based billing | 🔜 v0.2 |
+| **Usage Tracking** | Report and track consumption | 🔜 v0.2 |
+| **Seats** | Per-user licensing | 🔜 v0.3 |
+| **Credits & Balance** | Prepaid models, credit packs | 🔜 v0.4 |
+| **Proration** | Mid-cycle upgrade/downgrade calculations | 🔜 v0.5 |
+| **Discounts** | Percentage or fixed discounts | 🔜 v0.5 |
 
 ### Core vs Plugins
 
 ```
-BillSDK Core (essential):
-├── Subscriptions
-├── Plans & Features
-├── Usage tracking
-├── Seats
-├── Credits & Balance
-├── Billing calculation (what to charge)
-├── Payments table (record of charges)
-└── Payment adapters (execute charges)
+BillSDK Core:
+├── MVP (now)
+│   ├── Customers
+│   ├── Subscriptions
+│   ├── Plans & Boolean Features (from config)
+│   ├── Stripe Checkout integration
+│   └── Webhook handling
+│
+├── Future (v0.2+)
+│   ├── Metered usage tracking
+│   ├── Seats management
+│   ├── Credits & Balance
+│   ├── Proration
+│   └── Multiple payment adapters
 
-Plugins (optional):
-├── @billsdk/invoices    → Legal invoices with line items, PDF generation
+Plugins (optional, future):
+├── @billsdk/invoices    → Legal invoices with PDF
 ├── @billsdk/analytics   → MRR, churn, LTV metrics
 ├── @billsdk/webhooks    → Send events to external systems
 └── @billsdk/portal      → Pre-built customer portal UI
@@ -179,136 +196,183 @@ npm install @billsdk/stripe  # or @billsdk/paddle, etc.
 ### Server Setup
 
 ```typescript
+// lib/billing.ts
 import { billsdk } from "billsdk";
-import { drizzleAdapter } from "billsdk/adapters/drizzle";
+import { drizzleAdapter } from "@billsdk/drizzle";
 import { stripePayment } from "@billsdk/stripe";
 import { db } from "./db";
+import * as schema from "./db/schema";
 
 export const billing = billsdk({
-  // Your database - BillSDK owns the tables
-  database: drizzleAdapter(db),
+  // Database adapter - only stores customers & subscriptions
+  database: drizzleAdapter(db, { schema, provider: "pg" }),
   
-  // Payment provider - only for charging
+  // Payment adapter - handles checkout & webhooks
   payment: stripePayment({
-    secretKey: process.env.STRIPE_SECRET_KEY,
-    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    secretKey: process.env.STRIPE_SECRET_KEY!,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
   }),
+
+  // API base path
+  basePath: "/api/billing",
   
-  // Define your plans (or load from DB)
+  // Features are defined in code (source of truth)
+  features: [
+    { code: "export", name: "Export Data" },
+    { code: "api_access", name: "API Access" },
+    { code: "priority_support", name: "Priority Support" },
+  ],
+  
+  // Plans are defined in code (source of truth)
   plans: [
     {
       code: "free",
       name: "Free",
-      prices: [{ interval: "monthly", amount: 0 }],
-      features: {
-        api_calls: { type: "metered", included: 1000 },
-        seats: { type: "seats", included: 1 },
-        custom_domain: { type: "boolean", enabled: false },
-      },
+      prices: [{ amount: 0, interval: "monthly" }],
+      features: ["export"],
     },
     {
       code: "pro",
       name: "Pro",
       prices: [
-        { interval: "monthly", amount: 2900 },  // $29/mo
-        { interval: "yearly", amount: 29000 },  // $290/yr (2 months free)
+        { amount: 2000, interval: "monthly" },   // $20/mo
+        { amount: 20000, interval: "yearly" },   // $200/yr
       ],
-      features: {
-        api_calls: { type: "metered", included: 50000, overage: 1 }, // $0.01/extra
-        seats: { type: "seats", included: 5, overagePrice: 1000 },   // $10/extra seat
-        custom_domain: { type: "boolean", enabled: true },
-      },
-      trial: { days: 14 },
+      features: ["export", "api_access"],
+    },
+    {
+      code: "enterprise",
+      name: "Enterprise",
+      isPublic: false,  // Hidden from pricing page
+      prices: [
+        { amount: 9900, interval: "monthly" },
+        { amount: 99000, interval: "yearly" },
+      ],
+      features: ["export", "api_access", "priority_support"],
     },
   ],
 });
-
-// API handler - works with any framework
-export const billingHandler = billing.handler;
 ```
 
 ### Framework Integration
 
 ```typescript
-// Next.js
-// app/api/billing/[...path]/route.ts
+// Next.js App Router
+// app/api/billing/[...all]/route.ts
 import { billing } from "@/lib/billing";
 
-export const { GET, POST } = billing.handlers;
-
-// Webhook endpoint
-// app/api/billing/webhook/route.ts
-export const POST = billing.webhookHandler;
+export const GET = billing.handler;
+export const POST = billing.handler;
 ```
 
-### Server-Side API
+### Server-Side API (MVP)
 
 ```typescript
 // Create a customer when user signs up
-const customer = await billing.customers.create({
+const customer = await billing.api.createCustomer({
   externalId: user.id,  // Your user ID
   email: user.email,
   name: user.name,
 });
 
-// Subscribe to a plan
-const { subscription, checkoutUrl } = await billing.subscriptions.create({
-  customerId: customer.id,
+// Create subscription (redirects to Stripe Checkout)
+const { checkoutUrl } = await billing.api.createSubscription({
+  customerId: user.id,    // externalId
   planCode: "pro",
   interval: "monthly",
-  successUrl: "/dashboard",
+  successUrl: "/success",
   cancelUrl: "/pricing",
 });
 
 // User clicks checkoutUrl → pays → webhook confirms → subscription active
 
 // Check feature access
-const canUseCustomDomain = await billing.features.check({
-  customerId: customer.id,
-  feature: "custom_domain",
+const { allowed } = await billing.api.checkFeature({
+  customerId: user.id,
+  feature: "api_access",
 });
-// → { allowed: true }
 
-// Report usage
-await billing.usage.report({
-  customerId: customer.id,
+if (!allowed) {
+  return "Upgrade to Pro for API access";
+}
+
+// Get subscription status
+const subscription = await billing.api.getSubscription({
+  customerId: user.id,
+});
+// → { status: "active", planCode: "pro", currentPeriodEnd: ... }
+
+// List available plans
+const plans = await billing.api.listPlans();
+// → [{ code: "free", name: "Free", prices: [...] }, ...]
+```
+
+### Server-Side API (Future - v0.2+)
+
+```typescript
+// Report usage (metered features)
+await billing.api.reportUsage({
+  customerId: user.id,
   feature: "api_calls",
   quantity: 1,
 });
 
 // Check usage
-const usage = await billing.usage.get({
-  customerId: customer.id,
+const usage = await billing.api.getUsage({
+  customerId: user.id,
   feature: "api_calls",
 });
 // → { used: 1523, included: 50000, remaining: 48477, overage: 0 }
 
 // Add a seat
-await billing.seats.add({
-  customerId: customer.id,
+await billing.api.addSeat({
+  customerId: user.id,
   seatType: "member",
   userId: "user_456",
 });
 
-// Upgrade plan (with proration)
-const { invoice, checkoutUrl } = await billing.subscriptions.changePlan({
-  subscriptionId: subscription.id,
+// Change plan (with proration)
+await billing.api.changePlan({
+  customerId: user.id,
   newPlanCode: "enterprise",
-  prorate: true,  // Calculate mid-cycle credit
+  prorate: true,
 });
 
 // Cancel subscription
-await billing.subscriptions.cancel({
-  subscriptionId: subscription.id,
+await billing.api.cancelSubscription({
+  customerId: user.id,
   cancelAt: "period_end",  // or "immediately"
 });
 ```
 
-### Client SDK
+### Client SDK (MVP)
 
 ```typescript
-// React
-import { BillingProvider, useBilling } from "billsdk/react";
+// Vanilla JS - reactive state management
+import { createBillingClient } from "billsdk/client";
+
+const client = createBillingClient({
+  baseUrl: "/api/billing",
+});
+
+// Reactive atoms
+client.$subscription.subscribe((sub) => {
+  console.log("Subscription:", sub);
+  updateUI(sub);
+});
+
+// Initialize with customer
+client.setCustomerId("user_123");
+
+// Fetch current subscription
+await client.subscription.fetch();
+```
+
+### Client SDK (Future - React bindings)
+
+```typescript
+// React (future)
+import { BillingProvider, useSubscription } from "billsdk/react";
 
 function App() {
   return (
@@ -319,65 +383,31 @@ function App() {
 }
 
 function Dashboard() {
-  const { subscription, usage, plans } = useBilling();
+  const { data: subscription, isLoading } = useSubscription();
   
-  if (subscription.isLoading) return <Spinner />;
+  if (isLoading) return <Spinner />;
   
   return (
     <div>
-      <p>Plan: {subscription.data?.plan.name}</p>
-      <p>API Calls: {usage.data?.api_calls.used} / {usage.data?.api_calls.included}</p>
-      
-      <button onClick={() => billing.portal.open()}>
-        Manage Billing
-      </button>
+      <p>Plan: {subscription?.planCode}</p>
+      <p>Status: {subscription?.status}</p>
     </div>
   );
 }
 ```
 
-```typescript
-// Vanilla JS
-import { createBillingClient } from "billsdk/client";
-
-const billing = createBillingClient({
-  baseUrl: "/api/billing",
-});
-
-// Reactive atoms
-billing.$subscription.subscribe((sub) => {
-  console.log("Subscription changed:", sub);
-});
-
-billing.$usage.subscribe((usage) => {
-  updateUsageBar(usage.api_calls);
-});
-
-// Initialize with customer
-billing.setCustomerId("cus_123");
-
-// Upgrade
-await billing.subscriptions.upgrade({ planCode: "pro" });
-```
-
-### Billing Processor (Cron)
+### Billing Processor (Future - Cron)
 
 ```typescript
-// Your cron job (daily recommended)
+// Your cron job (for renewals, metered billing)
 import { billing } from "@/lib/billing";
 
-// This processes all subscriptions that need action:
-// - Generate invoices for renewals
-// - Charge customers
-// - Handle failed payments
-// - Convert trials
-// - Process cancellations
+// Process all subscriptions that need action
 const result = await billing.process();
 
 console.log(result);
 // {
 //   processed: 150,
-//   invoicesGenerated: 45,
 //   paymentsSuccessful: 43,
 //   paymentsFailed: 2,
 //   trialsConverted: 5,
@@ -410,45 +440,57 @@ Everything else is a plugin or external service.
 
 ## Architecture
 
-### Database Schema (owned by BillSDK)
+### Config as Source of Truth
+
+**Plans and features are defined in code, not in the database.**
+
+This is intentional:
+- **Immutable pricing** - Prices don't change for existing subscriptions
+- **Version control** - Your pricing is in git, not a database
+- **No sync issues** - No need to migrate data when changing plans
+- **Simple** - Less tables, less complexity
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  customer   │────▶│subscription │────▶│   payment   │
-└─────────────┘     └─────────────┘     └─────────────┘
-       │                   │                   
-       │                   ▼                   
-       │            ┌─────────────┐     
-       │            │    plan     │     
-       │            └─────────────┘     
-       │                   │
-       ▼                   ▼
-┌─────────────┐     ┌─────────────┐
-│usage_event  │     │plan_feature │
-└─────────────┘     └─────────────┘
-       │
-       ▼
-┌─────────────┐     ┌─────────────┐
-│    seat     │     │   feature   │
-└─────────────┘     └─────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    Your Code (config)                    │
+│                                                          │
+│   plans: [{ code: "pro", prices: [...], features: [...] }]
+│   features: [{ code: "export", name: "Export" }]         │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────┐
+│                    Database (state)                      │
+│                                                          │
+│   ┌─────────────┐         ┌─────────────┐               │
+│   │  customer   │────────▶│subscription │               │
+│   │             │         │             │               │
+│   │ externalId  │         │ planCode    │               │
+│   │ email       │         │ interval    │               │
+│   │ provider... │         │ status      │               │
+│   └─────────────┘         └─────────────┘               │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### Core Tables
+### Database Tables (MVP)
 
 | Table | Purpose |
 |-------|---------|
 | `customer` | Your users, linked by externalId |
-| `plan` | Pricing packages |
-| `plan_price` | Prices per interval (monthly, yearly) |
-| `feature` | Capabilities (api_calls, seats, custom_domain) |
-| `plan_feature` | Feature config per plan (limits, overage) |
-| `subscription` | Customer-plan relationship |
-| `payment` | Charge records with breakdown (JSON) |
-| `usage_event` | Raw usage data |
+| `subscription` | Customer-plan relationship (references planCode) |
+
+### Future Tables (v0.2+)
+
+| Table | Purpose |
+|-------|---------|
+| `usage_event` | Raw usage data for metered features |
 | `seat` | Per-user licenses |
 | `credit_transaction` | Credit purchases and usage |
+| `payment` | Charge records with breakdown |
 
-### Plugin Tables (optional)
+### Plugin Tables (future)
 
 | Plugin | Tables |
 |--------|--------|
@@ -456,7 +498,7 @@ Everything else is a plugin or external service.
 | `@billsdk/analytics` | `metric_snapshot` |
 | `@billsdk/webhooks` | `webhook_event`, `webhook_delivery` |
 
-### Plugin System
+### Plugin System (future)
 
 ```typescript
 import { billsdk } from "billsdk";
@@ -522,6 +564,15 @@ Just like Better Auth became the answer for authentication.
 
 ## FAQ
 
+**Q: What can I do with BillSDK today (MVP)?**
+
+- Define plans with fixed prices in code
+- Boolean features (on/off access)
+- Stripe Checkout for payments
+- Webhook handling for payment confirmation
+- Check feature access per customer
+- Trial periods
+
 **Q: How is this different from Commet SaaS?**
 
 Commet SaaS is a Merchant of Record - we handle taxes, compliance, refunds, payouts. You send us events, we handle everything.
@@ -537,9 +588,19 @@ BillSDK is self-hosted billing logic. You own the data, you handle payments dire
 
 Stripe Billing locks you into Stripe. BillSDK lets you use Stripe for payments while owning your billing logic. Tomorrow you can switch to Paddle without rewriting anything.
 
+**Q: Why are plans defined in code, not the database?**
+
+This is intentional:
+- **Immutability** - Existing subscriptions keep their original price
+- **Version control** - Your pricing is in git
+- **Simplicity** - No sync between code and DB
+- **Performance** - Plans are in memory, no DB queries
+
 **Q: Do I need to run a cron job?**
 
-Yes. BillSDK doesn't run background jobs. You call `billing.process()` from your cron (daily recommended). This is intentional - you have full control over when billing runs.
+Not for MVP. Stripe handles recurring billing via webhooks.
+
+For metered billing (v0.2+), you'll need a cron to calculate usage and trigger charges.
 
 ---
 
