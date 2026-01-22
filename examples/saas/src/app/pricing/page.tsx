@@ -69,12 +69,12 @@ export default function PricingPage() {
 
       const { customer } = await customerResponse.json();
 
-      // Then create the subscription
+      // Then create the subscription (using externalId, not internal id)
       const subscriptionResponse = await fetch("/api/billing/subscription", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          customerId: customer.id,
+          customerId: customer.externalId,
           planCode,
           interval: billingInterval,
           successUrl: `${window.location.origin}/success`,
@@ -154,7 +154,7 @@ export default function PricingPage() {
         <div className="grid md:grid-cols-3 gap-8">
           {plans.map((plan) => (
             <PricingCard
-              key={plan.id}
+              key={plan.code}
               plan={plan}
               interval={interval}
               isPopular={plan.code === "pro"}
