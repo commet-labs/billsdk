@@ -5,71 +5,49 @@ import { db } from "./db";
 import * as schema from "./db/schema";
 
 /**
- * BillSDK instance for the SaaS example
+ * BillSDK - Demo SaaS billing configuration
+ *
+ * Simple setup: $20/month plan with boolean features
  */
-export const bill = billsdk({
-  // Database adapter
+export const billing = billsdk({
   database: drizzleAdapter(db, {
     schema,
     provider: "pg",
   }),
 
-  // Payment adapter (Stripe)
   payment: stripePayment({
     secretKey: process.env.STRIPE_SECRET_KEY!,
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
   }),
 
-  // Secret for signing
   secret: process.env.BILLSDK_SECRET || "dev-secret-change-in-production",
 
-  // Define features
+  // Boolean features only (MVP)
   features: [
-    {
-      code: "api_calls",
-      name: "API Calls",
-      type: "metered",
-    },
-    {
-      code: "custom_domain",
-      name: "Custom Domain",
-      type: "boolean",
-    },
-    {
-      code: "priority_support",
-      name: "Priority Support",
-      type: "boolean",
-    },
+    { code: "export", name: "Export Data" },
+    { code: "api_access", name: "API Access" },
+    { code: "custom_domain", name: "Custom Domain" },
+    { code: "priority_support", name: "Priority Support" },
   ],
 
-  // Define plans
+  // Simple pricing: Free + $20 Pro
   plans: [
     {
       code: "free",
       name: "Free",
-      description: "For individuals and small projects",
+      description: "Get started for free",
       prices: [{ amount: 0, interval: "monthly" }],
-      features: ["api_calls"],
+      features: ["export"],
     },
     {
       code: "pro",
       name: "Pro",
-      description: "For growing teams and businesses",
+      description: "Everything you need",
       prices: [
-        { amount: 2900, interval: "monthly" },
-        { amount: 29000, interval: "yearly" },
+        { amount: 2000, interval: "monthly" }, // $20/mo
+        { amount: 20000, interval: "yearly" }, // $200/yr (2 months free)
       ],
-      features: ["api_calls", "custom_domain"],
-    },
-    {
-      code: "enterprise",
-      name: "Enterprise",
-      description: "For large organizations with advanced needs",
-      prices: [
-        { amount: 9900, interval: "monthly" },
-        { amount: 99000, interval: "yearly" },
-      ],
-      features: ["api_calls", "custom_domain", "priority_support"],
+      features: ["export", "api_access", "custom_domain", "priority_support"],
     },
   ],
 });

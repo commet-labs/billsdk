@@ -44,7 +44,6 @@ export type EndpointHandler<
 export interface BillingEndpoint {
   path: string;
   options: EndpointOptions;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handler: (context: any) => Promise<unknown> | unknown;
 }
 
