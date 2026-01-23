@@ -6,21 +6,26 @@ import type {
   PlanPrice,
   Subscription,
 } from "./models";
-import type { BillSDKOptions } from "./options";
+import type {
+  BillSDKOptions,
+  ExtractFeatureCodes,
+  FeatureConfig,
+} from "./options";
 
 /**
  * Feature access info returned by listFeatures
  */
-export interface FeatureAccess {
-  code: string;
+export interface FeatureAccess<TFeatureCode extends string = string> {
+  code: TFeatureCode;
   name: string;
   enabled: boolean;
 }
 
 /**
  * Inferred API type from endpoints
+ * @typeParam TFeatureCode - Union of valid feature codes from config
  */
-export interface InferredAPI {
+export interface InferredAPI<TFeatureCode extends string = string> {
   // Customer endpoints
   getCustomer: (params: { externalId: string }) => Promise<Customer | null>;
   createCustomer: (data: {
@@ -48,13 +53,25 @@ export interface InferredAPI {
   // Feature endpoints
   checkFeature: (params: {
     customerId: string;
-    feature: string;
+    feature: TFeatureCode;
   }) => Promise<{ allowed: boolean }>;
-  listFeatures: (params: { customerId: string }) => Promise<FeatureAccess[]>;
+  listFeatures: (params: {
+    customerId: string;
+  }) => Promise<FeatureAccess<TFeatureCode>[]>;
 
   // Health check
   health: () => Promise<{ status: "ok"; timestamp: string }>;
 }
+
+/**
+ * Helper to extract feature codes from BillSDKOptions
+ */
+type ExtractFeatureCodesFromOptions<Options extends BillSDKOptions<any>> =
+  Options extends BillSDKOptions<infer TFeatures>
+    ? TFeatures extends readonly FeatureConfig<string>[]
+      ? ExtractFeatureCodes<TFeatures>
+      : string
+    : string;
 
 /**
  * The main BillSDK instance type
@@ -69,8 +86,9 @@ export interface BillSDK<Options extends BillSDKOptions<any> = BillSDKOptions> {
 
   /**
    * Direct API access for server-side usage
+   * Features are type-safe based on your config
    */
-  api: InferredAPI;
+  api: InferredAPI<ExtractFeatureCodesFromOptions<Options>>;
 
   /**
    * Original options

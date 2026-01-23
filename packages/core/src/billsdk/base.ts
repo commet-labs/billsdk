@@ -22,8 +22,11 @@ const BASE_ERROR_CODES = {
 
 /**
  * Create the API object for direct server-side access
+ * The generic is for type inference only - runtime behavior is the same
  */
-function createAPI(contextPromise: Promise<BillingContext>): InferredAPI {
+function createAPI<TFeatureCode extends string = string>(
+  contextPromise: Promise<BillingContext>,
+): InferredAPI<TFeatureCode> {
   return {
     async getCustomer(params) {
       const ctx = await contextPromise;
@@ -158,8 +161,8 @@ function createAPI(contextPromise: Promise<BillingContext>): InferredAPI {
       return featureCodes.map((code) => {
         const feature = ctx.internalAdapter.findFeatureByCode(code);
         return feature
-          ? { code: feature.code, name: feature.name, enabled: true }
-          : { code, name: code, enabled: true };
+          ? { code: feature.code as TFeatureCode, name: feature.name, enabled: true as const }
+          : { code: code as TFeatureCode, name: code, enabled: true as const };
       });
     },
 
@@ -209,7 +212,8 @@ export function createBillSDK<Options extends BillSDKOptions<any>>(
   };
 
   // Create the API object
-  const api = createAPI(contextPromise);
+  // Type assertion needed because runtime uses string but we want type inference
+  const api = createAPI(contextPromise) as BillSDK<Options>["api"];
 
   return {
     handler,
