@@ -49,6 +49,10 @@ export interface InferredAPI<TFeatureCode extends string = string> {
     successUrl: string;
     cancelUrl: string;
   }) => Promise<{ subscription: Subscription; checkoutUrl: string }>;
+  cancelSubscription: (params: {
+    customerId: string;
+    cancelAt?: "period_end" | "immediately";
+  }) => Promise<Subscription | null>;
 
   // Feature endpoints
   checkFeature: (params: {

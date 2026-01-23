@@ -135,6 +135,35 @@ function createAPI<TFeatureCode extends string = string>(
       };
     },
 
+    async cancelSubscription(params) {
+      const ctx = await contextPromise;
+      const customer = await ctx.internalAdapter.findCustomerByExternalId(
+        params.customerId,
+      );
+      if (!customer) {
+        return null;
+      }
+
+      const subscription =
+        await ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
+      if (!subscription) {
+        return null;
+      }
+
+      const cancelAt = params.cancelAt ?? "period_end";
+
+      if (cancelAt === "immediately") {
+        // Cancel immediately
+        return ctx.internalAdapter.cancelSubscription(subscription.id);
+      }
+
+      // Cancel at period end - set cancelAt date but keep active
+      return ctx.internalAdapter.cancelSubscription(
+        subscription.id,
+        subscription.currentPeriodEnd,
+      );
+    },
+
     async checkFeature(params) {
       const ctx = await contextPromise;
       return ctx.internalAdapter.checkFeatureAccess(
@@ -161,7 +190,11 @@ function createAPI<TFeatureCode extends string = string>(
       return featureCodes.map((code) => {
         const feature = ctx.internalAdapter.findFeatureByCode(code);
         return feature
-          ? { code: feature.code as TFeatureCode, name: feature.name, enabled: true as const }
+          ? {
+              code: feature.code as TFeatureCode,
+              name: feature.name,
+              enabled: true as const,
+            }
           : { code: code as TFeatureCode, name: code, enabled: true as const };
       });
     },
@@ -246,9 +279,9 @@ export function createBillSDK<Options extends BillSDKOptions<any>>(
  * });
  * ```
  */
-export function billsdk<const TFeatures extends readonly FeatureConfig<string>[]>(
-  options: BillSDKOptions<TFeatures>,
-): BillSDK<BillSDKOptions<TFeatures>> {
+export function billsdk<
+  const TFeatures extends readonly FeatureConfig<string>[],
+>(options: BillSDKOptions<TFeatures>): BillSDK<BillSDKOptions<TFeatures>> {
   // biome-ignore lint/suspicious/noExplicitAny: Type coercion needed for generic constraint compatibility
   return createBillSDK(options as any);
 }

@@ -20,6 +20,17 @@ const createSubscriptionSchema = z.object({
 });
 
 /**
+ * Cancel subscription schema
+ */
+const cancelSubscriptionSchema = z.object({
+  customerId: z.string().min(1),
+  cancelAt: z
+    .enum(["period_end", "immediately"])
+    .optional()
+    .default("period_end"),
+});
+
+/**
  * Subscription endpoints
  */
 export const subscriptionEndpoints: Record<string, BillingEndpoint> = {
@@ -161,6 +172,53 @@ export const subscriptionEndpoints: Record<string, BillingEndpoint> = {
       return {
         subscription,
         checkoutUrl: checkoutResult.url,
+      };
+    },
+  },
+
+  cancelSubscription: {
+    path: "/subscription/cancel",
+    options: {
+      method: "POST",
+      body: cancelSubscriptionSchema,
+    },
+    handler: async (
+      context: EndpointContext<z.infer<typeof cancelSubscriptionSchema>>,
+    ) => {
+      const { ctx, body } = context;
+
+      // Find customer
+      const customer = await ctx.internalAdapter.findCustomerByExternalId(
+        body.customerId,
+      );
+      if (!customer) {
+        throw new Error("Customer not found");
+      }
+
+      // Find active subscription
+      const subscription =
+        await ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
+      if (!subscription) {
+        throw new Error("No active subscription found");
+      }
+
+      // Cancel subscription
+      if (body.cancelAt === "immediately") {
+        const canceled = await ctx.internalAdapter.cancelSubscription(
+          subscription.id,
+        );
+        return { subscription: canceled, canceledImmediately: true };
+      }
+
+      // Cancel at period end
+      const canceled = await ctx.internalAdapter.cancelSubscription(
+        subscription.id,
+        subscription.currentPeriodEnd,
+      );
+      return {
+        subscription: canceled,
+        canceledImmediately: false,
+        accessUntil: subscription.currentPeriodEnd,
       };
     },
   },
