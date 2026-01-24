@@ -196,7 +196,7 @@ function HeaderNavigationMenu({
       <header
         id="nd-nav"
         {...props}
-        className={cn("sticky h-14 top-0 z-40", props.className)}
+        className={cn("sticky h-0 top-0 z-40", props.className)}
       >
         <div
           className={cn(
