@@ -47,13 +47,14 @@ export function ThemeToggle({
 
     return (
       <button
+        type="button"
         className={container}
         aria-label={"Toggle Theme"}
         onClick={() => setTheme(value === "light" ? "dark" : "light")}
         data-theme-toggle=""
       >
         {full.map(([key, Icon]) => {
-          if (key === "system") return;
+          if (key === "system") return null;
 
           return (
             <Icon
@@ -73,6 +74,7 @@ export function ThemeToggle({
     <div className={container} data-theme-toggle="" {...props}>
       {full.map(([key, Icon]) => (
         <button
+          type="button"
           key={key}
           aria-label={key}
           className={cn(itemVariants({ active: value === key }))}

@@ -12,8 +12,11 @@ export function isActive(
   pathname: string,
   nested = true,
 ): boolean {
-  href = normalize(href);
-  pathname = normalize(pathname);
+  const normalizedHref = normalize(href);
+  const normalizedPathname = normalize(pathname);
 
-  return href === pathname || (nested && pathname.startsWith(`${href}/`));
+  return (
+    normalizedHref === normalizedPathname ||
+    (nested && normalizedPathname.startsWith(`${normalizedHref}/`))
+  );
 }

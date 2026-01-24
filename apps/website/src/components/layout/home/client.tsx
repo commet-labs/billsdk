@@ -154,7 +154,7 @@ export function Header({
                   className={cn(item.type === "icon" && "-mx-1 first:ms-0")}
                 />
               ))}
-              <div role="separator" className="flex-1" />
+              <div className="flex-1" />
               {i18n && (
                 <LanguageToggle>
                   <Languages className="size-5" />

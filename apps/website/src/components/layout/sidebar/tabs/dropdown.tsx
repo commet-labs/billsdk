@@ -67,7 +67,7 @@ export function SidebarTabsDropdown({
       <PopoverContent className="flex flex-col gap-1 w-(--radix-popover-trigger-width) p-1 fd-scroll-container">
         {options.map((item) => {
           const isActive = selected && item.url === selected.url;
-          if (!isActive && item.unlisted) return;
+          if (!isActive && item.unlisted) return null;
 
           return (
             <Link
