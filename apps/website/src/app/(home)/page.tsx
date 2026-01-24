@@ -7,15 +7,17 @@ export default function HomePage() {
       <div
         className="absolute inset-0 z-0 dark:opacity-100 opacity-0 transition-opacity"
         style={{
-          background: "radial-gradient(125% 125% at 50% 90%, #000000 40%, #2b092b 100%)",
+          background:
+            "radial-gradient(125% 125% at 50% 90%, #000000 40%, #2b092b 100%)",
         }}
       />
-      
+
       {/* Light Mode Background */}
       <div
         className="absolute inset-0 z-0 dark:opacity-0 opacity-100 transition-opacity"
         style={{
-          background: "radial-gradient(125% 125% at 50% 90%, #ffffff 40%, #f5e6f5 100%)",
+          background:
+            "radial-gradient(125% 125% at 50% 90%, #ffffff 40%, #f5e6f5 100%)",
         }}
       />
 
@@ -30,7 +32,9 @@ export default function HomePage() {
                 <h1 className="text-5xl md:text-7xl font-light tracking-tight dark:text-white text-neutral-900 leading-[1.1]">
                   Own your billing.
                   <br />
-                  <span className="dark:text-violet-300 text-violet-600">Use any provider.</span>
+                  <span className="dark:text-violet-300 text-violet-600">
+                    Use any provider.
+                  </span>
                 </h1>
                 <p className="text-lg md:text-xl dark:text-gray-400 text-neutral-600 font-light leading-relaxed">
                   A billing engine that runs inside your application.
@@ -62,7 +66,7 @@ export default function HomePage() {
               <div className="dark:bg-black/40 bg-white/60 backdrop-blur-md border dark:border-violet-500/20 border-violet-300/30 p-8">
                 <pre className="text-sm overflow-x-auto">
                   <code className="dark:text-gray-300 text-neutral-700 font-mono">
-{`const billing = billsdk({
+                    {`const billing = billsdk({
   database: drizzleAdapter(db),
   payment: stripePayment({ 
     secretKey 
@@ -99,7 +103,8 @@ const { allowed } =
                 Zero Lock-In
               </h3>
               <p className="text-sm dark:text-gray-400 text-neutral-600 leading-relaxed">
-                Switch payment providers without rewriting billing logic. Stripe, Paddle, MercadoPago—your choice.
+                Switch payment providers without rewriting billing logic.
+                Stripe, Paddle, MercadoPago—your choice.
               </p>
             </div>
 
@@ -108,7 +113,8 @@ const { allowed } =
                 In-Process
               </h3>
               <p className="text-sm dark:text-gray-400 text-neutral-600 leading-relaxed">
-                No external API calls. Everything runs inside your app. Milliseconds, not seconds.
+                No external API calls. Everything runs inside your app.
+                Milliseconds, not seconds.
               </p>
             </div>
 
@@ -117,7 +123,8 @@ const { allowed } =
                 Type-Safe
               </h3>
               <p className="text-sm dark:text-gray-400 text-neutral-600 leading-relaxed">
-                Plans in code. Version controlled. Full TypeScript inference. No database sync.
+                Plans in code. Version controlled. Full TypeScript inference. No
+                database sync.
               </p>
             </div>
           </div>
