@@ -49,7 +49,7 @@ export default function HomePage() {
             {/* Left: Hero Text */}
             <div className="space-y-8">
               <div className="space-y-6">
-                <h1 className="font-mono text-5xl md:text-7xl font-medium tracking-tight dark:text-white text-neutral-900 leading-[1.1]">
+                <h1 className="font-mono text-4xl md:text-6xl font-medium tracking-tight dark:text-white text-neutral-900 leading-[1.1]">
                   Own your billing.
                   <br />
                   <span className="dark:text-violet-300 text-violet-600">

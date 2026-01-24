@@ -3,5 +3,6 @@
 @import "fumadocs-ui/css/preset.css";
 
 @theme {
+  --font-sans: var(--font-ibm-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-ibm-mono), ui-monospace, monospace;
 }
