@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./db";
 
@@ -16,6 +17,47 @@ export const auth = betterAuth({
       enabled: true,
       maxAge: 5 * 60, // 5 minutes
     },
+  },
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      // Only run on sign-up endpoints
+      if (!ctx.path.startsWith("/sign-up")) {
+        return;
+      }
+
+      const newSession = ctx.context.newSession;
+      if (!newSession) {
+        return;
+      }
+
+      const user = newSession.user;
+      console.log("[auth] New user signed up, setting up billing:", user.id);
+
+      try {
+        // Dynamic import to avoid circular dependency
+        const { billing } = await import("./billing");
+
+        // Create billing customer for new user
+        const customer = await billing.api.createCustomer({
+          externalId: user.id,
+          email: user.email,
+          name: user.name,
+        });
+        console.log("[auth] Customer created:", customer.id);
+
+        // Assign free plan automatically (no checkout needed)
+        const billingCtx = await billing.$context;
+        await billingCtx.internalAdapter.createSubscription({
+          customerId: customer.id,
+          planCode: "free",
+          interval: "monthly",
+          status: "active",
+        });
+        console.log("[auth] Free subscription created for user:", user.id);
+      } catch (error) {
+        console.error("[auth] Failed to setup billing for user:", user.id, error);
+      }
+    }),
   },
 });
 
