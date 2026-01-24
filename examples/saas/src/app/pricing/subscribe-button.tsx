@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { DEMO_USER_ID } from "@/lib/constants";
 
 interface SubscribeButtonProps {
   planCode: string;
@@ -23,27 +24,37 @@ export function SubscribeButton({
 
     setLoading(true);
     try {
-      // For demo purposes, create a test customer and subscribe
-      // In a real app, you'd get the customer from your auth system
-      const customerId = `demo-customer-${Date.now()}`;
+      // Use consistent demo user ID
+      const customerId = DEMO_USER_ID;
 
-      // First, create the customer
-      const customerResponse = await fetch("/api/billing/customer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          externalId: customerId,
-          email: "demo@example.com",
-          name: "Demo User",
-        }),
-      });
+      // Check if customer exists, if not create it
+      const getCustomerResponse = await fetch(
+        `/api/billing/customer?externalId=${customerId}`
+      );
+      const customerData = await getCustomerResponse.json();
 
-      if (!customerResponse.ok) {
-        const error = await customerResponse.json();
-        throw new Error(error.message || "Failed to create customer");
+      let customer = customerData.customer;
+
+      if (!customer) {
+        // Create the customer if doesn't exist
+        const createResponse = await fetch("/api/billing/customer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            externalId: customerId,
+            email: "demo@example.com",
+            name: "Demo User",
+          }),
+        });
+
+        if (!createResponse.ok) {
+          const error = await createResponse.json();
+          throw new Error(error.message || "Failed to create customer");
+        }
+
+        const result = await createResponse.json();
+        customer = result.customer;
       }
-
-      const { customer } = await customerResponse.json();
 
       // Then create the subscription
       const subscriptionResponse = await fetch("/api/billing/subscription", {

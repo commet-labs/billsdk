@@ -156,9 +156,11 @@ export function createRouter(ctx: BillingContext): {
     const endpoint = endpoints[endpointKey]!;
 
     try {
+      const requestForHandler = request.clone();
+
       // Parse body for POST/PUT/PATCH
       let body: unknown;
-      if (["POST", "PUT", "PATCH"].includes(method)) {
+      if (["POST", "PUT", "PATCH"].includes(method) && endpoint.options.body) {
         try {
           const text = await request.text();
           if (text) {
@@ -203,11 +205,12 @@ export function createRouter(ctx: BillingContext): {
       }
 
       // Create endpoint context
+      // Use cloned request so handlers can read the body if needed (e.g., webhooks)
       const endpointContext = {
-        request,
+        request: requestForHandler,
         body,
         query: queryObj,
-        headers: request.headers,
+        headers: requestForHandler.headers,
         params: {},
         ctx, // Add billing context
       };
