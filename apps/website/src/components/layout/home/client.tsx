@@ -92,7 +92,7 @@ export function Header({
         {searchToggle.enabled !== false &&
           (searchToggle.components?.lg ?? (
             <LargeSearchToggle
-              className="w-full rounded-full ps-2.5 max-w-[240px]"
+              className="w-full ps-2.5 max-w-[240px]"
               hideIfDisabled
             />
           ))}
@@ -201,7 +201,7 @@ function HeaderNavigationMenu({
         <div
           className={cn(
             "backdrop-blur-lg border-b transition-colors *:mx-auto *:max-w-(--fd-layout-width)",
-            value.length > 0 && "max-lg:shadow-lg max-lg:rounded-b-2xl",
+            value.length > 0 && "max-lg:shadow-lg",
             (!isTransparent || value.length > 0) && "bg-fd-background/80",
           )}
         >
@@ -236,7 +236,7 @@ function NavigationMenuLinkItem({
 
       const {
         banner = child.icon ? (
-          <div className="w-fit rounded-md border bg-fd-muted p-1 [&_svg]:size-4">
+          <div className="w-fit border bg-fd-muted p-1 [&_svg]:size-4">
             {child.icon}
           </div>
         ) : null,
@@ -250,7 +250,7 @@ function NavigationMenuLinkItem({
             external={child.external}
             {...rest}
             className={cn(
-              "flex flex-col gap-2 rounded-lg border bg-fd-card p-3 transition-colors hover:bg-fd-accent/80 hover:text-fd-accent-foreground",
+              "flex flex-col gap-2 border bg-fd-card p-3 transition-colors hover:bg-fd-accent/80 hover:text-fd-accent-foreground",
               rest.className,
             )}
           >
@@ -270,7 +270,7 @@ function NavigationMenuLinkItem({
 
     return (
       <NavigationMenuItem {...props}>
-        <NavigationMenuTrigger className={cn(navItemVariants(), "rounded-md")}>
+        <NavigationMenuTrigger className={cn(navItemVariants())}>
           {item.url ? (
             <Link href={item.url} external={item.external}>
               {item.text}

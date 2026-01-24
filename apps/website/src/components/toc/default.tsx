@@ -13,7 +13,7 @@ export function TOCItems({ ref, className, ...props }: ComponentProps<"div">) {
 
   if (items.length === 0)
     return (
-      <div className="rounded-lg border bg-fd-card p-3 text-xs text-fd-muted-foreground">
+      <div className="border bg-fd-card p-3 text-xs text-fd-muted-foreground">
         {text.tocNoHeadings}
       </div>
     );
@@ -22,7 +22,7 @@ export function TOCItems({ ref, className, ...props }: ComponentProps<"div">) {
     <>
       <TocThumb
         containerRef={containerRef}
-        className="absolute top-(--fd-top) h-(--fd-height) w-0.5 rounded-e-sm bg-fd-primary transition-[top,height] ease-linear"
+        className="absolute top-(--fd-top) h-(--fd-height) w-0.5 bg-fd-primary transition-[top,height] ease-linear"
       />
       <div
         ref={mergeRefs(ref, containerRef)}

@@ -56,7 +56,7 @@ export function SidebarTabsDropdown({
         <PopoverTrigger
           {...props}
           className={cn(
-            "flex items-center gap-2 rounded-lg p-2 border bg-fd-secondary/50 text-start text-fd-secondary-foreground transition-colors hover:bg-fd-accent data-[state=open]:bg-fd-accent data-[state=open]:text-fd-accent-foreground",
+            "flex items-center gap-2 p-2 border bg-fd-secondary/50 text-start text-fd-secondary-foreground transition-colors hover:bg-fd-accent data-[state=open]:bg-fd-accent data-[state=open]:text-fd-accent-foreground",
             props.className,
           )}
         >
@@ -76,7 +76,7 @@ export function SidebarTabsDropdown({
               onClick={onClick}
               {...item.props}
               className={cn(
-                "flex items-center gap-2 rounded-lg p-1.5 hover:bg-fd-accent hover:text-fd-accent-foreground",
+                "flex items-center gap-2 p-1.5 hover:bg-fd-accent hover:text-fd-accent-foreground",
                 item.props?.className,
               )}
             >

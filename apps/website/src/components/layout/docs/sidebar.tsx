@@ -11,7 +11,7 @@ import { createLinkItemRenderer } from "../sidebar/link-item";
 import { createPageTreeRenderer } from "../sidebar/page-tree";
 
 const itemVariants = cva(
-  "relative flex flex-row items-center gap-2 rounded-lg p-2 text-start text-fd-muted-foreground wrap-anywhere [&_svg]:size-4 [&_svg]:shrink-0",
+  "relative flex flex-row items-center gap-2 p-2 text-start text-fd-muted-foreground wrap-anywhere [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -65,7 +65,7 @@ export function SidebarContent({
               className={cn(
                 "absolute flex flex-col w-full start-0 inset-y-0 items-end bg-fd-card text-sm border-e duration-250 *:w-(--fd-sidebar-width)",
                 collapsed && [
-                  "inset-y-2 rounded-xl transition-transform border w-(--fd-sidebar-width)",
+                  "inset-y-2 transition-transform border w-(--fd-sidebar-width)",
                   hovered
                     ? "shadow-lg translate-x-2 rtl:-translate-x-2"
                     : "-translate-x-(--fd-sidebar-width) rtl:translate-x-full",
@@ -85,7 +85,7 @@ export function SidebarContent({
           <div
             data-sidebar-panel=""
             className={cn(
-              "fixed flex top-[calc(--spacing(4)+var(--fd-docs-row-3))] start-4 shadow-lg transition-opacity rounded-xl p-0.5 border bg-fd-muted text-fd-muted-foreground z-10",
+              "fixed flex top-[calc(--spacing(4)+var(--fd-docs-row-3))] start-4 shadow-lg transition-opacity p-0.5 border bg-fd-muted text-fd-muted-foreground z-10",
               (!collapsed || hovered) && "pointer-events-none opacity-0",
             )}
           >
@@ -94,13 +94,12 @@ export function SidebarContent({
                 buttonVariants({
                   color: "ghost",
                   size: "icon-sm",
-                  className: "rounded-lg",
                 }),
               )}
             >
               <SidebarIcon />
             </Base.SidebarCollapseTrigger>
-            <SearchToggle className="rounded-lg" hideIfDisabled />
+            <SearchToggle hideIfDisabled />
           </div>
         </>
       )}

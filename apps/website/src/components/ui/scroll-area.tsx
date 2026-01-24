@@ -26,7 +26,7 @@ const ScrollViewport = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <Primitive.Viewport
     ref={ref}
-    className={cn("size-full rounded-[inherit]", className)}
+    className={cn("size-full", className)}
     {...props}
   >
     {children}
@@ -50,7 +50,7 @@ const ScrollBar = React.forwardRef<
     )}
     {...props}
   >
-    <Primitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-fd-border" />
+    <Primitive.ScrollAreaThumb className="relative flex-1 bg-fd-border" />
   </Primitive.Scrollbar>
 ));
 ScrollBar.displayName = Primitive.Scrollbar.displayName;
