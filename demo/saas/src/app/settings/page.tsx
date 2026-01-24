@@ -12,8 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { billing } from "@/lib/billing";
 import { getSession } from "@/lib/auth-server";
+import { billing } from "@/lib/billing";
 import { CancelButton } from "./cancel-button";
 
 export default async function SettingsPage() {

@@ -11,8 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { billing } from "@/lib/billing";
 import { getSession } from "@/lib/auth-server";
+import { billing } from "@/lib/billing";
 
 // Feature demos with mock functionality
 const FEATURE_DEMOS = [

@@ -18,8 +18,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { billing } from "@/lib/billing";
 import { getSession } from "@/lib/auth-server";
+import { billing } from "@/lib/billing";
 import { SignOutButton } from "./sign-out-button";
 
 // All features defined in billing config
@@ -102,9 +102,7 @@ export default async function DashboardPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Welcome back, {user.name}
-            </p>
+            <p className="text-muted-foreground">Welcome back, {user.name}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="outline">

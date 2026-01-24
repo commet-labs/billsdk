@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth-client";
 
@@ -37,7 +37,7 @@ export function SubscribeButton({
 
       // Check if customer exists, if not create it
       const getCustomerResponse = await fetch(
-        `/api/billing/customer?externalId=${user.id}`
+        `/api/billing/customer?externalId=${user.id}`,
       );
       const customerData = await getCustomerResponse.json();
 

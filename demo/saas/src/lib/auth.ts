@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
-import { createAuthMiddleware } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { createAuthMiddleware } from "better-auth/api";
 import { db } from "./db";
 
 export const auth = betterAuth({
@@ -55,7 +55,11 @@ export const auth = betterAuth({
         });
         console.log("[auth] Free subscription created for user:", user.id);
       } catch (error) {
-        console.error("[auth] Failed to setup billing for user:", user.id, error);
+        console.error(
+          "[auth] Failed to setup billing for user:",
+          user.id,
+          error,
+        );
       }
     }),
   },

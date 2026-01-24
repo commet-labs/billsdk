@@ -70,6 +70,8 @@ export interface InferredAPI<TFeatureCode extends string = string> {
 /**
  * Helper to extract feature codes from BillSDKOptions
  */
+
+// biome-ignore lint/suspicious/noExplicitAny: Generic constraint needs flexibility for readonly/mutable arrays
 type ExtractFeatureCodesFromOptions<Options extends BillSDKOptions<any>> =
   Options extends BillSDKOptions<infer TFeatures>
     ? TFeatures extends readonly FeatureConfig<string>[]
