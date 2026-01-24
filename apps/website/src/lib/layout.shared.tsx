@@ -4,7 +4,7 @@ export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
       title: "BillSDK",
-      transparentMode: "top",
+      transparentMode: "always",
     },
   };
 }
