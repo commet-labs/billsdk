@@ -1,4 +1,24 @@
+import { DynamicCodeBlock } from "fumadocs-ui/components/dynamic-codeblock";
 import Link from "next/link";
+
+const codeExample = `const billing = billsdk({
+  database: drizzleAdapter(db),
+  payment: stripePayment({ 
+    secretKey 
+  }),
+  
+  plans: [{
+    code: "pro",
+    prices: [{
+      amount: 2000,
+      interval: "monthly"
+    }],
+    features: [
+      "api_access",
+      "priority_support"
+    ]
+  }]
+});`;
 
 export default function HomePage() {
   return (
@@ -62,37 +82,8 @@ export default function HomePage() {
             </div>
 
             {/* Right: Code Block */}
-            <div>
-              <div className="dark:bg-black/40 bg-white/60 backdrop-blur-md border dark:border-violet-500/20 border-violet-300/30 p-8">
-                <pre className="text-sm overflow-x-auto">
-                  <code className="dark:text-gray-300 text-neutral-700 font-mono">
-                    {`const billing = billsdk({
-  database: drizzleAdapter(db),
-  payment: stripePayment({ 
-    secretKey 
-  }),
-  
-  plans: [{
-    code: "pro",
-    prices: [{
-      amount: 2000,
-      interval: "monthly"
-    }],
-    features: [
-      "api_access",
-      "priority_support"
-    ]
-  }]
-});
-
-const { allowed } = 
-  await billing.api.checkFeature({
-    customerId: user.id,
-    feature: "api_access"
-  });`}
-                  </code>
-                </pre>
-              </div>
+            <div className="[&_figure]:bg-black/40! [&_figure]:dark:bg-black/40! [&_figure]:backdrop-blur-md [&_figure]:border! [&_figure]:dark:border-violet-500/20 [&_figure]:border-violet-300/30 [&_figure]:py-2 [&_pre]:bg-transparent! [&_pre]:border-none!">
+              <DynamicCodeBlock lang="typescript" code={codeExample} />
             </div>
           </div>
 
