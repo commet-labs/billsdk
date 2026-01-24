@@ -3,10 +3,14 @@ import Link from "next/link";
 
 const codeExample = `const billing = billsdk({
   database: drizzleAdapter(db),
-  payment: stripePayment({ 
-    secretKey 
-  }),
+
+  payment: stripePayment(),
   
+  features: [
+    { code: "api_access", name: "API Access" },
+    { code: "priority_support", name: "Priority Support" },
+  ],
+
   plans: [{
     code: "pro",
     prices: [{
