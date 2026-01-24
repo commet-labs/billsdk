@@ -1,5 +1,8 @@
 import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
+// Re-export auth schema
+export * from "./auth-schema";
+
 /**
  * Customer table - who pays
  */

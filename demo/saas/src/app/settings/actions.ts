@@ -2,12 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { billing } from "@/lib/billing";
-import { DEMO_USER_ID } from "@/lib/constants";
+import { getSession } from "@/lib/auth-server";
 
 export async function cancelSubscriptionAction() {
   try {
+    const session = await getSession();
+
+    if (!session) {
+      return { success: false, error: "Not authenticated" };
+    }
+
     const result = await billing.api.cancelSubscription({
-      customerId: DEMO_USER_ID,
+      customerId: session.user.id,
       cancelAt: "period_end",
     });
 

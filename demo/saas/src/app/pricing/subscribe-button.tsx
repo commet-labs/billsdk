@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { DEMO_USER_ID } from "@/lib/constants";
+import { useSession } from "@/lib/auth-client";
 
 interface SubscribeButtonProps {
   planCode: string;
@@ -17,33 +18,40 @@ export function SubscribeButton({
   amount,
   isPopular,
 }: SubscribeButtonProps) {
+  const router = useRouter();
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
 
   async function handleSubscribe() {
     if (amount === 0) return;
 
+    // Redirect to login if not authenticated
+    if (!session?.user) {
+      router.push("/login");
+      return;
+    }
+
     setLoading(true);
     try {
-      // Use consistent demo user ID
-      const customerId = DEMO_USER_ID;
+      const user = session.user;
 
       // Check if customer exists, if not create it
       const getCustomerResponse = await fetch(
-        `/api/billing/customer?externalId=${customerId}`
+        `/api/billing/customer?externalId=${user.id}`
       );
       const customerData = await getCustomerResponse.json();
 
       let customer = customerData.customer;
 
       if (!customer) {
-        // Create the customer if doesn't exist
+        // Create the customer linked to auth user
         const createResponse = await fetch("/api/billing/customer", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            externalId: customerId,
-            email: "demo@example.com",
-            name: "Demo User",
+            externalId: user.id,
+            email: user.email,
+            name: user.name,
           }),
         });
 
@@ -87,6 +95,13 @@ export function SubscribeButton({
     }
   }
 
+  const buttonText = () => {
+    if (loading) return "Loading...";
+    if (amount === 0) return "Current Plan";
+    if (!session?.user) return "Sign in to Subscribe";
+    return "Subscribe";
+  };
+
   return (
     <Button
       className="w-full"
@@ -94,7 +109,7 @@ export function SubscribeButton({
       onClick={handleSubscribe}
       disabled={loading || amount === 0}
     >
-      {loading ? "Loading..." : amount === 0 ? "Current Plan" : "Subscribe"}
+      {buttonText()}
     </Button>
   );
 }

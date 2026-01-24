@@ -7,6 +7,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +19,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { billing } from "@/lib/billing";
-import { DEMO_USER_ID } from "@/lib/constants";
+import { getSession } from "@/lib/auth-server";
+import { SignOutButton } from "./sign-out-button";
 
 // All features defined in billing config
 const ALL_FEATURES = [
@@ -45,12 +47,21 @@ const ALL_FEATURES = [
 ] as const;
 
 export default async function DashboardPage() {
+  const session = await getSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  const { user } = session;
+
+  // Use user.id as customerId (externalId in billing)
   const subscription = await billing.api.getSubscription({
-    customerId: DEMO_USER_ID,
+    customerId: user.id,
   });
 
   const enabledFeatures = subscription
-    ? await billing.api.listFeatures({ customerId: DEMO_USER_ID })
+    ? await billing.api.listFeatures({ customerId: user.id })
     : [];
 
   const enabledCodes = new Set(enabledFeatures.map((f) => f.code));
@@ -92,15 +103,18 @@ export default async function DashboardPage() {
           <div>
             <h1 className="text-3xl font-bold">Dashboard</h1>
             <p className="text-muted-foreground">
-              Manage your subscription and features
+              Welcome back, {user.name}
             </p>
           </div>
-          <Button asChild variant="outline">
-            <Link href="/settings">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <Link href="/settings">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Link>
+            </Button>
+            <SignOutButton />
+          </div>
         </div>
 
         {/* Subscription Card */}

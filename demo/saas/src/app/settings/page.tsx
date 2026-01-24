@@ -1,5 +1,6 @@
 import { AlertTriangle, ArrowLeft, Calendar, CreditCard } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,12 +13,20 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { billing } from "@/lib/billing";
-import { DEMO_USER_ID } from "@/lib/constants";
+import { getSession } from "@/lib/auth-server";
 import { CancelButton } from "./cancel-button";
 
 export default async function SettingsPage() {
+  const session = await getSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  const { user } = session;
+
   const subscription = await billing.api.getSubscription({
-    customerId: DEMO_USER_ID,
+    customerId: user.id,
   });
 
   const plan = subscription

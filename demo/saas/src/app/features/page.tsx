@@ -1,5 +1,6 @@
 import { ArrowRight, Check, Lock, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { billing } from "@/lib/billing";
-import { DEMO_USER_ID } from "@/lib/constants";
+import { getSession } from "@/lib/auth-server";
 
 // Feature demos with mock functionality
 const FEATURE_DEMOS = [
@@ -46,12 +47,20 @@ const FEATURE_DEMOS = [
 ] as const;
 
 export default async function FeaturesPage() {
+  const session = await getSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  const { user } = session;
+
   const subscription = await billing.api.getSubscription({
-    customerId: DEMO_USER_ID,
+    customerId: user.id,
   });
 
   const enabledFeatures = subscription
-    ? await billing.api.listFeatures({ customerId: DEMO_USER_ID })
+    ? await billing.api.listFeatures({ customerId: user.id })
     : [];
 
   const enabledCodes = new Set(enabledFeatures.map((f) => f.code));

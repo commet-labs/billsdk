@@ -1,12 +1,17 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-server";
 
-export default async function HomePage() {
+export default async function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const session = await getSession();
 
+  // If already logged in, redirect to dashboard
   if (session) {
     redirect("/dashboard");
   }
 
-  redirect("/pricing");
+  return <>{children}</>;
 }
