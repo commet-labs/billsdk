@@ -1,5 +1,6 @@
 import { Calendar, CheckCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,12 +12,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { getSession } from "@/lib/auth-server";
 import { billing } from "@/lib/billing";
-import { DEMO_USER_ID } from "@/lib/constants";
 
 export default async function SuccessPage() {
+  const session = await getSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  const { user } = session;
+
   const subscription = await billing.api.getSubscription({
-    customerId: DEMO_USER_ID,
+    customerId: user.id,
   });
 
   const plan = subscription
@@ -26,7 +35,7 @@ export default async function SuccessPage() {
   const price = plan?.prices.find((p) => p.interval === subscription?.interval);
 
   const features = subscription
-    ? await billing.api.listFeatures({ customerId: DEMO_USER_ID })
+    ? await billing.api.listFeatures({ customerId: user.id })
     : [];
 
   const formatDate = (date: Date | null | undefined) => {

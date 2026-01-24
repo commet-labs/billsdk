@@ -35,6 +35,25 @@ export const webhookEndpoints: Record<string, BillingEndpoint> = {
               );
 
             if (subscription) {
+              // Cancel any other active subscriptions for this customer
+              const existingSubscriptions =
+                await ctx.internalAdapter.listSubscriptions(
+                  subscription.customerId,
+                );
+
+              for (const existing of existingSubscriptions) {
+                if (
+                  existing.id !== subscription.id &&
+                  (existing.status === "active" || existing.status === "trialing")
+                ) {
+                  await ctx.internalAdapter.cancelSubscription(existing.id);
+                  ctx.logger.info("Canceled previous subscription", {
+                    subscriptionId: existing.id,
+                    planCode: existing.planCode,
+                  });
+                }
+              }
+
               // Update subscription to active
               await ctx.internalAdapter.updateSubscription(subscription.id, {
                 status: "active",
