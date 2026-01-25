@@ -21,7 +21,6 @@ export async function cancelSubscriptionAction() {
       return { success: false, error: "No active subscription found" };
     }
 
-    revalidatePath("/settings");
     revalidatePath("/dashboard");
 
     return { success: true, subscription: result };
