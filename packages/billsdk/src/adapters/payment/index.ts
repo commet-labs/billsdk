@@ -1,66 +1,40 @@
-import type {
-  CheckoutResult,
-  PaymentAdapter,
-  WebhookResult,
-} from "@billsdk/core";
+import type { PaymentAdapter, PaymentResult } from "@billsdk/core";
 
 /**
- * Options for the default payment adapter
- */
-export interface PaymentAdapterOptions {
-  /**
-   * Base URL for the checkout confirmation page
-   * @default "/billing/confirm"
-   */
-  confirmUrl?: string;
-}
-
-/**
- * Default payment adapter for development and testing
+ * Default payment adapter - activates subscriptions immediately
  *
- * This adapter creates local checkout URLs that can be used to
- * simulate the payment flow without a real payment provider.
+ * Use this adapter when:
+ * - You don't need real payments (development, testing)
+ * - All your plans are free
+ * - You handle payments outside of BillSDK
  *
  * @example
  * ```typescript
  * import { billsdk } from "billsdk";
- * import { paymentAdapter } from "billsdk/adapters/payment";
  *
+ * // Without explicit adapter - uses paymentAdapter() by default
  * const billing = billsdk({
- *   payment: paymentAdapter(),
  *   plans: [...],
  * });
+ *
+ * // Subscriptions activate immediately
+ * const { subscription } = await billing.api.createSubscription({
+ *   customerId: "user_123",
+ *   planCode: "free",
+ * });
+ * // subscription.status === "active"
  * ```
  */
-export function paymentAdapter(
-  options?: PaymentAdapterOptions,
-): PaymentAdapter {
-  const confirmUrl = options?.confirmUrl ?? "/billing/confirm";
-
+export function paymentAdapter(): PaymentAdapter {
   return {
     id: "default",
 
-    async createCheckoutSession(params): Promise<CheckoutResult> {
-      const sessionId = `session_${Date.now()}_${params.subscription.id}`;
-
-      return {
-        sessionId,
-        url: `${confirmUrl}?session=${sessionId}`,
-        providerCustomerId: `cus_${params.customer.id}`,
-      };
+    async processPayment(): Promise<PaymentResult> {
+      // Default adapter activates immediately - no payment required
+      return { status: "active" };
     },
 
-    async handleWebhook(request): Promise<WebhookResult> {
-      const url = new URL(request.url);
-      const sessionId = url.searchParams.get("session");
-
-      return {
-        type: "checkout.completed",
-        data: {
-          sessionId: sessionId ?? undefined,
-        },
-      };
-    },
+    // No confirmPayment needed - we never return "pending"
   };
 }
 

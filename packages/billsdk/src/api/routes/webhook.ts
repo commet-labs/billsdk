@@ -17,92 +17,88 @@ export const webhookEndpoints: Record<string, BillingEndpoint> = {
         throw new Error("Payment adapter not configured");
       }
 
-      // Handle webhook from payment provider
-      const result = await ctx.paymentAdapter.handleWebhook(request);
+      // Check if payment adapter supports confirmPayment
+      if (!ctx.paymentAdapter.confirmPayment) {
+        // Adapter doesn't need webhooks (e.g., default adapter that activates immediately)
+        ctx.logger.debug("Payment adapter does not support confirmPayment");
+        return { received: true };
+      }
 
-      ctx.logger.debug("Webhook received", {
-        type: result.type,
-        data: result.data,
+      // Confirm payment from webhook/callback
+      const result = await ctx.paymentAdapter.confirmPayment(request);
+
+      ctx.logger.debug("Payment confirmation received", {
+        subscriptionId: result.subscriptionId,
+        status: result.status,
       });
 
-      switch (result.type) {
-        case "checkout.completed": {
-          // Find subscription by checkout session ID
-          if (result.data.sessionId) {
-            const subscription =
-              await ctx.internalAdapter.findSubscriptionByProviderSessionId(
-                result.data.sessionId,
-              );
+      if (result.status === "active") {
+        // Find the subscription
+        const subscription = await ctx.internalAdapter.findSubscriptionById(
+          result.subscriptionId,
+        );
 
-            if (subscription) {
-              // Cancel any other active subscriptions for this customer
-              const existingSubscriptions =
-                await ctx.internalAdapter.listSubscriptions(
-                  subscription.customerId,
-                );
+        if (subscription) {
+          // Cancel any other active subscriptions for this customer
+          const existingSubscriptions =
+            await ctx.internalAdapter.listSubscriptions(
+              subscription.customerId,
+            );
 
-              for (const existing of existingSubscriptions) {
-                if (
-                  existing.id !== subscription.id &&
-                  (existing.status === "active" ||
-                    existing.status === "trialing")
-                ) {
-                  await ctx.internalAdapter.cancelSubscription(existing.id);
-                  ctx.logger.info("Canceled previous subscription", {
-                    subscriptionId: existing.id,
-                    planCode: existing.planCode,
-                  });
-                }
-              }
-
-              // Update subscription to active
-              await ctx.internalAdapter.updateSubscription(subscription.id, {
-                status: "active",
-                providerSubscriptionId: result.data.providerSubscriptionId,
-              });
-
-              // Update customer provider ID if present
-              if (result.data.providerCustomerId) {
-                const customer = await ctx.internalAdapter.findCustomerById(
-                  subscription.customerId,
-                );
-                if (customer && !customer.providerCustomerId) {
-                  await ctx.internalAdapter.updateCustomer(customer.id, {
-                    providerCustomerId: result.data.providerCustomerId,
-                  });
-                }
-              }
-
-              ctx.logger.info("Subscription activated", {
-                subscriptionId: subscription.id,
-                providerSubscriptionId: result.data.providerSubscriptionId,
+          for (const existing of existingSubscriptions) {
+            if (
+              existing.id !== subscription.id &&
+              (existing.status === "active" || existing.status === "trialing")
+            ) {
+              await ctx.internalAdapter.cancelSubscription(existing.id);
+              ctx.logger.info("Canceled previous subscription", {
+                subscriptionId: existing.id,
+                planCode: existing.planCode,
               });
             }
           }
-          break;
-        }
 
-        case "subscription.canceled": {
-          // Find subscription by provider subscription ID
-          if (result.data.providerSubscriptionId) {
-            // For now, we'd need to search by providerSubscriptionId
-            // This would require adding a findByProviderSubscriptionId method
-            ctx.logger.info("Subscription canceled webhook received", {
-              providerSubscriptionId: result.data.providerSubscriptionId,
-            });
-          }
-          break;
-        }
-
-        case "payment.failed": {
-          ctx.logger.warn("Payment failed webhook received", {
-            data: result.data,
+          // Update subscription to active
+          await ctx.internalAdapter.updateSubscription(subscription.id, {
+            status: "active",
+            providerSubscriptionId: result.providerSubscriptionId,
           });
-          break;
-        }
 
-        default:
-          ctx.logger.debug("Unknown webhook type", { type: result.type });
+          // Update customer provider ID if present
+          if (result.providerCustomerId) {
+            const customer = await ctx.internalAdapter.findCustomerById(
+              subscription.customerId,
+            );
+            if (customer && !customer.providerCustomerId) {
+              await ctx.internalAdapter.updateCustomer(customer.id, {
+                providerCustomerId: result.providerCustomerId,
+              });
+            }
+          }
+
+          ctx.logger.info("Subscription activated via webhook", {
+            subscriptionId: subscription.id,
+            providerSubscriptionId: result.providerSubscriptionId,
+          });
+        } else {
+          ctx.logger.warn("Subscription not found for confirmation", {
+            subscriptionId: result.subscriptionId,
+          });
+        }
+      } else if (result.status === "failed") {
+        // Mark subscription as failed/canceled
+        const subscription = await ctx.internalAdapter.findSubscriptionById(
+          result.subscriptionId,
+        );
+
+        if (subscription) {
+          await ctx.internalAdapter.updateSubscription(subscription.id, {
+            status: "canceled",
+          });
+          ctx.logger.warn("Payment failed, subscription canceled", {
+            subscriptionId: subscription.id,
+          });
+        }
       }
 
       return { received: true };

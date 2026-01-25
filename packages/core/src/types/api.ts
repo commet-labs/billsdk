@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { PaymentAdapter } from "./payment";
 
 /**
  * HTTP methods supported by the API
@@ -33,6 +34,10 @@ export interface GenericBillingContext {
   plugins: any[];
   // biome-ignore lint/suspicious/noExplicitAny: Generic context allows flexibility
   options: any;
+  /**
+   * Payment adapter for processing payments
+   */
+  paymentAdapter?: PaymentAdapter;
 }
 
 /**

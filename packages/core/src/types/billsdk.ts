@@ -41,13 +41,22 @@ export interface InferredAPI<TFeatureCode extends string = string> {
   getSubscription: (params: {
     customerId: string;
   }) => Promise<Subscription | null>;
+  /**
+   * Create a subscription for a customer
+   *
+   * The payment adapter decides the flow:
+   * - If payment completes immediately: returns { subscription } with status "active"
+   * - If payment requires redirect: returns { subscription, redirectUrl } with status "pending_payment"
+   *
+   * successUrl and cancelUrl are only required if the payment adapter needs them (e.g., Stripe)
+   */
   createSubscription: (params: {
     customerId: string;
     planCode: string;
     interval?: "monthly" | "yearly";
-    successUrl: string;
-    cancelUrl: string;
-  }) => Promise<{ subscription: Subscription; checkoutUrl: string }>;
+    successUrl?: string;
+    cancelUrl?: string;
+  }) => Promise<{ subscription: Subscription; redirectUrl?: string }>;
   cancelSubscription: (params: {
     customerId: string;
     cancelAt?: "period_end" | "immediately";

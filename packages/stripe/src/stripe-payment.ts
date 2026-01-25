@@ -1,7 +1,8 @@
 import type {
-  CheckoutResult,
+  ConfirmResult,
   PaymentAdapter,
-  WebhookResult,
+  PaymentParams,
+  PaymentResult,
 } from "@billsdk/core";
 import type Stripe from "stripe";
 
@@ -57,8 +58,16 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
   return {
     id: "stripe",
 
-    async createCheckoutSession(params): Promise<CheckoutResult> {
+    async processPayment(params: PaymentParams): Promise<PaymentResult> {
       const stripeClient = await getStripe();
+
+      // Validate required URLs for Stripe Checkout
+      if (!params.successUrl || !params.cancelUrl) {
+        return {
+          status: "failed",
+          error: "successUrl and cancelUrl are required for Stripe payments",
+        };
+      }
 
       // Create or retrieve Stripe customer
       let stripeCustomerId = params.customer.providerCustomerId;
@@ -106,13 +115,14 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
       });
 
       return {
+        status: "pending",
+        redirectUrl: session.url!,
         sessionId: session.id,
-        url: session.url!,
         providerCustomerId: stripeCustomerId,
       };
     },
 
-    async handleWebhook(request): Promise<WebhookResult> {
+    async confirmPayment(request: Request): Promise<ConfirmResult> {
       const stripeClient = await getStripe();
 
       const signature = request.headers.get("stripe-signature");
@@ -133,59 +143,42 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
         throw new Error(`Webhook signature verification failed: ${err}`);
       }
 
-      switch (event.type) {
-        case "checkout.session.completed": {
-          const session = event.data.object as Stripe.Checkout.Session;
-          return {
-            type: "checkout.completed",
-            data: {
-              sessionId: session.id,
-              providerSubscriptionId: session.subscription as string,
-              providerCustomerId: session.customer as string,
-            },
-          };
+      // Handle checkout.session.completed event
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const subscriptionId = session.metadata?.billsdkSubscriptionId;
+
+        if (!subscriptionId) {
+          throw new Error("Missing billsdkSubscriptionId in session metadata");
         }
 
-        case "customer.subscription.updated": {
-          const subscription = event.data.object as Stripe.Subscription;
-          return {
-            type: "subscription.updated",
-            data: {
-              providerSubscriptionId: subscription.id,
-              providerCustomerId: subscription.customer as string,
-              status: subscription.status,
-            },
-          };
-        }
-
-        case "customer.subscription.deleted": {
-          const subscription = event.data.object as Stripe.Subscription;
-          return {
-            type: "subscription.canceled",
-            data: {
-              providerSubscriptionId: subscription.id,
-              providerCustomerId: subscription.customer as string,
-            },
-          };
-        }
-
-        case "invoice.payment_failed": {
-          const invoice = event.data.object as Stripe.Invoice;
-          return {
-            type: "payment.failed",
-            data: {
-              providerSubscriptionId: invoice.subscription as string,
-              providerCustomerId: invoice.customer as string,
-            },
-          };
-        }
-
-        default:
-          return {
-            type: "unknown",
-            data: {},
-          };
+        return {
+          subscriptionId,
+          status: "active",
+          providerSubscriptionId: session.subscription as string,
+          providerCustomerId: session.customer as string,
+        };
       }
+
+      // Handle payment failures
+      if (event.type === "invoice.payment_failed") {
+        const invoice = event.data.object as Stripe.Invoice;
+        // Try to get subscription ID from invoice metadata or subscription
+        const subscriptionId =
+          (invoice.subscription_details?.metadata
+            ?.billsdkSubscriptionId as string) ?? "";
+
+        return {
+          subscriptionId,
+          status: "failed",
+          providerSubscriptionId: invoice.subscription as string,
+          providerCustomerId: invoice.customer as string,
+        };
+      }
+
+      // For other events, we don't have a direct subscription mapping
+      // This shouldn't happen in normal flow
+      throw new Error(`Unhandled webhook event type: ${event.type}`);
     },
   };
 }

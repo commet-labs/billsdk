@@ -90,7 +90,7 @@ function createAPI<TFeatureCode extends string = string>(
         );
       }
 
-      // Create subscription (using planCode, not planId)
+      // Create subscription in pending state
       const subscription = await ctx.internalAdapter.createSubscription({
         customerId: customer.id,
         planCode: params.planCode,
@@ -99,8 +99,8 @@ function createAPI<TFeatureCode extends string = string>(
         trialDays: price.trialDays,
       });
 
-      // Create checkout session
-      const checkoutResult = await ctx.paymentAdapter.createCheckoutSession({
+      // Process payment - adapter decides the flow
+      const result = await ctx.paymentAdapter.processPayment({
         customer: {
           id: customer.id,
           email: customer.email,
@@ -118,22 +118,54 @@ function createAPI<TFeatureCode extends string = string>(
         metadata: { subscriptionId: subscription.id },
       });
 
-      // Update subscription with checkout session ID and provider customer ID
-      await ctx.internalAdapter.updateSubscription(subscription.id, {
-        providerCheckoutSessionId: checkoutResult.sessionId,
-      });
+      // Handle payment result based on adapter's decision
+      if (result.status === "active") {
+        // Payment completed immediately - activate subscription
+        const activeSubscription = await ctx.internalAdapter.updateSubscription(
+          subscription.id,
+          { status: "active" },
+        );
 
-      // Update customer with provider ID if new
-      if (checkoutResult.providerCustomerId && !customer.providerCustomerId) {
-        await ctx.internalAdapter.updateCustomer(customer.id, {
-          providerCustomerId: checkoutResult.providerCustomerId,
-        });
+        // Update customer with provider ID if returned
+        if (result.providerCustomerId && !customer.providerCustomerId) {
+          await ctx.internalAdapter.updateCustomer(customer.id, {
+            providerCustomerId: result.providerCustomerId,
+          });
+        }
+
+        return {
+          subscription: activeSubscription ?? {
+            ...subscription,
+            status: "active" as const,
+          },
+        };
       }
 
-      return {
-        subscription,
-        checkoutUrl: checkoutResult.url,
-      };
+      if (result.status === "pending") {
+        // Payment pending - user needs to complete payment flow
+        await ctx.internalAdapter.updateSubscription(subscription.id, {
+          providerCheckoutSessionId: result.sessionId,
+        });
+
+        // Update customer with provider ID if returned
+        if (result.providerCustomerId && !customer.providerCustomerId) {
+          await ctx.internalAdapter.updateCustomer(customer.id, {
+            providerCustomerId: result.providerCustomerId,
+          });
+        }
+
+        return {
+          subscription,
+          redirectUrl: result.redirectUrl,
+        };
+      }
+
+      // result.status === "failed"
+      // Delete the pending subscription since payment failed
+      await ctx.internalAdapter.updateSubscription(subscription.id, {
+        status: "canceled",
+      });
+      throw new Error(result.error);
     },
 
     async cancelSubscription(params) {
