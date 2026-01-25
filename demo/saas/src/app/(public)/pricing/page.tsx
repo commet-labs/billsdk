@@ -22,6 +22,13 @@ export default async function PricingPage({ searchParams }: PageProps) {
     getSession(),
   ]);
 
+  // Get current subscription if user is logged in
+  const subscription = session
+    ? await billing.api.getSubscription({ customerId: session.user.id })
+    : null;
+
+  const currentPlanCode = subscription?.planCode ?? null;
+
   return (
     <div className="min-h-screen py-12 px-4">
       <div className="max-w-4xl mx-auto">
@@ -55,11 +62,10 @@ export default async function PricingPage({ searchParams }: PageProps) {
           <IntervalToggle />
         </div>
 
-        {/* Pricing Cards - 2 columns for 2 plans */}
+        {/* Pricing Cards */}
         <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
           {plans.map((plan) => {
-            const price = plan.prices.find((p) => p.interval === interval);
-            const amount = price?.amount ?? 0;
+            const isCurrentPlan = currentPlanCode === plan.code;
 
             return (
               <PricingCard
@@ -67,13 +73,14 @@ export default async function PricingPage({ searchParams }: PageProps) {
                 plan={plan}
                 interval={interval}
                 isPopular={plan.code === "pro"}
+                isCurrentPlan={isCurrentPlan}
               >
                 <SubscribeButton
                   planCode={plan.code}
                   interval={interval}
-                  amount={amount}
                   isPopular={plan.code === "pro"}
                   isAuthenticated={!!session}
+                  isCurrentPlan={isCurrentPlan}
                 />
               </PricingCard>
             );

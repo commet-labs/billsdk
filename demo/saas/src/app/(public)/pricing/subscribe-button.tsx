@@ -8,23 +8,23 @@ import { subscribeAction } from "./actions";
 interface SubscribeButtonProps {
   planCode: string;
   interval: "monthly" | "yearly";
-  amount: number;
   isPopular?: boolean;
   isAuthenticated?: boolean;
+  isCurrentPlan?: boolean;
 }
 
 export function SubscribeButton({
   planCode,
   interval,
-  amount,
   isPopular,
   isAuthenticated,
+  isCurrentPlan,
 }: SubscribeButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   function handleClick() {
-    if (amount === 0) return;
+    if (isCurrentPlan) return;
 
     if (!isAuthenticated) {
       router.push("/login");
@@ -36,17 +36,17 @@ export function SubscribeButton({
 
   const buttonText = () => {
     if (isPending) return "Loading...";
-    if (amount === 0) return "Current Plan";
-    if (!isAuthenticated) return "Sign in to Subscribe";
+    if (isCurrentPlan) return "Current Plan";
+    if (!isAuthenticated) return "Get Started";
     return "Subscribe";
   };
 
   return (
     <Button
       className="w-full"
-      variant={isPopular ? "default" : "outline"}
+      variant={isCurrentPlan ? "secondary" : isPopular ? "default" : "outline"}
       onClick={handleClick}
-      disabled={isPending || amount === 0}
+      disabled={isPending || isCurrentPlan}
     >
       {buttonText()}
     </Button>

@@ -3,41 +3,41 @@
 @import "fumadocs-ui/css/preset.css";
 
 @theme {
-  /* Light Mode - Neutro con toque violeta sutil */
-  --color-fd-background: hsl(0, 0%, 100%);
-  --color-fd-foreground: hsl(0, 0%, 10%);
-  --color-fd-muted: hsl(0, 0%, 96%);
-  --color-fd-muted-foreground: hsl(0, 0%, 40%);
-  --color-fd-popover: hsl(0, 0%, 100%);
-  --color-fd-popover-foreground: hsl(0, 0%, 15%);
-  --color-fd-card: hsl(0, 0%, 98%);
-  --color-fd-card-foreground: hsl(0, 0%, 10%);
-  --color-fd-border: hsla(0, 0%, 80%, 50%);
+  /* Light Mode - Clay/Cream base #F0EEE6 */
+  --color-fd-background: #f0eee6;
+  --color-fd-foreground: hsl(30, 10%, 15%);
+  --color-fd-muted: #e8e6de;
+  --color-fd-muted-foreground: hsl(30, 5%, 40%);
+  --color-fd-popover: #f0eee6;
+  --color-fd-popover-foreground: hsl(30, 10%, 15%);
+  --color-fd-card: #eae8e0;
+  --color-fd-card-foreground: hsl(30, 10%, 15%);
+  --color-fd-border: hsla(40, 15%, 70%, 50%);
   --color-fd-primary: hsl(263, 70%, 50%);
-  --color-fd-primary-foreground: hsl(0, 0%, 100%);
-  --color-fd-secondary: hsl(0, 0%, 96%);
-  --color-fd-secondary-foreground: hsl(0, 0%, 10%);
-  --color-fd-accent: hsla(0, 0%, 90%, 60%);
-  --color-fd-accent-foreground: hsl(0, 0%, 10%);
+  --color-fd-primary-foreground: #f0eee6;
+  --color-fd-secondary: #e8e6de;
+  --color-fd-secondary-foreground: hsl(30, 10%, 15%);
+  --color-fd-accent: hsla(40, 20%, 85%, 60%);
+  --color-fd-accent-foreground: hsl(30, 10%, 15%);
   --color-fd-ring: hsl(263, 70%, 50%);
 }
 
 .dark {
-  /* Dark Mode - Negro con acentos violeta (como la landing) */
-  --color-fd-background: hsl(0, 0%, 0%);
-  --color-fd-foreground: hsl(0, 0%, 100%);
-  --color-fd-muted: hsl(0, 0%, 10%);
-  --color-fd-muted-foreground: hsl(0, 0%, 60%);
-  --color-fd-popover: hsl(0, 0%, 6%);
-  --color-fd-popover-foreground: hsl(0, 0%, 90%);
-  --color-fd-card: hsl(0, 0%, 6%);
-  --color-fd-card-foreground: hsl(0, 0%, 100%);
-  --color-fd-border: hsla(270, 30%, 50%, 20%);
-  --color-fd-primary: hsl(263, 70%, 70%);
-  --color-fd-primary-foreground: hsl(0, 0%, 0%);
-  --color-fd-secondary: hsl(0, 0%, 12%);
-  --color-fd-secondary-foreground: hsl(0, 0%, 100%);
-  --color-fd-accent: hsla(0, 0%, 30%, 40%);
-  --color-fd-accent-foreground: hsl(0, 0%, 90%);
-  --color-fd-ring: hsl(263, 70%, 60%);
+  /* Dark Mode - Clay oscuro cálido */
+  --color-fd-background: #1A1918;
+  --color-fd-foreground: #F0EEE6;
+  --color-fd-muted: #252422;
+  --color-fd-muted-foreground: #A09A8C;
+  --color-fd-popover: #1E1D1B;
+  --color-fd-popover-foreground: #E8E6DE;
+  --color-fd-card: #1E1D1B;
+  --color-fd-card-foreground: #F0EEE6;
+  --color-fd-border: hsla(40, 10%, 35%, 40%);
+  --color-fd-primary: #C9C4B5;
+  --color-fd-primary-foreground: #1A1918;
+  --color-fd-secondary: #252422;
+  --color-fd-secondary-foreground: #F0EEE6;
+  --color-fd-accent: hsla(40, 10%, 25%, 50%);
+  --color-fd-accent-foreground: #E8E6DE;
+  --color-fd-ring: #A09A8C;
 }
