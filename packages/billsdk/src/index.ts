@@ -29,16 +29,13 @@ export type {
   Where,
   WhereOperator,
 } from "@billsdk/core";
-// Re-export everything from @billsdk/core for convenience
 export * from "@billsdk/core";
-
-// Re-export adapters for convenience (actual implementations are in separate packages)
-export { memoryAdapter } from "@billsdk/memory-adapter";
 export {
-  drizzleAdapter,
   type DrizzleAdapterConfig,
   type DrizzleDB,
+  drizzleAdapter,
 } from "@billsdk/drizzle-adapter";
+export { memoryAdapter } from "@billsdk/memory-adapter";
 export { paymentAdapter } from "@billsdk/payment-adapter";
 
 // Main factory

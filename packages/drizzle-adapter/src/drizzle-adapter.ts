@@ -18,9 +18,13 @@ import {
  * Drizzle database instance type
  */
 export interface DrizzleDB {
+  // biome-ignore lint/suspicious/noExplicitAny: Drizzle types vary by dialect
   insert: (table: any) => any;
+  // biome-ignore lint/suspicious/noExplicitAny: Drizzle types vary by dialect
   select: () => any;
+  // biome-ignore lint/suspicious/noExplicitAny: Drizzle types vary by dialect
   update: (table: any) => any;
+  // biome-ignore lint/suspicious/noExplicitAny: Drizzle types vary by dialect
   delete: (table: any) => any;
   transaction?: <T>(fn: (tx: DrizzleDB) => Promise<T>) => Promise<T>;
 }
@@ -32,6 +36,7 @@ export interface DrizzleAdapterConfig {
   /**
    * The schema object that defines the tables
    */
+  // biome-ignore lint/suspicious/noExplicitAny: Schema varies by user's table definitions
   schema: Record<string, any>;
 
   /**
@@ -49,6 +54,7 @@ export interface DrizzleAdapterConfig {
 /**
  * Build where clause from BillSDK Where[] format
  */
+// biome-ignore lint/suspicious/noExplicitAny: Table type varies by user's schema
 function buildWhereClause(where: Where[], table: any): SQL | undefined {
   if (!where || where.length === 0) return undefined;
 
@@ -134,9 +140,11 @@ export function drizzleAdapter(
   };
 
   const withReturning = async (
+    // biome-ignore lint/suspicious/noExplicitAny: Query builder type varies by operation
     builder: any,
     model: string,
     where?: Where[],
+    // biome-ignore lint/suspicious/noExplicitAny: Return type varies by table schema
   ): Promise<any> => {
     if (config.provider !== "mysql") {
       const result = await builder.returning();
