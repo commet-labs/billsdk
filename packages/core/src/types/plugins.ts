@@ -1,6 +1,5 @@
-import type { BillingContext } from "../context/create-context";
 import type { DBFieldAttribute } from "../db/field";
-import type { BillingEndpoint } from "./api";
+import type { BillingEndpoint, GenericBillingContext } from "./api";
 
 /**
  * Plugin schema for extending the database
@@ -20,7 +19,7 @@ export interface BillSDKPluginHook {
     request: Request;
     path: string;
     method: string;
-    billingContext: BillingContext;
+    billingContext: GenericBillingContext;
   }) => Promise<undefined | Response> | undefined | Response;
 }
 
@@ -60,7 +59,7 @@ export interface BillSDKPlugin {
   /**
    * Plugin initialization
    */
-  init?: (context: BillingContext) => Promise<void> | void;
+  init?: (context: GenericBillingContext) => Promise<void> | void;
 
   /**
    * Error codes exposed by this plugin

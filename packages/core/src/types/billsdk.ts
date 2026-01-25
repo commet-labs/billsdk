@@ -1,4 +1,3 @@
-import type { BillingContext } from "../context/create-context";
 import type {
   Customer,
   Feature,
@@ -103,8 +102,10 @@ export interface BillSDK<Options extends BillSDKOptions<any> = BillSDKOptions> {
 
   /**
    * Internal context (Promise for lazy initialization)
+   * The actual type is BillingContext from billsdk package
    */
-  $context: Promise<BillingContext>;
+  // biome-ignore lint/suspicious/noExplicitAny: Internal context type varies by implementation
+  $context: Promise<any>;
 
   /**
    * Type inference helpers

@@ -1,7 +1,7 @@
 {
   "name": "@billsdk/core",
   "version": "0.1.0",
-  "description": "Core billing engine for SaaS applications",
+  "description": "Core infrastructure for BillSDK plugins",
   "type": "module",
   "license": "MIT",
   "exports": {
@@ -9,22 +9,36 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./client": {
-      "types": "./dist/client/index.d.ts",
-      "default": "./dist/client/index.js"
+    "./api": {
+      "types": "./dist/api/index.d.ts",
+      "default": "./dist/api/index.js"
     },
-    "./react": {
-      "types": "./dist/client/react/index.d.ts",
-      "default": "./dist/client/react/index.js"
+    "./error": {
+      "types": "./dist/error/index.d.ts",
+      "default": "./dist/error/index.js"
+    },
+    "./db": {
+      "types": "./dist/db/schema.d.ts",
+      "default": "./dist/db/schema.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
     }
   },
   "typesVersions": {
     "*": {
-      "client": [
-        "./dist/client/index.d.ts"
+      "api": [
+        "./dist/api/index.d.ts"
       ],
-      "react": [
-        "./dist/client/react/index.d.ts"
+      "error": [
+        "./dist/error/index.d.ts"
+      ],
+      "db": [
+        "./dist/db/schema.d.ts"
+      ],
+      "types": [
+        "./dist/types/index.d.ts"
       ]
     }
   },
@@ -45,32 +59,20 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "defu": "6.1.4",
     "zod": "4.3.5"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
     "@types/node": "22.15.29",
-    "@types/react": "^19.0.0",
-    "react": "^19.0.0",
     "tsup": "8.5.1",
     "typescript": "5.9.3",
     "vitest": "4.0.17"
-  },
-  "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0"
-  },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    }
   },
   "keywords": [
     "billing",
     "sdk",
     "saas",
-    "subscriptions",
-    "payments",
+    "plugins",
     "typescript",
     "core"
   ]

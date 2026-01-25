@@ -1,4 +1,4 @@
-import { createBillingClient } from "@billsdk/core/react";
+import { createBillingClient } from "billsdk/react";
 
 export const billingClient = createBillingClient();
 

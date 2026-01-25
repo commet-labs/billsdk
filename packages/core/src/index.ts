@@ -1,36 +1,37 @@
-// BillSDK Core - The billing engine for SaaS applications
+// BillSDK Core - Infrastructure for plugin authors
+// This package provides types, helpers, and utilities for creating BillSDK plugins.
 
-// Adapters
-export { memoryAdapter } from "./adapters/memory-adapter";
-// Main factory - the only way to create a billing instance
-export { billsdk } from "./billsdk";
-
-// Types - only what users need
 export type {
-  BillingInterval,
-  // Main types
-  BillSDK,
-  BillSDKOptions,
-  CheckoutResult,
-  // Model types for type inference
-  Customer,
-  // Adapter interface for custom adapters
-  DBAdapter,
-  ExtractFeatureCodes,
-  Feature,
-  FeatureConfig,
-  // Payment adapter interface
-  PaymentAdapter,
-  Plan,
-  PlanConfig,
-  PlanFeature,
-  PlanPrice,
-  PlanPriceConfig,
-  SortBy,
-  SortDirection,
-  Subscription,
-  SubscriptionStatus,
-  WebhookResult,
-  Where,
-  WhereOperator,
-} from "./types";
+  BillingMiddleware,
+  GenericBillingContext,
+  GenericEndpointContext,
+  MiddlewareContext,
+  MiddlewareHandler,
+  MiddlewareMatcher,
+} from "./api";
+
+// Re-export API helpers for creating endpoints
+export {
+  createBillingEndpoint,
+  createBillingMiddleware,
+  matchAll,
+  matchMethod,
+  matchPath,
+} from "./api";
+export type { BaseErrorCode, HttpStatus } from "./error";
+
+// Re-export error handling
+export { BASE_ERROR_CODES, BillingError, defineErrorCodes } from "./error";
+// Re-export all types
+export type * from "./types";
+
+// Re-export utilities
+export {
+  addDays,
+  addMonths,
+  formatCurrency,
+  generateId,
+  isFuture,
+  isPast,
+  sleep,
+} from "./utils";

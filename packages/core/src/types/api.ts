@@ -1,5 +1,4 @@
 import type { z } from "zod";
-import type { BillingContext } from "../context/create-context";
 
 /**
  * HTTP methods supported by the API
@@ -17,6 +16,26 @@ export interface EndpointOptions {
 }
 
 /**
+ * Generic billing context interface for core types
+ * The full BillingContext is defined in the billsdk package
+ */
+export interface GenericBillingContext {
+  basePath: string;
+  logger: {
+    debug: (message: string, ...args: unknown[]) => void;
+    info: (message: string, ...args: unknown[]) => void;
+    warn: (message: string, ...args: unknown[]) => void;
+    error: (message: string, ...args: unknown[]) => void;
+  };
+  // biome-ignore lint/suspicious/noExplicitAny: Generic context allows flexibility
+  internalAdapter: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Generic context allows flexibility
+  plugins: any[];
+  // biome-ignore lint/suspicious/noExplicitAny: Generic context allows flexibility
+  options: any;
+}
+
+/**
  * Endpoint context passed to handlers
  */
 export interface EndpointContext<TBody = unknown, TQuery = unknown> {
@@ -25,7 +44,7 @@ export interface EndpointContext<TBody = unknown, TQuery = unknown> {
   query: TQuery;
   headers: Headers;
   params: Record<string, string>;
-  ctx: BillingContext;
+  ctx: GenericBillingContext;
 }
 
 /**
