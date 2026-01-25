@@ -1,16 +1,30 @@
 import { DynamicCodeBlock } from "fumadocs-ui/components/dynamic-codeblock";
+import type { Metadata } from "next";
 import Link from "next/link";
 
-const codeExample = `const billing = billsdk({
-  database: drizzleAdapter(db),
+export const metadata: Metadata = {
+  title: "BillSDK - Own your billing. Use any provider.",
+  description:
+    "A billing engine that runs inside your application. No lock-in. No revenue share. Subscriptions, feature gating, trials, webhooks, and usage tracking.",
+  openGraph: {
+    title: "BillSDK - Own your billing. Use any provider.",
+    description:
+      "A billing engine that runs inside your application. No lock-in. No revenue share. Pure logic.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BillSDK - Own your billing. Use any provider.",
+    description:
+      "A billing engine that runs inside your application. No lock-in. No revenue share. Pure logic.",
+  },
+};
 
-  payment: stripePayment(),
-  
+const codeExample = `const billing = billsdk({
   features: [
     { code: "api_access", name: "API Access" },
     { code: "priority_support", name: "Priority Support" },
   ],
-
   plans: [{
     code: "pro",
     prices: [{
