@@ -1,4 +1,7 @@
+import Link from "next/link";
 import { PricingCard } from "@/components/pricing-card";
+import { Button } from "@/components/ui/button";
+import { getSession } from "@/lib/auth-server";
 import { billing } from "@/lib/billing";
 import { IntervalToggle } from "./interval-toggle";
 import { SubscribeButton } from "./subscribe-button";
@@ -14,11 +17,32 @@ export default async function PricingPage({ searchParams }: PageProps) {
   const interval: BillingInterval =
     intervalParam === "yearly" ? "yearly" : "monthly";
 
-  const plans = await billing.api.listPlans();
+  const [plans, session] = await Promise.all([
+    billing.api.listPlans(),
+    getSession(),
+  ]);
 
   return (
     <div className="min-h-screen py-12 px-4">
       <div className="max-w-4xl mx-auto">
+        {/* Navigation */}
+        <div className="flex justify-end mb-8">
+          {session ? (
+            <Button asChild variant="outline">
+              <Link href="/dashboard">Back to Dashboard</Link>
+            </Button>
+          ) : (
+            <div className="flex gap-2">
+              <Button asChild variant="outline">
+                <Link href="/login">Sign in</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/signup">Sign up</Link>
+              </Button>
+            </div>
+          )}
+        </div>
+
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">

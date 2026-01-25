@@ -8,5 +8,5 @@ export default async function HomePage() {
     redirect("/dashboard");
   }
 
-  redirect("/pricing");
+  redirect("/login");
 }
