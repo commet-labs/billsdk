@@ -1,4 +1,3 @@
-import { AlertTriangle, ArrowLeft, Calendar, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -61,10 +60,7 @@ export default async function SettingsPage() {
         {/* Header */}
         <div className="mb-8">
           <Button asChild variant="ghost" size="sm" className="mb-4">
-            <Link href="/dashboard">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Link>
+            <Link href="/dashboard">Back to Dashboard</Link>
           </Button>
           <h1 className="text-3xl font-bold">Billing Settings</h1>
           <p className="text-muted-foreground">
@@ -80,7 +76,6 @@ export default async function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
-                      <CreditCard className="h-5 w-5" />
                       Current Plan
                     </CardTitle>
                     <CardDescription>Your subscription details</CardDescription>
@@ -108,7 +103,6 @@ export default async function SettingsPage() {
                 <Separator />
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
                     Current Period
                   </span>
                   <span>
@@ -141,7 +135,6 @@ export default async function SettingsPage() {
             <Card className={isCanceled ? "border-destructive/50" : ""}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-destructive">
-                  <AlertTriangle className="h-5 w-5" />
                   {isCanceled ? "Subscription Canceled" : "Cancel Subscription"}
                 </CardTitle>
                 <CardDescription>

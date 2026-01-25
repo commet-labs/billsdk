@@ -1,4 +1,3 @@
-import { Calendar, CheckCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -61,11 +60,6 @@ export default async function SuccessPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3">
-              <CheckCircle className="h-12 w-12 text-green-500" />
-            </div>
-          </div>
           <CardTitle className="text-2xl">Payment Successful!</CardTitle>
           <CardDescription>
             Thank you for subscribing. Your account has been upgraded.
@@ -91,7 +85,6 @@ export default async function SuccessPage() {
               <Separator />
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
                   Next billing
                 </span>
                 <span>{formatDate(subscription.currentPeriodEnd)}</span>
@@ -102,7 +95,6 @@ export default async function SuccessPage() {
             {features.length > 0 && (
               <div>
                 <p className="text-sm font-medium mb-2 flex items-center gap-1">
-                  <Sparkles className="h-3 w-3" />
                   Features unlocked
                 </p>
                 <div className="flex flex-wrap gap-2">

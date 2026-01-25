@@ -1,4 +1,3 @@
-import { Lock } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getSession } from "@/lib/auth-server";
@@ -25,7 +24,6 @@ export async function FeatureGate({
     if (fallback) return <>{fallback}</>;
     return (
       <div className="flex flex-col items-center justify-center p-8 rounded-lg border border-dashed bg-muted/50">
-        <Lock className="h-8 w-8 text-muted-foreground mb-4" />
         <p className="text-muted-foreground text-center mb-4">
           Please sign in to access this feature
         </p>
@@ -56,7 +54,6 @@ export async function FeatureGate({
   // Default fallback
   return (
     <div className="flex flex-col items-center justify-center p-8 rounded-lg border border-dashed bg-muted/50">
-      <Lock className="h-8 w-8 text-muted-foreground mb-4" />
       <p className="text-muted-foreground text-center mb-4">
         This feature requires an upgrade
       </p>

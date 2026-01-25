@@ -1,4 +1,3 @@
-import { XCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +14,6 @@ export default function CancelPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md text-center">
         <CardHeader>
-          <div className="flex justify-center mb-4">
-            <XCircle className="h-16 w-16 text-muted-foreground" />
-          </div>
           <CardTitle className="text-2xl">Payment Canceled</CardTitle>
           <CardDescription>
             Your payment was not completed. No charges were made.

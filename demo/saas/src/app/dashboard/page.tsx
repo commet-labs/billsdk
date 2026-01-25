@@ -1,11 +1,3 @@
-import {
-  Calendar,
-  Check,
-  CreditCard,
-  Settings,
-  Sparkles,
-  X,
-} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -106,10 +98,7 @@ export default async function DashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="outline">
-              <Link href="/settings">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Link>
+              <Link href="/settings">Settings</Link>
             </Button>
             <SignOutButton />
           </div>
@@ -121,7 +110,6 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
                   Subscription
                 </CardTitle>
                 <CardDescription>
@@ -145,7 +133,6 @@ export default async function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
                     Current Period
                   </p>
                   <p className="font-medium">
@@ -188,10 +175,7 @@ export default async function DashboardPage() {
         {/* Features Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5" />
-              Features
-            </CardTitle>
+            <CardTitle className="flex items-center gap-2">Features</CardTitle>
             <CardDescription>
               Features available on your current plan
             </CardDescription>
@@ -209,19 +193,6 @@ export default async function DashboardPage() {
                         : "bg-muted/50 border-muted"
                     }`}
                   >
-                    <div
-                      className={`mt-0.5 rounded-full p-1 ${
-                        isEnabled
-                          ? "bg-green-500 text-white"
-                          : "bg-muted-foreground/20 text-muted-foreground"
-                      }`}
-                    >
-                      {isEnabled ? (
-                        <Check className="h-3 w-3" />
-                      ) : (
-                        <X className="h-3 w-3" />
-                      )}
-                    </div>
                     <div>
                       <p
                         className={`font-medium ${
@@ -239,14 +210,6 @@ export default async function DashboardPage() {
               })}
             </div>
           </CardContent>
-          <CardFooter>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/features">
-                <Sparkles className="h-4 w-4 mr-2" />
-                Try Features Demo
-              </Link>
-            </Button>
-          </CardFooter>
         </Card>
       </div>
     </div>
