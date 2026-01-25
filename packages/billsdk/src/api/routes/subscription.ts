@@ -160,6 +160,19 @@ export const subscriptionEndpoints: Record<string, BillingEndpoint> = {
 
       // Handle payment result based on adapter's decision
       if (result.status === "active") {
+        // Cancel any other active subscriptions for this customer
+        const existingSubscriptions = await ctx.internalAdapter.listSubscriptions(
+          customer.id,
+        );
+        for (const existing of existingSubscriptions) {
+          if (
+            existing.id !== subscription.id &&
+            (existing.status === "active" || existing.status === "trialing")
+          ) {
+            await ctx.internalAdapter.cancelSubscription(existing.id);
+          }
+        }
+
         // Payment completed immediately - activate subscription
         const activeSubscription = await ctx.internalAdapter.updateSubscription(
           subscription.id,
