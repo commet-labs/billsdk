@@ -18,12 +18,13 @@ interface FetchOptions {
 /**
  * Create a configured fetch function
  */
-export function createFetch(config: ClientConfig) {
+export function createFetch(config: ClientConfig = {}) {
   const baseFetch = config.fetch ?? fetch;
+  const baseURL = config.baseURL ?? "/api/billing";
 
   return async <T>(path: string, options: FetchOptions = {}): Promise<T> => {
     const method = options.method ?? "GET";
-    let url = `${config.baseURL}${path}`;
+    let url = `${baseURL}${path}`;
 
     // Add query params
     if (options.query) {

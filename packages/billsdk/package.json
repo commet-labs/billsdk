@@ -12,6 +12,20 @@
     "./client": {
       "types": "./dist/client.d.ts",
       "default": "./dist/client.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "default": "./dist/react.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "client": [
+        "./dist/client.d.ts"
+      ],
+      "react": [
+        "./dist/react.d.ts"
+      ]
     }
   },
   "main": "./dist/index.js",
@@ -36,9 +50,19 @@
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
     "@types/node": "22.15.29",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
     "tsup": "8.5.1",
     "typescript": "5.9.3",
     "vitest": "4.0.17"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   },
   "keywords": [
     "billing",

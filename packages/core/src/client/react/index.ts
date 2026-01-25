@@ -1,18 +1,39 @@
-import type { Customer, Plan } from "../types/models";
-import { asyncAtom, atom } from "./atoms";
-import { createFetch } from "./proxy";
+import type { Customer, Plan } from "../../types/models";
+import { asyncAtom, atom } from "../atoms";
+import { createFetch } from "../proxy";
 import type {
   AsyncAtom,
   ClientConfig,
   HealthResponse,
   SubscriptionResponse,
-} from "./types";
+} from "../types";
+import { useAsyncStore } from "./react-store";
 
 /**
- * Billing client interface
+ * React billing client interface
  */
-export interface BillingClient {
-  // Reactive atoms
+export interface BillingClientReact {
+  // React hooks (auto-subscribing)
+  useCustomer: () => {
+    data: Customer | null;
+    isLoading: boolean;
+    error: Error | null;
+    refresh: () => Promise<void>;
+  };
+  useSubscription: () => {
+    data: SubscriptionResponse | null;
+    isLoading: boolean;
+    error: Error | null;
+    refresh: () => Promise<void>;
+  };
+  usePlans: () => {
+    data: Plan[];
+    isLoading: boolean;
+    error: Error | null;
+    refresh: () => Promise<void>;
+  };
+
+  // Raw atoms (for advanced usage)
   $customer: AsyncAtom<Customer | null>;
   $subscription: AsyncAtom<SubscriptionResponse | null>;
   $plans: AsyncAtom<Plan[]>;
@@ -53,28 +74,27 @@ export interface BillingClient {
 }
 
 /**
- * Create a billing client
+ * Create a React billing client
  *
  * @example
  * ```typescript
- * import { createBillingClient } from "@billsdk/core/client";
+ * import { createBillingClient } from "@billsdk/core/react";
  *
  * // Uses default baseURL: "/api/billing"
- * const billing = createBillingClient();
+ * export const billing = createBillingClient();
  *
- * // Set current customer
- * billing.setCustomerId("user_123");
+ * // In a component
+ * function Dashboard() {
+ *   const { data: subscription, isLoading } = billing.useSubscription();
  *
- * // Reactive state
- * billing.$customer.subscribe((customer) => {
- *   console.log("Customer:", customer);
- * });
- *
- * // Direct API calls
- * const plans = await billing.plans.list();
+ *   if (isLoading) return <Loading />;
+ *   return <div>Plan: {subscription?.plan?.name}</div>;
+ * }
  * ```
  */
-export function createBillingClient(config: ClientConfig = {}): BillingClient {
+export function createBillingClient(
+  config: ClientConfig = {},
+): BillingClientReact {
   const $fetch = createFetch(config);
 
   // Current customer ID atom
@@ -123,7 +143,18 @@ export function createBillingClient(config: ClientConfig = {}): BillingClient {
   );
 
   return {
-    // Atoms
+    // React hooks
+    useCustomer: () => useAsyncStore($customer),
+    useSubscription: () => useAsyncStore($subscription),
+    usePlans: () =>
+      useAsyncStore($plans) as {
+        data: Plan[];
+        isLoading: boolean;
+        error: Error | null;
+        refresh: () => Promise<void>;
+      },
+
+    // Raw atoms
     $customer,
     $subscription,
     $plans,
@@ -180,4 +211,7 @@ export function createBillingClient(config: ClientConfig = {}): BillingClient {
   };
 }
 
-export default createBillingClient;
+// Re-export types
+export type * from "../types";
+// Re-export store hooks for advanced usage
+export { useAsyncStore, useStore } from "./react-store";

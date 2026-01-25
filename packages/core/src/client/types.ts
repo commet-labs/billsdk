@@ -6,9 +6,9 @@ import type { Customer, Plan, PlanPrice, Subscription } from "../types/models";
 export interface ClientConfig {
   /**
    * Base URL for the billing API
-   * @example "http://localhost:3000/api/billing"
+   * @default "/api/billing"
    */
-  baseURL: string;
+  baseURL?: string;
 
   /**
    * Custom fetch function
