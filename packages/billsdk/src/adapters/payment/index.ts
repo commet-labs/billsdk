@@ -32,7 +32,9 @@ export interface PaymentAdapterOptions {
  * });
  * ```
  */
-export function paymentAdapter(options?: PaymentAdapterOptions): PaymentAdapter {
+export function paymentAdapter(
+  options?: PaymentAdapterOptions,
+): PaymentAdapter {
   const confirmUrl = options?.confirmUrl ?? "/billing/confirm";
 
   return {
