@@ -82,10 +82,14 @@ export function SubscribeButton({
         throw new Error(error.message || "Failed to create subscription");
       }
 
-      const { checkoutUrl } = await subscriptionResponse.json();
+      const { subscription, redirectUrl } = await subscriptionResponse.json();
 
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
+      if (redirectUrl) {
+        // Payment adapter requires redirect (e.g., Stripe)
+        window.location.href = redirectUrl;
+      } else if (subscription) {
+        // Subscription activated immediately (default adapter)
+        router.push("/success");
       }
     } catch (err) {
       console.error("Subscription error:", err);
