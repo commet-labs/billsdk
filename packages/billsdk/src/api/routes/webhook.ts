@@ -27,6 +27,12 @@ export const webhookEndpoints: Record<string, BillingEndpoint> = {
       // Confirm payment from webhook/callback
       const result = await ctx.paymentAdapter.confirmPayment(request);
 
+      // If result is null, the event was acknowledged but not relevant to us
+      if (!result) {
+        ctx.logger.debug("Webhook event acknowledged but not processed");
+        return { received: true };
+      }
+
       ctx.logger.debug("Payment confirmation received", {
         subscriptionId: result.subscriptionId,
         status: result.status,

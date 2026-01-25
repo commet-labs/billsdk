@@ -122,7 +122,7 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
       };
     },
 
-    async confirmPayment(request: Request): Promise<ConfirmResult> {
+    async confirmPayment(request: Request): Promise<ConfirmResult | null> {
       const stripeClient = await getStripe();
 
       const signature = request.headers.get("stripe-signature");
@@ -176,9 +176,9 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
         };
       }
 
-      // For other events, we don't have a direct subscription mapping
-      // This shouldn't happen in normal flow
-      throw new Error(`Unhandled webhook event type: ${event.type}`);
+      // For other events (customer.created, invoice.paid, etc.), we don't need to do anything
+      // Return null to indicate the event was acknowledged but not processed
+      return null;
     },
   };
 }

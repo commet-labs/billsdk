@@ -1,3 +1,4 @@
+import { stripePayment } from "@billsdk/stripe";
 import { billsdk } from "billsdk";
 import { drizzleAdapter } from "billsdk/adapters/drizzle";
 import { db } from "./db";
@@ -5,12 +6,16 @@ import * as schema from "./db/schema";
 
 /**
  * BillSDK - Demo SaaS billing configuration
- *
  */
 export const billing = billsdk({
   database: drizzleAdapter(db, {
     schema,
     provider: "pg",
+  }),
+
+  payment: stripePayment({
+    secretKey: process.env.STRIPE_SECRET_KEY!,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
   }),
 
   features: [

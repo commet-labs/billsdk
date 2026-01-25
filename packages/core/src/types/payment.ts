@@ -129,6 +129,8 @@ export interface PaymentAdapter {
    *
    * Only needed if processPayment returns "pending"
    * Called when the payment provider notifies us of payment completion
+   *
+   * Return null for webhook events that don't need processing (e.g., customer.created)
    */
-  confirmPayment?(request: Request): Promise<ConfirmResult>;
+  confirmPayment?(request: Request): Promise<ConfirmResult | null>;
 }
