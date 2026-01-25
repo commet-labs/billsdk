@@ -1,12 +1,7 @@
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth-server";
-
-export default async function HomePage() {
-  const session = await getSession();
-
-  if (session) {
-    redirect("/dashboard");
-  }
-
-  redirect("/login");
+export default function HomePage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <h1 className="text-4xl font-bold">billSDK</h1>
+    </div>
+  );
 }
