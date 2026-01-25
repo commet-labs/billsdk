@@ -4,40 +4,40 @@
 
 @theme {
   /* Light Mode - Sage Clay (warm with subtle green undertone) */
-  --color-fd-background: #ECEEE8;
-  --color-fd-foreground: #1C1E1A;
-  --color-fd-muted: #E4E6E0;
-  --color-fd-muted-foreground: #5C5E58;
-  --color-fd-popover: #ECEEE8;
-  --color-fd-popover-foreground: #1C1E1A;
-  --color-fd-card: #E6E8E2;
-  --color-fd-card-foreground: #1C1E1A;
+  --color-fd-background: #eceee8;
+  --color-fd-foreground: #1c1e1a;
+  --color-fd-muted: #e4e6e0;
+  --color-fd-muted-foreground: #5c5e58;
+  --color-fd-popover: #eceee8;
+  --color-fd-popover-foreground: #1c1e1a;
+  --color-fd-card: #e6e8e2;
+  --color-fd-card-foreground: #1c1e1a;
   --color-fd-border: hsla(80, 8%, 70%, 50%);
-  --color-fd-primary: #3A3C38;
-  --color-fd-primary-foreground: #ECEEE8;
-  --color-fd-secondary: #E4E6E0;
-  --color-fd-secondary-foreground: #1C1E1A;
+  --color-fd-primary: #3a3c38;
+  --color-fd-primary-foreground: #eceee8;
+  --color-fd-secondary: #e4e6e0;
+  --color-fd-secondary-foreground: #1c1e1a;
   --color-fd-accent: hsla(80, 10%, 85%, 60%);
-  --color-fd-accent-foreground: #1C1E1A;
-  --color-fd-ring: #5C5E58;
+  --color-fd-accent-foreground: #1c1e1a;
+  --color-fd-ring: #5c5e58;
 }
 
 .dark {
   /* Dark Mode - Sage Clay oscuro (matching light mode undertone) */
-  --color-fd-background: #181A19;
-  --color-fd-foreground: #E8ECE6;
+  --color-fd-background: #181a19;
+  --color-fd-foreground: #e8ece6;
   --color-fd-muted: #222524;
-  --color-fd-muted-foreground: #8A8E88;
-  --color-fd-popover: #1C1E1D;
-  --color-fd-popover-foreground: #E0E4DE;
-  --color-fd-card: #1C1E1D;
-  --color-fd-card-foreground: #E8ECE6;
+  --color-fd-muted-foreground: #8a8e88;
+  --color-fd-popover: #1c1e1d;
+  --color-fd-popover-foreground: #e0e4de;
+  --color-fd-card: #1c1e1d;
+  --color-fd-card-foreground: #e8ece6;
   --color-fd-border: hsla(100, 6%, 32%, 40%);
-  --color-fd-primary: #C4C9C2;
-  --color-fd-primary-foreground: #181A19;
+  --color-fd-primary: #c4c9c2;
+  --color-fd-primary-foreground: #181a19;
   --color-fd-secondary: #222524;
-  --color-fd-secondary-foreground: #E8ECE6;
+  --color-fd-secondary-foreground: #e8ece6;
   --color-fd-accent: hsla(100, 6%, 22%, 50%);
-  --color-fd-accent-foreground: #E0E4DE;
-  --color-fd-ring: #8A8E88;
+  --color-fd-accent-foreground: #e0e4de;
+  --color-fd-ring: #8a8e88;
 }

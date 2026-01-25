@@ -55,9 +55,7 @@ export function PricingCard({
         <div className="flex items-center justify-between">
           <CardTitle>{plan.name}</CardTitle>
           <div className="flex gap-2">
-            {isCurrentPlan && (
-              <Badge className="bg-green-500">Your Plan</Badge>
-            )}
+            {isCurrentPlan && <Badge className="bg-green-500">Your Plan</Badge>}
             {isPopular && !isCurrentPlan && <Badge>Popular</Badge>}
           </div>
         </div>
