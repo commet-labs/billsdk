@@ -6,6 +6,7 @@ export default defineConfig({
     "src/client/index.ts",
     "src/client/react/index.ts",
     "src/adapters/drizzle/index.ts",
+    "src/adapters/memory-adapter/index.ts",
     "src/adapters/payment/index.ts",
     "src/integrations/next.ts",
   ],
@@ -15,5 +16,11 @@ export default defineConfig({
   clean: true,
   splitting: false,
   treeshake: true,
-  external: ["@billsdk/core", "react", "drizzle-orm"],
+  external: [
+    "@billsdk/core",
+    "@billsdk/drizzle-adapter",
+    "@billsdk/memory-adapter",
+    "@billsdk/payment-adapter",
+    "react",
+  ],
 });

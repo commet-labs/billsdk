@@ -111,7 +111,7 @@ function buildWhereClause(where: Where[], table: any): SQL | undefined {
  *
  * @example
  * ```typescript
- * import { drizzleAdapter } from "@billsdk/drizzle";
+ * import { drizzleAdapter } from "@billsdk/drizzle-adapter";
  * import { db } from "./db";
  * import * as schema from "./schema";
  *

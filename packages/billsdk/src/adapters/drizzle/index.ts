@@ -1,5 +1,6 @@
+// Re-export from @billsdk/drizzle-adapter for convenience
 export {
+  drizzleAdapter,
   type DrizzleAdapterConfig,
   type DrizzleDB,
-  drizzleAdapter,
-} from "./drizzle-adapter";
+} from "@billsdk/drizzle-adapter";

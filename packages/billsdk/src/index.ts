@@ -32,7 +32,14 @@ export type {
 // Re-export everything from @billsdk/core for convenience
 export * from "@billsdk/core";
 
-// Built-in adapters
-export { memoryAdapter } from "./adapters/memory-adapter";
+// Re-export adapters for convenience (actual implementations are in separate packages)
+export { memoryAdapter } from "@billsdk/memory-adapter";
+export {
+  drizzleAdapter,
+  type DrizzleAdapterConfig,
+  type DrizzleDB,
+} from "@billsdk/drizzle-adapter";
+export { paymentAdapter } from "@billsdk/payment-adapter";
+
 // Main factory
 export { billsdk } from "./billsdk";
