@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Logo } from "@/components/logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -91,9 +92,14 @@ export default async function DashboardPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {user.name}</p>
+          <div className="flex items-center gap-4">
+            <Logo size={40} showText={false} />
+            <div>
+              <h1 className="text-2xl font-bold">Dashboard</h1>
+              <p className="text-muted-foreground text-sm">
+                Welcome back, {user.name}
+              </p>
+            </div>
           </div>
           <SignOutButton />
         </div>
@@ -175,7 +181,7 @@ export default async function DashboardPage() {
                         key={feature.code}
                         className={`flex items-start gap-3 p-4 rounded-lg border ${
                           isEnabled
-                            ? "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800"
+                            ? "bg-green-950/20 border-green-800"
                             : "bg-muted/50 border-muted"
                         }`}
                       >

@@ -50,9 +50,9 @@ export default function LoginPage() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-900/50">
+          <div className="flex items-center gap-2 p-3 text-sm bg-red-950/30 text-red-400 rounded-lg border border-red-900/50">
             <svg
-              className="h-4 w-4 flex-shrink-0"
+              className="h-4 w-4 shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"

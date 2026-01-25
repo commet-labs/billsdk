@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Logo } from "@/components/logo";
 import { getSession } from "@/lib/auth-server";
 
 export default async function AuthLayout({
@@ -17,12 +17,7 @@ export default async function AuthLayout({
   return (
     <div className="min-h-screen flex flex-col">
       <div className="p-6">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="font-bold text-lg text-primary-foreground">B</span>
-          </div>
-          <span className="font-semibold text-xl">BillSDK</span>
-        </Link>
+        <Logo size={32} />
       </div>
       <div className="flex-1 flex items-center justify-center p-6">
         {children}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { PricingCard } from "@/components/pricing-card";
 import { Button } from "@/components/ui/button";
 import { getSession } from "@/lib/auth-server";
@@ -33,7 +34,8 @@ export default async function PricingPage({ searchParams }: PageProps) {
     <div className="min-h-screen py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Navigation */}
-        <div className="flex justify-end mb-8">
+        <div className="flex items-center justify-between mb-8">
+          <Logo />
           {session ? (
             <Button asChild variant="outline">
               <Link href="/dashboard">Back to Dashboard</Link>
