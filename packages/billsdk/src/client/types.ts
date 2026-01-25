@@ -82,3 +82,40 @@ export interface AsyncAtom<T> {
   refresh(): Promise<void>;
   subscribe(callback: (value: T | null) => void): () => void;
 }
+
+/**
+ * Input for creating a subscription
+ */
+export interface CreateSubscriptionInput {
+  customerId: string;
+  planCode: string;
+  interval?: "monthly" | "yearly";
+  successUrl?: string;
+  cancelUrl?: string;
+}
+
+/**
+ * Response from creating a subscription
+ */
+export interface CreateSubscriptionResponse {
+  subscription: Subscription;
+  /** Redirect URL if payment adapter requires redirect (e.g., Stripe checkout) */
+  redirectUrl?: string;
+}
+
+/**
+ * Input for canceling a subscription
+ */
+export interface CancelSubscriptionInput {
+  customerId: string;
+  cancelAt?: "period_end" | "immediately";
+}
+
+/**
+ * Response from canceling a subscription
+ */
+export interface CancelSubscriptionResponse {
+  subscription: Subscription;
+  canceledImmediately?: boolean;
+  accessUntil?: Date;
+}

@@ -3,7 +3,11 @@ import { asyncAtom, atom } from "./atoms";
 import { createFetch } from "./proxy";
 import type {
   AsyncAtom,
+  CancelSubscriptionInput,
+  CancelSubscriptionResponse,
   ClientConfig,
+  CreateSubscriptionInput,
+  CreateSubscriptionResponse,
   HealthResponse,
   SubscriptionResponse,
 } from "./types";
@@ -41,6 +45,12 @@ export interface BillingClient {
     get(options: {
       query: { customerId: string };
     }): Promise<SubscriptionResponse>;
+    create(options: {
+      body: CreateSubscriptionInput;
+    }): Promise<CreateSubscriptionResponse>;
+    cancel(options: {
+      body: CancelSubscriptionInput;
+    }): Promise<CancelSubscriptionResponse>;
   };
 
   health: {
@@ -153,6 +163,15 @@ export function createBillingClient(config: ClientConfig = {}): BillingClient {
     subscription: {
       async get(options) {
         return $fetch("/subscription", { method: "GET", query: options.query });
+      },
+      async create(options) {
+        return $fetch("/subscription", { method: "POST", body: options.body });
+      },
+      async cancel(options) {
+        return $fetch("/subscription/cancel", {
+          method: "POST",
+          body: options.body,
+        });
       },
     },
 
