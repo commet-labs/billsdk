@@ -113,9 +113,6 @@ export default async function SuccessPage() {
           <Button asChild className="w-full">
             <Link href="/dashboard">Go to Dashboard</Link>
           </Button>
-          <Button asChild variant="outline" className="w-full">
-            <Link href="/features">Explore Features</Link>
-          </Button>
         </CardFooter>
       </Card>
     </div>

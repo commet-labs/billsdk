@@ -73,6 +73,7 @@ export default async function PricingPage({ searchParams }: PageProps) {
                   interval={interval}
                   amount={amount}
                   isPopular={plan.code === "pro"}
+                  isAuthenticated={!!session}
                 />
               </PricingCard>
             );
