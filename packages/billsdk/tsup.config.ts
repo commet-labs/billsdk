@@ -6,6 +6,7 @@ export default defineConfig({
     "src/client/index.ts",
     "src/client/react/index.ts",
     "src/adapters/drizzle/index.ts",
+    "src/adapters/payment/index.ts",
     "src/integrations/next.ts",
   ],
   format: ["esm"],

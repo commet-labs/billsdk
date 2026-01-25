@@ -21,6 +21,7 @@
     "node": ">=20"
   },
   "workspaces": [
+    "apps/*",
     "packages/*",
     "examples/*"
   ]

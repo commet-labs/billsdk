@@ -1,4 +1,5 @@
 import { memoryAdapter } from "../adapters/memory-adapter";
+import { paymentAdapter } from "../adapters/payment";
 import { createRouter } from "../api";
 import {
   type BillingContext,
@@ -212,8 +213,9 @@ function createAPI<TFeatureCode extends string = string>(
  * Initialize the billing context
  */
 async function init(options: BillSDKOptions): Promise<BillingContext> {
-  const adapter = options.database ?? memoryAdapter();
-  return createBillingContext(adapter, options);
+  const database = options.database ?? memoryAdapter();
+  const payment = options.payment ?? paymentAdapter();
+  return createBillingContext(database, { ...options, payment });
 }
 
 /**
