@@ -128,10 +128,10 @@ export default function HomePage() {
                   href="/docs"
                   className="px-6 py-3 dark:bg-[#E8ECE6] dark:text-[#181A19] bg-[#1C1E1A] text-[#ECEEE8] font-medium dark:hover:bg-[#E0E4DE] hover:bg-[#2C2E2A] transition-colors"
                 >
-                  Documentation
+                  Get Started
                 </Link>
                 <a
-                  href="https://github.com/commet/billsdk"
+                  href="https://github.com/commet-labs/billsdk"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-6 py-3 border dark:border-[#8A8E88]/30 border-[#5C5E58]/30 dark:text-[#C4C9C2] text-[#4A4C46] font-medium dark:hover:border-[#C4C9C2]/50 hover:border-[#5C5E58]/50 dark:hover:text-[#E8ECE6] hover:text-[#1C1E1A] transition-colors"
