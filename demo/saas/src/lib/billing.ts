@@ -1,4 +1,3 @@
-import { stripePayment } from "@billsdk/stripe";
 import { billsdk } from "billsdk";
 import { drizzleAdapter } from "billsdk/adapters/drizzle";
 import { db } from "./db";
