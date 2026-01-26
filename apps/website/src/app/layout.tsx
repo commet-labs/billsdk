@@ -15,6 +15,15 @@ export const metadata: Metadata = {
     shortcut: "/logo.svg",
     apple: "/logo.svg",
   },
+  openGraph: {
+    url: "https://billsdk.com",
+    images: "https://billsdk.com/og.png",
+    siteName: "BillSDK",
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: "https://billsdk.com/og.png",
+  },
 };
 
 export default function Layout({ children }: LayoutProps<"/">) {

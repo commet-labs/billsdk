@@ -16,6 +16,15 @@ export const metadata: Metadata = {
     shortcut: "/logo.svg",
     apple: "/logo.svg",
   },
+  openGraph: {
+    url: "https://demo.billsdk.com",
+    images: "https://demo.billsdk.com/og.png",
+    siteName: "BillSDK Demo",
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: "https://demo.billsdk.com/og.png",
+  },
 };
 
 export default function RootLayout({
