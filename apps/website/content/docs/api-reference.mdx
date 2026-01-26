@@ -1,0 +1,245 @@
+---
+title: API Reference
+description: Server-side API methods
+---
+
+All methods are available on `billing.api` for direct server-side usage.
+
+## Customers
+
+### createCustomer
+
+Create a billing customer linked to your user.
+
+```typescript
+const customer = await billing.api.createCustomer({
+  externalId: user.id,  // Your user ID
+  email: user.email,
+  name: user.name,      // Optional
+});
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `externalId` | `string` | Yes | Your application's user ID |
+| `email` | `string` | Yes | Billing email |
+| `name` | `string` | No | Customer name |
+
+**Returns:** `Customer`
+
+### getCustomer
+
+Get customer by external ID.
+
+```typescript
+const customer = await billing.api.getCustomer({
+  externalId: user.id,
+});
+```
+
+**Returns:** `Customer | null`
+
+## Plans
+
+### listPlans
+
+List all public plans. Plans with `isPublic: false` are excluded.
+
+```typescript
+const plans = await billing.api.listPlans();
+```
+
+**Returns:** `Plan[]`
+
+### getPlan
+
+Get a specific plan by code.
+
+```typescript
+const plan = await billing.api.getPlan({ code: "pro" });
+```
+
+**Returns:** `Plan | null`
+
+## Subscriptions
+
+### createSubscription
+
+Create a subscription. With Stripe, this returns a checkout URL for the user to complete payment.
+
+```typescript
+const result = await billing.api.createSubscription({
+  customerId: user.id,        // externalId
+  planCode: "pro",
+  interval: "monthly",        // Optional, default: "monthly"
+  successUrl: "https://app.com/success",
+  cancelUrl: "https://app.com/pricing",
+});
+
+if (result.redirectUrl) {
+  // User needs to complete payment
+  redirect(result.redirectUrl);
+} else {
+  // Subscription activated immediately (e.g., free plan)
+  console.log(result.subscription.status); // "active"
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customerId` | `string` | Yes | Customer's externalId |
+| `planCode` | `string` | Yes | Plan to subscribe to |
+| `interval` | `"monthly" \| "yearly"` | No | Billing interval |
+| `successUrl` | `string` | Yes* | Redirect after payment |
+| `cancelUrl` | `string` | Yes* | Redirect if user cancels |
+
+*Required for payment adapters that use redirects (Stripe).
+
+**Returns:** `{ subscription: Subscription; redirectUrl?: string }`
+
+### getSubscription
+
+Get customer's active subscription.
+
+```typescript
+const subscription = await billing.api.getSubscription({
+  customerId: user.id,
+});
+
+if (subscription) {
+  console.log(subscription.status);   // "active" | "trialing" | "canceled" | ...
+  console.log(subscription.planCode); // "pro"
+  console.log(subscription.currentPeriodEnd);
+}
+```
+
+**Returns:** `Subscription | null`
+
+### cancelSubscription
+
+Cancel a subscription.
+
+```typescript
+const subscription = await billing.api.cancelSubscription({
+  customerId: user.id,
+  cancelAt: "period_end",  // or "immediately"
+});
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customerId` | `string` | Yes | Customer's externalId |
+| `cancelAt` | `"period_end" \| "immediately"` | No | When to cancel (default: `"period_end"`) |
+
+**Returns:** `Subscription | null`
+
+## Features
+
+### checkFeature
+
+Check if a customer has access to a feature.
+
+```typescript
+const { allowed } = await billing.api.checkFeature({
+  customerId: user.id,
+  feature: "api_access",  // Type-safe
+});
+
+if (!allowed) {
+  throw new Error("Upgrade required");
+}
+```
+
+**Returns:** `{ allowed: boolean }`
+
+### listFeatures
+
+List all features available to a customer based on their plan.
+
+```typescript
+const features = await billing.api.listFeatures({
+  customerId: user.id,
+});
+
+// [{ code: "export", name: "Export Data", enabled: true }, ...]
+```
+
+**Returns:** `FeatureAccess[]`
+
+## Health
+
+### health
+
+Health check endpoint.
+
+```typescript
+const { status, timestamp } = await billing.api.health();
+// { status: "ok", timestamp: "2024-01-15T10:30:00.000Z" }
+```
+
+## Types
+
+### Customer
+
+```typescript
+interface Customer {
+  id: string;
+  externalId: string;
+  email: string;
+  name?: string;
+  providerCustomerId?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### Subscription
+
+```typescript
+interface Subscription {
+  id: string;
+  customerId: string;
+  planCode: string;
+  interval: "monthly" | "quarterly" | "yearly";
+  status: SubscriptionStatus;
+  providerSubscriptionId?: string;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  canceledAt?: Date;
+  cancelAt?: Date;
+  trialStart?: Date;
+  trialEnd?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+type SubscriptionStatus =
+  | "active"
+  | "trialing"
+  | "past_due"
+  | "canceled"
+  | "paused"
+  | "incomplete"
+  | "pending_payment";
+```
+
+### Plan
+
+```typescript
+interface Plan {
+  code: string;
+  name: string;
+  description?: string;
+  isPublic: boolean;
+  prices: PlanPrice[];
+  features: string[];
+}
+
+interface PlanPrice {
+  amount: number;
+  currency: string;
+  interval: "monthly" | "quarterly" | "yearly";
+  trialDays?: number;
+}
+```

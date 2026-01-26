@@ -1,0 +1,173 @@
+---
+title: Configuration
+description: All configuration options for BillSDK
+---
+
+## Options
+
+```typescript
+const billing = billsdk({
+  database: drizzleAdapter(db, { schema, provider: "pg" }),
+  payment: stripePayment({ ... }),
+  basePath: "/api/billing",
+  secret: process.env.BILLSDK_SECRET,
+  features: [...],
+  plans: [...],
+  plugins: [...],
+  hooks: { before, after },
+  logger: { level: "info", disabled: false },
+});
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `database` | `DBAdapter` | `memoryAdapter()` | Database adapter |
+| `payment` | `PaymentAdapter` | - | Payment provider adapter |
+| `basePath` | `string` | `/api/billing` | API base path |
+| `secret` | `string` | - | Signing secret (required in production) |
+| `features` | `FeatureConfig[]` | `[]` | Feature definitions |
+| `plans` | `PlanConfig[]` | `[]` | Plan definitions |
+| `plugins` | `Plugin[]` | `[]` | Plugins |
+| `hooks` | `object` | - | Request hooks |
+| `logger` | `object` | - | Logger configuration |
+
+## Features
+
+Features are capabilities you can gate per plan. Currently only boolean (on/off) features are supported.
+
+```typescript
+features: [
+  { code: "export", name: "Export Data" },
+  { code: "api_access", name: "API Access" },
+  { code: "priority_support", name: "Priority Support" },
+]
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `code` | `string` | Yes | Unique identifier |
+| `name` | `string` | Yes | Display name |
+| `type` | `"boolean" \| "metered" \| "seats"` | No | Feature type (default: `"boolean"`) |
+
+Feature codes are type-safe. When you call `checkFeature`, TypeScript only accepts codes you defined:
+
+```typescript
+// Type error: "invalid_feature" is not a valid feature code
+await billing.api.checkFeature({ customerId, feature: "invalid_feature" });
+```
+
+## Plans
+
+Plans define your pricing tiers. They exist only in code, not in the database.
+
+```typescript
+plans: [
+  {
+    code: "free",
+    name: "Free",
+    description: "Get started",
+    isPublic: true,
+    prices: [{ amount: 0, interval: "monthly" }],
+    features: ["export"],
+  },
+  {
+    code: "pro",
+    name: "Pro",
+    prices: [
+      { amount: 2000, interval: "monthly", currency: "usd" },
+      { amount: 20000, interval: "yearly", trialDays: 14 },
+    ],
+    features: ["export", "api_access"],
+  },
+  {
+    code: "enterprise",
+    name: "Enterprise",
+    isPublic: false, // Hidden from listPlans()
+    prices: [{ amount: 9900, interval: "monthly" }],
+    features: ["export", "api_access", "priority_support"],
+  },
+]
+```
+
+### Plan Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `code` | `string` | Yes | Unique identifier |
+| `name` | `string` | Yes | Display name |
+| `description` | `string` | No | Plan description |
+| `isPublic` | `boolean` | No | Show in `listPlans()` (default: `true`) |
+| `prices` | `PlanPriceConfig[]` | Yes | Pricing options |
+| `features` | `string[]` | No | Enabled feature codes |
+
+### Price Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `amount` | `number` | Yes | Price in cents (2000 = $20.00) |
+| `interval` | `"monthly" \| "quarterly" \| "yearly"` | Yes | Billing cycle |
+| `currency` | `string` | No | ISO 4217 code (default: `"usd"`) |
+| `trialDays` | `number` | No | Trial period length |
+
+## Database Adapters
+
+### Drizzle
+
+```typescript
+import { drizzleAdapter } from "@billsdk/drizzle-adapter";
+
+database: drizzleAdapter(db, {
+  schema,
+  provider: "pg", // "pg" | "mysql" | "sqlite"
+})
+```
+
+### Memory (Testing)
+
+```typescript
+import { memoryAdapter } from "@billsdk/memory-adapter";
+
+database: memoryAdapter()
+```
+
+## Payment Adapters
+
+### Stripe
+
+```typescript
+import { stripePayment } from "@billsdk/stripe";
+
+payment: stripePayment({
+  secretKey: process.env.STRIPE_SECRET_KEY!,
+  webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
+  apiVersion: "2024-11-20.acacia", // Optional
+})
+```
+
+## Hooks
+
+Execute code before or after every request.
+
+```typescript
+hooks: {
+  before: async ({ request, path, method }) => {
+    // Return Response to short-circuit
+    if (!isAuthenticated(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    // Return undefined to continue
+  },
+  after: async ({ request, path, method }) => {
+    console.log(`[billing] ${method} ${path}`);
+  },
+}
+```
+
+## Logger
+
+```typescript
+logger: {
+  level: "debug", // "debug" | "info" | "warn" | "error"
+  disabled: false,
+}
+```

@@ -1,13 +1,27 @@
 ---
-title: Hello World
-description: Your first document
+title: Introduction
+description: Billing SDK that runs inside your application
 ---
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+BillSDK is a billing engine that runs inside your application. You define plans and features in code, integrate with Stripe (or any payment provider), and ship billing in minutes.
 
-## What is Next?
+## Why BillSDK
 
-<Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.dev" />
-</Cards>
+Billing SaaS platforms (Stripe Billing, Chargebee) lock you into their ecosystem, charge a percentage of your revenue, and run your billing logic on their servers.
+
+Building billing yourself takes months and every edge case (trials, proration, failures) costs you revenue or angry customers.
+
+
+## Current Status
+
+| Feature | Status |
+|---------|--------|
+| Fixed-price plans | Done |
+| Boolean features (on/off gating) | Done |
+| Stripe Checkout | Done |
+| Webhook handling | Done |
+| Trial periods | Done |
+| Metered usage | Planned |
+| Seats (per-user) | Planned |
+| Credits & Balance | Planned |
+| Proration | Planned |
