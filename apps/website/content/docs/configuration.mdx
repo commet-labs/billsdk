@@ -22,7 +22,7 @@ const billing = billsdk({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `database` | `DBAdapter` | `memoryAdapter()` | Database adapter |
-| `payment` | `PaymentAdapter` | - | Payment provider adapter |
+| `payment` | `PaymentAdapter` | `paymentAdapter()` | Payment provider adapter |
 | `basePath` | `string` | `/api/billing` | API base path |
 | `secret` | `string` | - | Signing secret (required in production) |
 | `features` | `FeatureConfig[]` | `[]` | Feature definitions |
@@ -132,6 +132,21 @@ database: memoryAdapter()
 
 ## Payment Adapters
 
+### Default
+
+Activates subscriptions immediately without payment processing. Used automatically if you don't specify a payment adapter.
+
+```typescript
+import { paymentAdapter } from "@billsdk/payment-adapter";
+
+payment: paymentAdapter()
+```
+
+Use when:
+- All your plans are free
+- You're in development/testing
+- You handle payments outside BillSDK
+
 ### Stripe
 
 ```typescript
@@ -140,7 +155,6 @@ import { stripePayment } from "@billsdk/stripe";
 payment: stripePayment({
   secretKey: process.env.STRIPE_SECRET_KEY!,
   webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
-  apiVersion: "2024-11-20.acacia", // Optional
 })
 ```
 
