@@ -23,6 +23,6 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    "examples/*"
+    "demo/*"
   ]
 }

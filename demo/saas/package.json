@@ -1,5 +1,5 @@
 {
-  "name": "saas",
+  "name": "@billsdk/demo-saas",
   "version": "0.1.0",
   "private": true,
   "scripts": {
