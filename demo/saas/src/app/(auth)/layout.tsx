@@ -16,7 +16,7 @@ export default async function AuthLayout({
 
   return (
     <div className="min-h-screen flex flex-col p-4">
-      <div className="max-w-4xl mx-auto w-full">
+      <div className="max-w-[1400px] mx-auto w-full">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-xl font-bold">billSDK</span>
           <span className="text-xs text-neutral-500">demo</span>
