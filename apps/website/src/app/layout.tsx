@@ -15,13 +15,6 @@ export const metadata: Metadata = {
     shortcut: "/logo.svg",
     apple: "/logo.svg",
   },
-  openGraph: {
-    images: ["/og-image.png"],
-  },
-  twitter: {
-    card: "summary_large_image",
-    images: ["/og-image.png"],
-  },
 };
 
 export default function Layout({ children }: LayoutProps<"/">) {

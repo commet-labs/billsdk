@@ -140,12 +140,12 @@ export default function HomePage() {
                   Get Started
                 </Link>
                 <a
-                  href="https://github.com/commet-labs/billsdk"
+                  href="https://demo.billsdk.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-6 py-3 border dark:border-[#8A8E88]/30 border-[#5C5E58]/30 dark:text-[#C4C9C2] text-[#4A4C46] font-medium dark:hover:border-[#C4C9C2]/50 hover:border-[#5C5E58]/50 dark:hover:text-[#E8ECE6] hover:text-[#1C1E1A] transition-colors"
                 >
-                  GitHub
+                  Demo
                 </a>
               </div>
             </div>
