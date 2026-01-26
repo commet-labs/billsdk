@@ -93,11 +93,11 @@ export function CodeBlock({
       tabIndex={-1}
       className={cn(
         inTab
-          ? "bg-fd-secondary -mx-px -mb-px last:rounded-b-xl"
-          : "my-4 bg-fd-card rounded-xl",
+          ? "bg-fd-secondary -mx-px -mb-px"
+          : "my-4 bg-[#E4E6E0]/80 dark:bg-[#222524]/60 backdrop-blur-md",
         keepBackground && "bg-(--shiki-light-bg) dark:bg-(--shiki-dark-bg)",
 
-        "shiki relative border shadow-sm not-prose overflow-hidden text-sm",
+        "shiki relative border border-[#5C5E58]/12 dark:border-[#8A8E88]/15 shadow-sm not-prose overflow-hidden text-sm",
         props.className,
       )}
     >
@@ -201,7 +201,7 @@ export function CodeBlockTabs({ ref, ...props }: ComponentProps<typeof Tabs>) {
       ref={mergeRefs(containerRef, ref)}
       {...props}
       className={cn(
-        "bg-fd-card rounded-xl border",
+        "bg-[#E4E6E0]/80 dark:bg-[#222524]/60 backdrop-blur-md border border-[#5C5E58]/12 dark:border-[#8A8E88]/15",
         !nested && "my-4",
         props.className,
       )}

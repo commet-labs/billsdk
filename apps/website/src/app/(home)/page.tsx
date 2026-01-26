@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import {
+  CodeBlockTab,
+  CodeBlockTabs,
+  CodeBlockTabsList,
+  CodeBlockTabsTrigger,
+} from "@/components/codeblock";
 import { DynamicCodeBlock } from "@/components/dynamic-codeblock";
 
 export const metadata: Metadata = {
@@ -99,6 +105,24 @@ export default function HomePage() {
                 </p>
               </div>
 
+              {/* Install Command */}
+              <CodeBlockTabs defaultValue="pnpm">
+                <CodeBlockTabsList>
+                  <CodeBlockTabsTrigger value="pnpm">pnpm</CodeBlockTabsTrigger>
+                  <CodeBlockTabsTrigger value="npm">npm</CodeBlockTabsTrigger>
+                  <CodeBlockTabsTrigger value="bun">bun</CodeBlockTabsTrigger>
+                </CodeBlockTabsList>
+                <CodeBlockTab value="pnpm">
+                  <DynamicCodeBlock lang="bash" code="pnpm add billsdk" />
+                </CodeBlockTab>
+                <CodeBlockTab value="npm">
+                  <DynamicCodeBlock lang="bash" code="npm i billsdk" />
+                </CodeBlockTab>
+                <CodeBlockTab value="bun">
+                  <DynamicCodeBlock lang="bash" code="bun add billsdk" />
+                </CodeBlockTab>
+              </CodeBlockTabs>
+
               <div className="flex items-center gap-4">
                 <Link
                   href="/docs"
@@ -118,7 +142,7 @@ export default function HomePage() {
             </div>
 
             {/* Right: Code Block */}
-            <div className="[&_figure]:bg-[#E4E6E0]/80! [&_figure]:dark:bg-[#222524]/60! [&_figure]:backdrop-blur-md [&_figure]:border! [&_figure]:dark:border-[#8A8E88]/15 [&_figure]:border-[#5C5E58]/12 [&_figure]:py-2 [&_pre]:bg-transparent! [&_pre]:border-none!">
+            <div className="[&_figure]:my-0">
               <DynamicCodeBlock lang="typescript" code={codeExample} />
             </div>
           </div>
