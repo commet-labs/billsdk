@@ -17,7 +17,9 @@ export async function GET(
     <DefaultImage
       title={page.data.title}
       description={page.data.description}
-      site="My App"
+      site="BillSDK"
+      primaryColor="rgba(100, 110, 100, 0.3)"
+      primaryTextColor="#E8ECE6"
     />,
     {
       width: 1200,
