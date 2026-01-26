@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Logo } from "@/components/logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -93,15 +92,15 @@ export default async function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Logo size={40} showText={false} />
-            <div>
-              <h1 className="text-2xl font-bold">Dashboard</h1>
-              <p className="text-muted-foreground text-sm">
-                Welcome back, {user.name}
-              </p>
-            </div>
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-xl font-bold">billSDK</span>
+              <span className="text-xs text-neutral-500">demo</span>
+            </Link>
           </div>
-          <SignOutButton />
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">{user.name}</span>
+            <SignOutButton />
+          </div>
         </div>
 
         {/* Subscription Section */}
