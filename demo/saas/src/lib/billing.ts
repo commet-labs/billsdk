@@ -13,11 +13,6 @@ export const billing = billsdk({
     provider: "pg",
   }),
 
-  payment: stripePayment({
-    secretKey: process.env.STRIPE_SECRET_KEY!,
-    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
-  }),
-
   features: [
     { code: "export", name: "Export Data" },
     { code: "api_access", name: "API Access" },
