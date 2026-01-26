@@ -253,6 +253,15 @@ export function CodeBlockTabsTrigger({
   );
 }
 
-export function CodeBlockTab(props: ComponentProps<typeof TabsContent>) {
-  return <TabsContent {...props} />;
+export function CodeBlockTab({
+  className,
+  ...props
+}: ComponentProps<typeof TabsContent>) {
+  return (
+    <TabsContent
+      forceMount
+      className={cn("data-[state=inactive]:hidden", className)}
+      {...props}
+    />
+  );
 }

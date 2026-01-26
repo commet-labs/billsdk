@@ -9,7 +9,7 @@ import {
 import { DynamicCodeBlock } from "@/components/dynamic-codeblock";
 
 export const metadata: Metadata = {
-  title: "BillSDK - Own your billing. Use any provider.",
+  title: "BillSDK",
   description:
     "A billing engine that runs inside your application. No lock-in. No revenue share. Subscriptions, feature gating, trials, webhooks, and usage tracking.",
   openGraph: {
@@ -44,8 +44,7 @@ const configExample = `const billing = billsdk({
   }]
 });`;
 
-const checkFeatureExample = `
-const { allowed } = await billing.checkFeature({
+const checkFeatureExample = `const { allowed } = await billing.checkFeature({
   customerId: "cus_123",
   feature: "api_access"
 });

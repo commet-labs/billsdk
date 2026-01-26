@@ -9,7 +9,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BillSDK Demo - SaaS Billing",
+  title: "BillSDK Demo",
   description: "Demo application showcasing BillSDK billing integration",
 };
 
