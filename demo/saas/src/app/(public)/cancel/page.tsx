@@ -11,7 +11,7 @@ import {
 
 export default function CancelPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="flex-1 flex items-center justify-center py-12">
       <Card className="w-full max-w-md text-center">
         <CardHeader>
           <CardTitle className="text-2xl">Payment Canceled</CardTitle>
