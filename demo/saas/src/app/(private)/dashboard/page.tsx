@@ -155,16 +155,36 @@ export default async function DashboardPage() {
                     )}
                   </span>
                 </div>
+                {isCanceled && (
+                  <>
+                    <Separator />
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                      <p className="text-sm">
+                        Your subscription has been canceled. You&apos;ll
+                        continue to have access to all features until{" "}
+                        <span className="font-semibold">
+                          {formatDate(subscription.cancelAt)}
+                        </span>
+                        .
+                      </p>
+                    </div>
+                  </>
+                )}
               </CardContent>
-              <CardFooter>
-                <Button asChild variant="outline" className="w-full">
+              <CardFooter className="gap-2">
+                <Button asChild variant="outline" className="flex-1">
                   <Link href="/pricing">Change Plan</Link>
                 </Button>
+                {!isCanceled && (
+                  <CancelButton
+                    accessUntilDate={formatDate(subscription.currentPeriodEnd)}
+                  />
+                )}
               </CardFooter>
             </Card>
 
             {/* Features Card */}
-            <Card className="mb-6">
+            <Card>
               <CardHeader>
                 <CardTitle>Features</CardTitle>
                 <CardDescription>
@@ -201,50 +221,6 @@ export default async function DashboardPage() {
                   })}
                 </div>
               </CardContent>
-            </Card>
-
-            {/* Cancel Subscription Card */}
-            <Card className={isCanceled ? "border-destructive/50" : ""}>
-              <CardHeader>
-                <CardTitle className="text-destructive">
-                  {isCanceled ? "Subscription Canceled" : "Cancel Subscription"}
-                </CardTitle>
-                <CardDescription>
-                  {isCanceled
-                    ? "Your subscription has been canceled"
-                    : "Cancel your subscription at the end of the current billing period"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isCanceled ? (
-                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-                    <p className="text-sm">
-                      Your subscription will end on{" "}
-                      <span className="font-semibold">
-                        {formatDate(subscription.cancelAt)}
-                      </span>
-                      . You&apos;ll continue to have access to all features
-                      until then.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="bg-muted rounded-lg p-4">
-                    <p className="text-sm text-muted-foreground">
-                      If you cancel, you&apos;ll still have access to your
-                      current plan until{" "}
-                      <span className="font-semibold">
-                        {formatDate(subscription.currentPeriodEnd)}
-                      </span>
-                      . After that, you&apos;ll be downgraded to the free plan.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-              {!isCanceled && (
-                <CardFooter>
-                  <CancelButton />
-                </CardFooter>
-              )}
             </Card>
           </>
         ) : (
