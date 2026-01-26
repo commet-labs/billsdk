@@ -43,13 +43,13 @@ export function PricingCard({
 
   return (
     <Card
-      className={
+      className={`flex flex-col h-full ${
         isCurrentPlan
           ? "border-green-500 shadow-lg ring-2 ring-green-500/20"
           : isPopular
             ? "border-primary shadow-lg"
             : ""
-      }
+      }`}
     >
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -61,7 +61,7 @@ export function PricingCard({
         </div>
         <CardDescription>{plan.description}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <div className="mb-6">
           <span className="text-4xl font-bold">{formattedPrice}</span>
           <span className="text-muted-foreground">
@@ -82,7 +82,7 @@ export function PricingCard({
           ))}
         </ul>
       </CardContent>
-      <CardFooter>{children}</CardFooter>
+      <CardFooter className="mt-auto">{children}</CardFooter>
     </Card>
   );
 }
