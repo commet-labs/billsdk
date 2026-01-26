@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import {
   CodeBlockTab,
@@ -7,24 +6,6 @@ import {
   CodeBlockTabsTrigger,
 } from "@/components/codeblock";
 import { DynamicCodeBlock } from "@/components/dynamic-codeblock";
-
-export const metadata: Metadata = {
-  title: "BillSDK",
-  description:
-    "A billing engine that runs inside your application. No lock-in. No revenue share. Subscriptions, feature gating, trials, webhooks, and usage tracking.",
-  openGraph: {
-    title: "BillSDK - Own your billing. Use any provider.",
-    description:
-      "A billing engine that runs inside your application. No lock-in. No revenue share. Pure logic.",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "BillSDK - Own your billing. Use any provider.",
-    description:
-      "A billing engine that runs inside your application. No lock-in. No revenue share. Pure logic.",
-  },
-};
 
 const configExample = `const billing = billsdk({
   features: [

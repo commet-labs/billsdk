@@ -10,12 +10,16 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  title: "BillSDK",
+  description:
+    "A billing engine that runs inside your application. No lock-in. No revenue share.",
   icons: {
     icon: "/logo.svg",
     shortcut: "/logo.svg",
     apple: "/logo.svg",
   },
   openGraph: {
+    type: "website",
     url: "https://billsdk.com",
     images: "https://billsdk.com/og.png",
     siteName: "BillSDK",
