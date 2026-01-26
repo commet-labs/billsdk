@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
 };
 
-const codeExample = `const billing = billsdk({
+const configExample = `const billing = billsdk({
   features: [
     { code: "api_access", name: "API Access" },
     { code: "priority_support", name: "Priority Support" },
@@ -43,6 +43,16 @@ const codeExample = `const billing = billsdk({
     ]
   }]
 });`;
+
+const checkFeatureExample = `
+const { allowed } = await billing.checkFeature({
+  customerId: "cus_123",
+  feature: "api_access"
+});
+
+if (allowed) {
+  // Grant access to the feature
+}`;
 
 export default function HomePage() {
   return (
@@ -142,9 +152,25 @@ export default function HomePage() {
             </div>
 
             {/* Right: Code Block */}
-            <div className="[&_figure]:my-0">
-              <DynamicCodeBlock lang="typescript" code={codeExample} />
-            </div>
+            <CodeBlockTabs defaultValue="config">
+              <CodeBlockTabsList>
+                <CodeBlockTabsTrigger value="config">
+                  Config
+                </CodeBlockTabsTrigger>
+                <CodeBlockTabsTrigger value="check">
+                  Check Feature
+                </CodeBlockTabsTrigger>
+              </CodeBlockTabsList>
+              <CodeBlockTab value="config">
+                <DynamicCodeBlock lang="typescript" code={configExample} />
+              </CodeBlockTab>
+              <CodeBlockTab value="check">
+                <DynamicCodeBlock
+                  lang="typescript"
+                  code={checkFeatureExample}
+                />
+              </CodeBlockTab>
+            </CodeBlockTabs>
           </div>
 
           {/* Features Grid */}
