@@ -1,6 +1,6 @@
-import { DynamicCodeBlock } from "fumadocs-ui/components/dynamic-codeblock";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DynamicCodeBlock } from "@/components/dynamic-codeblock";
 
 export const metadata: Metadata = {
   title: "BillSDK - Own your billing. Use any provider.",
