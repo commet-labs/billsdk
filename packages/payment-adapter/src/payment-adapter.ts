@@ -48,7 +48,11 @@ export function paymentAdapter(): PaymentAdapter {
 
     async processPayment(): Promise<PaymentResult> {
       // Default adapter activates immediately - no payment required
-      return { status: "active" };
+      // Returns a mock providerCustomerId so upgrades/charges work
+      return {
+        status: "active",
+        providerCustomerId: `cus_mock_${crypto.randomUUID()}`,
+      };
     },
 
     // No confirmPayment needed - we never return "pending"
