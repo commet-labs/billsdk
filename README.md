@@ -2,7 +2,7 @@
 
 The billing SDK for modern apps. Own your billing logic. Use any payment provider.
 
-BillSDK Banner
+![BillSDK Banner](assets/banner.png)
 
 ## Documentation
 
