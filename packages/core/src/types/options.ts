@@ -1,4 +1,5 @@
 import type { DBAdapter } from "./adapter";
+import type { BillingBehaviors } from "./behaviors";
 import type { BillingInterval } from "./models";
 import type { PaymentAdapter } from "./payment";
 import type { BillSDKPlugin } from "./plugins";
@@ -127,12 +128,33 @@ export interface BillSDKOptions<
   plugins?: BillSDKPlugin[];
 
   /**
-   * Lifecycle hooks
+   * Lifecycle hooks for HTTP requests
    */
   hooks?: {
     before?: BillingMiddleware;
     after?: BillingMiddleware;
   };
+
+  /**
+   * Configurable billing behaviors with sensible defaults.
+   *
+   * Each behavior is triggered after a specific billing event and can be
+   * overridden to customize the side effects. The `defaultBehavior` function
+   * is always provided so you can use it, skip it, or call it conditionally.
+   *
+   * @example
+   * ```typescript
+   * behaviors: {
+   *   // Override: downgrade to free instead of cancel
+   *   onRefund: async (ctx, { subscription }, defaultBehavior) => {
+   *     await ctx.internalAdapter.updateSubscription(subscription.id, {
+   *       planCode: "free",
+   *     });
+   *   },
+   * }
+   * ```
+   */
+  behaviors?: BillingBehaviors;
 
   /**
    * Logger configuration
@@ -162,7 +184,13 @@ export interface ResolvedBillSDKOptions<
 > extends Required<
     Omit<
       BillSDKOptions<TFeatures>,
-      "plugins" | "hooks" | "logger" | "payment" | "plans" | "features"
+      | "plugins"
+      | "hooks"
+      | "behaviors"
+      | "logger"
+      | "payment"
+      | "plans"
+      | "features"
     >
   > {
   plugins: BillSDKPlugin[];
@@ -173,6 +201,7 @@ export interface ResolvedBillSDKOptions<
     before?: BillingMiddleware;
     after?: BillingMiddleware;
   };
+  behaviors?: BillingBehaviors;
   logger: {
     level: "debug" | "info" | "warn" | "error";
     disabled: boolean;
