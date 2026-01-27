@@ -2,7 +2,7 @@
 
 The billing SDK for modern apps. Own your billing logic. Use any payment provider.
 
-![BillSDK Banner](assets/banner.png)
+![BillSDK Banner](https://raw.githubusercontent.com/commet-labs/billsdk/main/assets/banner.png)
 
 ## Documentation
 
