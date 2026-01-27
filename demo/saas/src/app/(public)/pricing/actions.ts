@@ -32,8 +32,8 @@ export async function subscribeAction(
     customerId: customer.externalId,
     planCode,
     interval,
-    successUrl: "http://localhost:3000/success",
-    cancelUrl: "http://localhost:3000/cancel",
+    successUrl: "http://localhost:3001/success",
+    cancelUrl: "http://localhost:3001/cancel",
   });
 
   // Redirect to payment or success
