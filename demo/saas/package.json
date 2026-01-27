@@ -19,6 +19,7 @@
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "@vercel/analytics": "^1.6.1",
     "better-auth": "^1.4.17",
     "billsdk": "workspace:^",
     "class-variance-authority": "^0.7.1",
