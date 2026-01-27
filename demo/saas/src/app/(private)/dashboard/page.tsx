@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { getSession } from "@/lib/auth-server";
 import { billing } from "@/lib/billing";
 import { CancelButton } from "./cancel-button";
+import { RefundButton } from "./refund-button";
 import { SignOutButton } from "./sign-out-button";
 
 // All features defined in billing config
@@ -244,54 +245,70 @@ export default async function DashboardPage() {
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {payments.map((payment: Payment) => (
-                      <div
-                        key={payment.id}
-                        className="flex items-center justify-between p-3 rounded-lg border"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <p className="font-medium capitalize">
-                              {payment.type}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {formatDate(payment.createdAt)}
-                            </p>
+                    {payments.map((payment: Payment) => {
+                      const canRefund =
+                        payment.status === "succeeded" &&
+                        payment.type !== "refund" &&
+                        payment.amount > 0;
+
+                      return (
+                        <div
+                          key={payment.id}
+                          className="flex items-center justify-between p-3 rounded-lg border"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <p className="font-medium capitalize">
+                                {payment.type}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {formatDate(payment.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span
+                              className={`font-semibold ${
+                                payment.amount < 0 ? "text-green-500" : ""
+                              }`}
+                            >
+                              {payment.amount < 0 ? "+" : ""}
+                              {formatPrice(
+                                Math.abs(payment.amount),
+                                payment.currency,
+                              )}
+                            </span>
+                            <Badge
+                              variant={
+                                payment.status === "succeeded"
+                                  ? "default"
+                                  : payment.status === "refunded"
+                                    ? "secondary"
+                                    : payment.status === "failed"
+                                      ? "destructive"
+                                      : "outline"
+                              }
+                              className={
+                                payment.status === "succeeded"
+                                  ? "bg-green-500"
+                                  : ""
+                              }
+                            >
+                              {payment.status}
+                            </Badge>
+                            {canRefund && (
+                              <RefundButton
+                                paymentId={payment.id}
+                                amount={formatPrice(
+                                  payment.amount,
+                                  payment.currency,
+                                )}
+                              />
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={`font-semibold ${
-                              payment.amount < 0 ? "text-green-500" : ""
-                            }`}
-                          >
-                            {payment.amount < 0 ? "+" : ""}
-                            {formatPrice(
-                              Math.abs(payment.amount),
-                              payment.currency,
-                            )}
-                          </span>
-                          <Badge
-                            variant={
-                              payment.status === "succeeded"
-                                ? "default"
-                                : payment.status === "refunded"
-                                  ? "secondary"
-                                  : payment.status === "failed"
-                                    ? "destructive"
-                                    : "outline"
-                            }
-                            className={
-                              payment.status === "succeeded"
-                                ? "bg-green-500"
-                                : ""
-                            }
-                          >
-                            {payment.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>

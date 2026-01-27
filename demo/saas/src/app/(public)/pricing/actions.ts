@@ -27,7 +27,24 @@ export async function subscribeAction(
     });
   }
 
-  // Create subscription
+  // Check if user already has an active subscription
+  const currentSubscription = await billing.api.getSubscription({
+    customerId: user.id,
+  });
+
+  if (currentSubscription && currentSubscription.planCode !== planCode) {
+    // User has a subscription but wants a different plan -> Change plan
+    // This uses proration to calculate credits/charges
+    await billing.api.changeSubscription({
+      customerId: user.id,
+      newPlanCode: planCode,
+      prorate: true,
+    });
+
+    redirect("/dashboard");
+  }
+
+  // No subscription or same plan -> Create new subscription
   const result = await billing.api.createSubscription({
     customerId: customer.externalId,
     planCode,
