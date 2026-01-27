@@ -5,7 +5,12 @@ import {
   type BillingContext,
   createBillingContext,
 } from "../context/create-context";
-import { changeSubscription as changeSubscriptionService } from "../logic/subscription-service";
+import { createRefund as createRefundService } from "../logic/refund-service";
+import {
+  cancelSubscription as cancelSubscriptionService,
+  changeSubscription as changeSubscriptionService,
+  createSubscription as createSubscriptionService,
+} from "../logic/subscription-service";
 import type { BillSDK, InferredAPI } from "../types/billsdk";
 import type { BillSDKOptions, FeatureConfig } from "../types/options";
 
@@ -64,150 +69,26 @@ function createAPI<TFeatureCode extends string = string>(
     async createSubscription(params) {
       const ctx = await contextPromise;
 
-      if (!ctx.paymentAdapter) {
-        throw new Error("Payment adapter not configured");
-      }
-
-      // Find customer
-      const customer = await ctx.internalAdapter.findCustomerByExternalId(
-        params.customerId,
-      );
-      if (!customer) {
-        throw new Error("Customer not found");
-      }
-
-      // Find plan (from config, synchronous)
-      const plan = ctx.internalAdapter.findPlanByCode(params.planCode);
-      if (!plan) {
-        throw new Error("Plan not found");
-      }
-
-      // Find price for interval
-      const interval = params.interval ?? "monthly";
-      const price = ctx.internalAdapter.getPlanPrice(params.planCode, interval);
-      if (!price) {
-        throw new Error(
-          `No price found for plan ${params.planCode} with interval ${interval}`,
-        );
-      }
-
-      // Create subscription in pending state
-      const subscription = await ctx.internalAdapter.createSubscription({
-        customerId: customer.id,
+      // Delegate to shared service
+      return createSubscriptionService(ctx, {
+        customerId: params.customerId,
         planCode: params.planCode,
-        interval,
-        status: "pending_payment",
-        trialDays: price.trialDays,
-      });
-
-      // Process payment - adapter decides the flow
-      const result = await ctx.paymentAdapter.processPayment({
-        customer: {
-          id: customer.id,
-          email: customer.email,
-          providerCustomerId: customer.providerCustomerId,
-        },
-        plan: { code: plan.code, name: plan.name },
-        price: {
-          amount: price.amount,
-          currency: price.currency,
-          interval: price.interval,
-        },
-        subscription: { id: subscription.id },
+        interval: params.interval,
         successUrl: params.successUrl,
         cancelUrl: params.cancelUrl,
-        metadata: { subscriptionId: subscription.id },
       });
-
-      // Handle payment result based on adapter's decision
-      if (result.status === "active") {
-        // Cancel any other active subscriptions for this customer
-        const existingSubscriptions =
-          await ctx.internalAdapter.listSubscriptions(customer.id);
-        for (const existing of existingSubscriptions) {
-          if (
-            existing.id !== subscription.id &&
-            (existing.status === "active" || existing.status === "trialing")
-          ) {
-            await ctx.internalAdapter.cancelSubscription(existing.id);
-          }
-        }
-
-        // Payment completed immediately - activate subscription
-        const activeSubscription = await ctx.internalAdapter.updateSubscription(
-          subscription.id,
-          { status: "active" },
-        );
-
-        // Update customer with provider ID if returned
-        if (result.providerCustomerId && !customer.providerCustomerId) {
-          await ctx.internalAdapter.updateCustomer(customer.id, {
-            providerCustomerId: result.providerCustomerId,
-          });
-        }
-
-        return {
-          subscription: activeSubscription ?? {
-            ...subscription,
-            status: "active" as const,
-          },
-        };
-      }
-
-      if (result.status === "pending") {
-        // Payment pending - user needs to complete payment flow
-        await ctx.internalAdapter.updateSubscription(subscription.id, {
-          providerCheckoutSessionId: result.sessionId,
-        });
-
-        // Update customer with provider ID if returned
-        if (result.providerCustomerId && !customer.providerCustomerId) {
-          await ctx.internalAdapter.updateCustomer(customer.id, {
-            providerCustomerId: result.providerCustomerId,
-          });
-        }
-
-        return {
-          subscription,
-          redirectUrl: result.redirectUrl,
-        };
-      }
-
-      // result.status === "failed"
-      // Delete the pending subscription since payment failed
-      await ctx.internalAdapter.updateSubscription(subscription.id, {
-        status: "canceled",
-      });
-      throw new Error(result.error);
     },
 
     async cancelSubscription(params) {
       const ctx = await contextPromise;
-      const customer = await ctx.internalAdapter.findCustomerByExternalId(
-        params.customerId,
-      );
-      if (!customer) {
-        return null;
-      }
 
-      const subscription =
-        await ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
-      if (!subscription) {
-        return null;
-      }
+      // Delegate to shared service
+      const result = await cancelSubscriptionService(ctx, {
+        customerId: params.customerId,
+        cancelAt: params.cancelAt,
+      });
 
-      const cancelAt = params.cancelAt ?? "period_end";
-
-      if (cancelAt === "immediately") {
-        // Cancel immediately
-        return ctx.internalAdapter.cancelSubscription(subscription.id);
-      }
-
-      // Cancel at period end - set cancelAt date but keep active
-      return ctx.internalAdapter.cancelSubscription(
-        subscription.id,
-        subscription.currentPeriodEnd,
-      );
+      return result.subscription;
     },
 
     async changeSubscription(params) {
@@ -278,6 +159,17 @@ function createAPI<TFeatureCode extends string = string>(
     async getPayment(params) {
       const ctx = await contextPromise;
       return ctx.internalAdapter.findPaymentById(params.paymentId);
+    },
+
+    async createRefund(params) {
+      const ctx = await contextPromise;
+
+      // Delegate to shared service
+      return createRefundService(ctx, {
+        paymentId: params.paymentId,
+        amount: params.amount,
+        reason: params.reason,
+      });
     },
   };
 }

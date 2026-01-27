@@ -7,5 +7,6 @@
  */
 
 export * from "./proration";
+export * from "./refund-service";
 export * from "./renewal";
 export * from "./subscription-service";
