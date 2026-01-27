@@ -4,6 +4,23 @@
   "description": "In-memory database adapter for BillSDK (testing & development)",
   "type": "module",
   "license": "MIT",
+  "author": {
+    "name": "decker",
+    "url": "https://github.com/decker-dev"
+  },
+  "homepage": "https://github.com/commet-labs/billsdk/tree/main/packages/memory-adapter#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/commet-labs/billsdk.git",
+    "directory": "packages/memory-adapter"
+  },
+  "bugs": {
+    "url": "https://github.com/commet-labs/billsdk/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -43,6 +60,8 @@
     "memory",
     "adapter",
     "testing",
-    "development"
+    "development",
+    "mock",
+    "in-memory"
   ]
 }

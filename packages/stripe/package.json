@@ -4,6 +4,27 @@
   "description": "Stripe payment adapter for BillSDK",
   "type": "module",
   "license": "MIT",
+  "author": {
+    "name": "decker",
+    "url": "https://github.com/decker-dev"
+  },
+  "homepage": "https://github.com/commet-labs/billsdk/tree/main/packages/stripe#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/commet-labs/billsdk.git",
+    "directory": "packages/stripe"
+  },
+  "bugs": {
+    "url": "https://github.com/commet-labs/billsdk/issues"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/commet-labs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -44,6 +65,9 @@
     "sdk",
     "stripe",
     "payments",
-    "adapter"
+    "adapter",
+    "subscriptions",
+    "checkout",
+    "metered-billing"
   ]
 }

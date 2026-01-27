@@ -4,6 +4,23 @@
   "description": "Default payment adapter for BillSDK (instant activation, no payment required)",
   "type": "module",
   "license": "MIT",
+  "author": {
+    "name": "decker",
+    "url": "https://github.com/decker-dev"
+  },
+  "homepage": "https://github.com/commet-labs/billsdk/tree/main/packages/payment-adapter#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/commet-labs/billsdk.git",
+    "directory": "packages/payment-adapter"
+  },
+  "bugs": {
+    "url": "https://github.com/commet-labs/billsdk/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -42,6 +59,8 @@
     "sdk",
     "payment",
     "adapter",
-    "default"
+    "default",
+    "free",
+    "no-payment"
   ]
 }

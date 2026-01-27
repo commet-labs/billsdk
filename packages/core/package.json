@@ -4,6 +4,23 @@
   "description": "Core infrastructure for BillSDK plugins",
   "type": "module",
   "license": "MIT",
+  "author": {
+    "name": "decker",
+    "url": "https://github.com/decker-dev"
+  },
+  "homepage": "https://github.com/commet-labs/billsdk/tree/main/packages/core#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/commet-labs/billsdk.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/commet-labs/billsdk/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -74,6 +91,7 @@
     "saas",
     "plugins",
     "typescript",
-    "core"
+    "core",
+    "infrastructure"
   ]
 }

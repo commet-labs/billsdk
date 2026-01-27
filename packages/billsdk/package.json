@@ -4,6 +4,27 @@
   "description": "The billing SDK for SaaS applications",
   "type": "module",
   "license": "MIT",
+  "author": {
+    "name": "decker",
+    "url": "https://github.com/decker-dev"
+  },
+  "homepage": "https://github.com/commet-labs/billsdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/commet-labs/billsdk.git",
+    "directory": "packages/billsdk"
+  },
+  "bugs": {
+    "url": "https://github.com/commet-labs/billsdk/issues"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/commet-labs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -103,6 +124,9 @@
     "saas",
     "subscriptions",
     "payments",
-    "typescript"
+    "typescript",
+    "stripe",
+    "metered-billing",
+    "usage-based"
   ]
 }
