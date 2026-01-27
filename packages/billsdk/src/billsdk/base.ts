@@ -5,7 +5,7 @@ import {
   type BillingContext,
   createBillingContext,
 } from "../context/create-context";
-import { createRefund as createRefundService } from "../logic/refund-service";
+import { runBehavior } from "../logic/behaviors/runner";
 import {
   cancelSubscription as cancelSubscriptionService,
   changeSubscription as changeSubscriptionService,
@@ -164,8 +164,8 @@ function createAPI<TFeatureCode extends string = string>(
     async createRefund(params) {
       const ctx = await contextPromise;
 
-      // Delegate to shared service
-      return createRefundService(ctx, {
+      // Delegate to behavior (default: refund + cancel subscription)
+      return runBehavior(ctx, "onRefund", {
         paymentId: params.paymentId,
         amount: params.amount,
         reason: params.reason,

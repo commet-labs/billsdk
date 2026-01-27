@@ -2,10 +2,12 @@ import type {
   OnDowngradeParams,
   OnPaymentFailedParams,
   OnRefundParams,
+  OnRefundResult,
   OnSubscriptionCancelParams,
   OnTrialEndParams,
 } from "@billsdk/core";
 import type { BillingContext } from "../../context/create-context";
+import { createRefund as createRefundService } from "../refund-service";
 
 /**
  * Default billing behaviors - these are the opinionated defaults that BillSDK
@@ -16,23 +18,23 @@ import type { BillingContext } from "../../context/create-context";
  */
 export const defaultBehaviors = {
   /**
-   * Default onRefund behavior: Cancel the subscription immediately.
+   * Default onRefund behavior: Delegates to refund service.
    *
-   * Rationale: A refund typically means the customer is unhappy or doesn't
-   * want the service. Canceling prevents further charges and clearly ends
-   * the relationship.
+   * The service handles all business logic:
+   * - Process the refund via payment adapter
+   * - Cancel the associated subscription (BillSDK opinionated default)
+   *
+   * Override this behavior if you want different logic (e.g., refund without cancel).
    */
-  onRefund: async (ctx: BillingContext, params: OnRefundParams) => {
-    const { subscription } = params;
-
-    if (subscription && subscription.status !== "canceled") {
-      ctx.logger.info("Default onRefund: Canceling subscription", {
-        subscriptionId: subscription.id,
-        customerId: params.customer.id,
-      });
-
-      await ctx.internalAdapter.cancelSubscription(subscription.id);
-    }
+  onRefund: async (
+    ctx: BillingContext,
+    params: OnRefundParams,
+  ): Promise<OnRefundResult> => {
+    return createRefundService(ctx, {
+      paymentId: params.paymentId,
+      amount: params.amount,
+      reason: params.reason,
+    });
   },
 
   /**

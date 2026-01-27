@@ -1,6 +1,5 @@
 import type { Payment } from "@billsdk/core";
 import type { BillingContext } from "../context/create-context";
-import { runBehavior } from "./behaviors/runner";
 
 export interface CreateRefundParams {
   /**
@@ -117,30 +116,20 @@ export async function createRefund(
     amount: refundAmount,
   });
 
-  // Get customer for behavior
-  const customer = await ctx.internalAdapter.findCustomerById(
-    payment.customerId,
-  );
-  if (!customer) {
-    throw new Error("Customer not found for payment");
+  if (payment.subscriptionId) {
+    const subscription = await ctx.internalAdapter.findSubscriptionById(
+      payment.subscriptionId,
+    );
+
+    if (subscription && subscription.status !== "canceled") {
+      ctx.logger.info("Refund includes subscription cancellation", {
+        subscriptionId: subscription.id,
+        paymentId,
+      });
+
+      await ctx.internalAdapter.cancelSubscription(subscription.id);
+    }
   }
-
-  // Get subscription if payment was for a subscription
-  const subscription = payment.subscriptionId
-    ? await ctx.internalAdapter.findSubscriptionById(payment.subscriptionId)
-    : undefined;
-
-  // Run the onRefund behavior (default: cancel subscription)
-  await runBehavior(ctx, "onRefund", {
-    payment: {
-      ...payment,
-      status: newStatus,
-      refundedAmount: newRefundedAmount,
-    },
-    refund: refundPayment,
-    subscription: subscription ?? undefined,
-    customer,
-  });
 
   return {
     refund: refundPayment,

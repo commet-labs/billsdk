@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { BillingContext } from "../../context/create-context";
-import { createRefund as createRefundService } from "../../logic/refund-service";
+import { runBehavior } from "../../logic/behaviors/runner";
 import type { BillingEndpoint, EndpointContext } from "../../types/api";
 
 /**
@@ -37,8 +37,8 @@ export const refundEndpoints: Record<string, BillingEndpoint> = {
     ) => {
       const { ctx, body } = context;
 
-      // Delegate to shared service
-      return createRefundService(ctx as BillingContext, {
+      // Delegate to behavior (default: refund + cancel subscription)
+      return runBehavior(ctx as BillingContext, "onRefund", {
         paymentId: body.paymentId,
         amount: body.amount,
         reason: body.reason,
