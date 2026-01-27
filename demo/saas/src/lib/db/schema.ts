@@ -1,4 +1,11 @@
-import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 // Re-export auth schema
 export * from "./auth-schema";
@@ -39,6 +46,32 @@ export const subscription = pgTable("subscription", {
   cancelAt: timestamp("cancel_at"),
   trialStart: timestamp("trial_start"),
   trialEnd: timestamp("trial_end"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+/**
+ * Payment table - record of charges and refunds
+ */
+export const payment = pgTable("payment", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  customerId: uuid("customer_id")
+    .references(() => customer.id, { onDelete: "cascade" })
+    .notNull(),
+  subscriptionId: uuid("subscription_id"),
+  // Type: subscription | renewal | upgrade | refund
+  type: text("type").notNull(),
+  // Status: pending | succeeded | failed | refunded
+  status: text("status").default("pending").notNull(),
+  // Amount in cents
+  amount: integer("amount").notNull(),
+  // Currency code (ISO 4217)
+  currency: text("currency").default("usd").notNull(),
+  // Provider payment ID (e.g., Stripe charge ID)
+  providerPaymentId: text("provider_payment_id"),
+  // Amount refunded (for partial refunds)
+  refundedAmount: integer("refunded_amount"),
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
