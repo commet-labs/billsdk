@@ -3,16 +3,21 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "turbo build",
-    "dev": "turbo dev",
+    "build": "turbo build --filter=./packages/*",
+    "dev": "turbo dev --filter=./packages/*",
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
-    "clean": "turbo clean && rm -rf node_modules .turbo"
+    "clean": "turbo clean && rm -rf node_modules .turbo",
+    "release": "turbo build --filter=./packages/* && bumpp && pnpm -r publish --access public --no-git-checks",
+    "release:canary": "turbo build --filter=./packages/* && bumpp --tag canary && pnpm -r publish --access public --tag canary --no-git-checks",
+    "release:beta": "turbo build --filter=./packages/* && bumpp --tag beta && pnpm -r publish --access public --tag beta --no-git-checks",
+    "bump": "bumpp"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
+    "bumpp": "^10.4.0",
     "turbo": "2.7.5",
     "typescript": "5.9.3"
   },
