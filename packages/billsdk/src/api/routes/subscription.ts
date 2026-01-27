@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { calculateProration } from "../../logic/proration";
+import type { BillingContext } from "../../context/create-context";
+import { changeSubscription as changeSubscriptionService } from "../../logic/subscription-service";
 import type { BillingEndpoint, EndpointContext } from "../../types/api";
 
 /**
@@ -199,6 +200,22 @@ export const subscriptionEndpoints: Record<string, BillingEndpoint> = {
           });
         }
 
+        // Record the payment (only if amount > 0)
+        if (price.amount > 0) {
+          await ctx.internalAdapter.createPayment({
+            customerId: customer.id,
+            subscriptionId: subscription.id,
+            type: "subscription",
+            status: "succeeded",
+            amount: price.amount,
+            currency: price.currency,
+            metadata: {
+              planCode: plan.code,
+              interval: body.interval,
+            },
+          });
+        }
+
         return {
           subscription: activeSubscription ?? {
             ...subscription,
@@ -293,145 +310,13 @@ export const subscriptionEndpoints: Record<string, BillingEndpoint> = {
     ) => {
       const { ctx, body } = context;
 
-      // Find customer
-      const customer = await ctx.internalAdapter.findCustomerByExternalId(
-        body.customerId,
-      );
-      if (!customer) {
-        throw new Error("Customer not found");
-      }
-
-      // Find active subscription
-      const subscription =
-        await ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
-      if (!subscription) {
-        throw new Error("No active subscription found");
-      }
-
-      // Check if already on the same plan
-      if (subscription.planCode === body.newPlanCode) {
-        throw new Error("Already on this plan");
-      }
-
-      // Get current plan price
-      const oldPlan = ctx.internalAdapter.findPlanByCode(subscription.planCode);
-      const oldPrice = ctx.internalAdapter.getPlanPrice(
-        subscription.planCode,
-        subscription.interval,
-      );
-      if (!oldPrice) {
-        throw new Error("Current plan price not found");
-      }
-
-      // Get new plan and price
-      const newPlan = ctx.internalAdapter.findPlanByCode(body.newPlanCode);
-      if (!newPlan) {
-        throw new Error("New plan not found");
-      }
-
-      const newPrice = ctx.internalAdapter.getPlanPrice(
-        body.newPlanCode,
-        subscription.interval,
-      );
-      if (!newPrice) {
-        throw new Error(
-          `No price found for plan ${body.newPlanCode} with interval ${subscription.interval}`,
-        );
-      }
-
-      let payment = null;
-
-      // Calculate proration if enabled
-      if (body.prorate) {
-        const proration = calculateProration({
-          oldPlanAmount: oldPrice.amount,
-          newPlanAmount: newPrice.amount,
-          currentPeriodStart: subscription.currentPeriodStart,
-          currentPeriodEnd: subscription.currentPeriodEnd,
-          changeDate: new Date(),
-        });
-
-        ctx.logger.info("Proration calculated", {
-          credit: proration.credit,
-          charge: proration.charge,
-          netAmount: proration.netAmount,
-          daysRemaining: proration.daysRemaining,
-        });
-
-        // If there's a positive net amount, charge the customer
-        if (proration.netAmount > 0) {
-          // Check if adapter supports direct charging
-          if (!ctx.paymentAdapter?.charge) {
-            throw new Error(
-              "Payment adapter does not support direct charging. Cannot process upgrade.",
-            );
-          }
-
-          // Customer must have a saved payment method
-          if (!customer.providerCustomerId) {
-            throw new Error(
-              "Customer does not have a saved payment method. Cannot process upgrade.",
-            );
-          }
-
-          // Charge the difference
-          const chargeResult = await ctx.paymentAdapter.charge({
-            customer: {
-              id: customer.id,
-              email: customer.email,
-              providerCustomerId: customer.providerCustomerId,
-            },
-            amount: proration.netAmount,
-            currency: newPrice.currency,
-            description: `Upgrade from ${oldPlan?.name ?? subscription.planCode} to ${newPlan.name}`,
-            metadata: {
-              subscriptionId: subscription.id,
-              customerId: customer.id,
-              type: "upgrade",
-              oldPlanCode: subscription.planCode,
-              newPlanCode: body.newPlanCode,
-            },
-          });
-
-          if (chargeResult.status === "failed") {
-            throw new Error(chargeResult.error ?? "Charge failed");
-          }
-
-          // Record the payment
-          payment = await ctx.internalAdapter.createPayment({
-            customerId: customer.id,
-            subscriptionId: subscription.id,
-            type: "upgrade",
-            status: "succeeded",
-            amount: proration.netAmount,
-            currency: newPrice.currency,
-            providerPaymentId: chargeResult.providerPaymentId,
-            metadata: {
-              oldPlanCode: subscription.planCode,
-              newPlanCode: body.newPlanCode,
-              proration: {
-                credit: proration.credit,
-                charge: proration.charge,
-              },
-            },
-          });
-        }
-        // If netAmount is negative (downgrade), we could issue a credit
-        // For now, we just update the plan without refunding
-      }
-
-      // Update subscription with new plan
-      const updatedSubscription = await ctx.internalAdapter.updateSubscription(
-        subscription.id,
-        { planCode: body.newPlanCode },
-      );
-
-      return {
-        subscription: updatedSubscription,
-        previousPlan: oldPlan,
-        newPlan,
-        payment,
-      };
+      // Delegate to shared service
+      // Cast ctx to BillingContext - at runtime it's the same object
+      return changeSubscriptionService(ctx as BillingContext, {
+        customerId: body.customerId,
+        newPlanCode: body.newPlanCode,
+        prorate: body.prorate,
+      });
     },
   },
 };

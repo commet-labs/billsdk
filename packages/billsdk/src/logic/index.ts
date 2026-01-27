@@ -8,3 +8,4 @@
 
 export * from "./proration";
 export * from "./renewal";
+export * from "./subscription-service";

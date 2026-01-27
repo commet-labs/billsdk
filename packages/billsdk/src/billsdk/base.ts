@@ -5,6 +5,7 @@ import {
   type BillingContext,
   createBillingContext,
 } from "../context/create-context";
+import { changeSubscription as changeSubscriptionService } from "../logic/subscription-service";
 import type { BillSDK, InferredAPI } from "../types/billsdk";
 import type { BillSDKOptions, FeatureConfig } from "../types/options";
 
@@ -207,6 +208,17 @@ function createAPI<TFeatureCode extends string = string>(
         subscription.id,
         subscription.currentPeriodEnd,
       );
+    },
+
+    async changeSubscription(params) {
+      const ctx = await contextPromise;
+
+      // Delegate to shared service
+      return changeSubscriptionService(ctx, {
+        customerId: params.customerId,
+        newPlanCode: params.newPlanCode,
+        prorate: params.prorate,
+      });
     },
 
     async checkFeature(params) {
