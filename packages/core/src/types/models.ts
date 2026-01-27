@@ -1,5 +1,5 @@
 /**
- * Customer - represents a billable entity (stored in DB)
+ * Customer - represents a billable entity
  */
 export interface Customer {
   [key: string]: unknown;

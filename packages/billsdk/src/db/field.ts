@@ -1,5 +1,3 @@
-// Re-export from @billsdk/core for convenience
-// Users can import from "billsdk" instead of "@billsdk/core/db"
 export {
   type DBFieldAttribute,
   type DBFieldReference,

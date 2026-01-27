@@ -33,8 +33,3 @@ export function billingHandler(billing: BillingInstance) {
     POST: handler,
   };
 }
-
-/**
- * Alias for billingHandler (matches better-auth naming)
- */
-export const toNextJsHandler = billingHandler;
