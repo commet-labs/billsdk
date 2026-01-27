@@ -250,6 +250,23 @@ function createAPI<TFeatureCode extends string = string>(
         timestamp: new Date().toISOString(),
       };
     },
+
+    async listPayments(params) {
+      const ctx = await contextPromise;
+      const customer = await ctx.internalAdapter.findCustomerByExternalId(
+        params.customerId,
+      );
+      if (!customer) return [];
+      return ctx.internalAdapter.listPayments(customer.id, {
+        limit: params.limit,
+        offset: params.offset,
+      });
+    },
+
+    async getPayment(params) {
+      const ctx = await contextPromise;
+      return ctx.internalAdapter.findPaymentById(params.paymentId);
+    },
   };
 }
 

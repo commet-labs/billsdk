@@ -3,7 +3,9 @@ import type { BillingEndpoint } from "../types/api";
 import { customerEndpoints } from "./routes/customer";
 import { featureEndpoints } from "./routes/features";
 import { healthEndpoint } from "./routes/health";
+import { paymentEndpoints } from "./routes/payment";
 import { planEndpoints } from "./routes/plan";
+import { refundEndpoints } from "./routes/refund";
 import { subscriptionEndpoints } from "./routes/subscription";
 import { webhookEndpoints } from "./routes/webhook";
 
@@ -19,6 +21,8 @@ export function getEndpoints(
     ...planEndpoints,
     ...subscriptionEndpoints,
     ...featureEndpoints,
+    ...paymentEndpoints,
+    ...refundEndpoints,
     ...webhookEndpoints,
   };
 

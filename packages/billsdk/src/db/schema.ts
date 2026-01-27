@@ -133,6 +133,72 @@ export const billingSchema: DBSchema = {
       input: false,
     }),
   }),
+
+  payment: defineTable({
+    id: defineField({
+      type: "string",
+      primaryKey: true,
+      defaultValue: generateId,
+      input: false,
+    }),
+    customerId: defineField({
+      type: "string",
+      index: true,
+      references: {
+        model: "customer",
+        field: "id",
+        onDelete: "cascade",
+      },
+    }),
+    subscriptionId: defineField({
+      type: "string",
+      required: false,
+      index: true,
+    }),
+    // Payment type: subscription | renewal | upgrade | refund
+    type: defineField({
+      type: "string",
+    }),
+    // Payment status: pending | succeeded | failed | refunded
+    status: defineField({
+      type: "string",
+      defaultValue: "pending",
+    }),
+    // Amount in cents
+    amount: defineField({
+      type: "number",
+    }),
+    // Currency code (ISO 4217)
+    currency: defineField({
+      type: "string",
+      defaultValue: "usd",
+    }),
+    // Provider payment ID (e.g., Stripe charge ID)
+    providerPaymentId: defineField({
+      type: "string",
+      required: false,
+      index: true,
+    }),
+    // Amount refunded (for partial refunds)
+    refundedAmount: defineField({
+      type: "number",
+      required: false,
+    }),
+    metadata: defineField({
+      type: "json",
+      required: false,
+    }),
+    createdAt: defineField({
+      type: "date",
+      defaultValue: () => new Date(),
+      input: false,
+    }),
+    updatedAt: defineField({
+      type: "date",
+      defaultValue: () => new Date(),
+      input: false,
+    }),
+  }),
 };
 
 /**
@@ -149,6 +215,7 @@ export function getBillingSchema(): DBSchema {
 export const TABLES = {
   CUSTOMER: "customer",
   SUBSCRIPTION: "subscription",
+  PAYMENT: "payment",
 } as const;
 
 export type TableName = (typeof TABLES)[keyof typeof TABLES];

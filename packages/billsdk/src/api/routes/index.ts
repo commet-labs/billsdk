@@ -1,6 +1,8 @@
 export { customerEndpoints } from "./customer";
 export { featureEndpoints } from "./features";
 export { healthEndpoint } from "./health";
+export { paymentEndpoints } from "./payment";
 export { planEndpoints } from "./plan";
+export { refundEndpoints } from "./refund";
 export { subscriptionEndpoints } from "./subscription";
 export { webhookEndpoints } from "./webhook";

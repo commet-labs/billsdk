@@ -2,9 +2,11 @@ import type { DBAdapter } from "../types/adapter";
 import type {
   BillingInterval,
   CreateCustomerInput,
+  CreatePaymentInput,
   CreateSubscriptionInput,
   Customer,
   Feature,
+  Payment,
   Plan,
   PlanPrice,
   Subscription,
@@ -59,6 +61,18 @@ export interface InternalAdapter {
     customerId: string,
     featureCode: string,
   ): Promise<{ allowed: boolean }>;
+
+  // Payment operations (DB)
+  createPayment(data: CreatePaymentInput): Promise<Payment>;
+  findPaymentById(id: string): Promise<Payment | null>;
+  findPaymentByProviderPaymentId(
+    providerPaymentId: string,
+  ): Promise<Payment | null>;
+  updatePayment(id: string, data: Partial<Payment>): Promise<Payment | null>;
+  listPayments(
+    customerId: string,
+    options?: { limit?: number; offset?: number },
+  ): Promise<Payment[]>;
 }
 
 /**
@@ -363,6 +377,72 @@ export function createInternalAdapter(
       // Check if plan has the feature (from config)
       const planFeatures = this.getPlanFeatures(subscription.planCode);
       return { allowed: planFeatures.includes(featureCode) };
+    },
+
+    // Payment operations (DB)
+    async createPayment(data: CreatePaymentInput): Promise<Payment> {
+      const now = new Date();
+      return adapter.create<Payment>({
+        model: TABLES.PAYMENT,
+        data: {
+          customerId: data.customerId,
+          subscriptionId: data.subscriptionId,
+          type: data.type,
+          status: data.status ?? "pending",
+          amount: data.amount,
+          currency: data.currency ?? "usd",
+          providerPaymentId: data.providerPaymentId,
+          metadata: data.metadata,
+          createdAt: now,
+          updatedAt: now,
+        } as Omit<Payment, "id">,
+      });
+    },
+
+    async findPaymentById(id: string): Promise<Payment | null> {
+      return adapter.findOne<Payment>({
+        model: TABLES.PAYMENT,
+        where: [{ field: "id", operator: "eq", value: id }],
+      });
+    },
+
+    async findPaymentByProviderPaymentId(
+      providerPaymentId: string,
+    ): Promise<Payment | null> {
+      return adapter.findOne<Payment>({
+        model: TABLES.PAYMENT,
+        where: [
+          {
+            field: "providerPaymentId",
+            operator: "eq",
+            value: providerPaymentId,
+          },
+        ],
+      });
+    },
+
+    async updatePayment(
+      id: string,
+      data: Partial<Payment>,
+    ): Promise<Payment | null> {
+      return adapter.update<Payment>({
+        model: TABLES.PAYMENT,
+        where: [{ field: "id", operator: "eq", value: id }],
+        update: { ...data, updatedAt: new Date() },
+      });
+    },
+
+    async listPayments(
+      customerId: string,
+      options?: { limit?: number; offset?: number },
+    ): Promise<Payment[]> {
+      return adapter.findMany<Payment>({
+        model: TABLES.PAYMENT,
+        where: [{ field: "customerId", operator: "eq", value: customerId }],
+        limit: options?.limit,
+        offset: options?.offset,
+        sortBy: { field: "createdAt", direction: "desc" },
+      });
     },
   };
 }
