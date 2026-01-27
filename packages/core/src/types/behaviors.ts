@@ -2,25 +2,36 @@ import type { GenericBillingContext } from "./api";
 import type { Customer, Payment, Plan, Subscription } from "./models";
 
 /**
- * Parameters for the onRefund behavior
+ * Parameters for the onRefund behavior (inputs)
  */
 export interface OnRefundParams {
   /**
-   * The original payment that was refunded
+   * Payment ID to refund (BillSDK payment ID)
    */
-  payment: Payment;
+  paymentId: string;
+  /**
+   * Amount to refund in cents (partial refund)
+   * If omitted, full refund is issued
+   */
+  amount?: number;
+  /**
+   * Reason for the refund
+   */
+  reason?: string;
+}
+
+/**
+ * Result of the onRefund behavior
+ */
+export interface OnRefundResult {
   /**
    * The refund payment record (negative amount)
    */
   refund: Payment;
   /**
-   * The subscription associated with the payment (if any)
+   * The original payment that was refunded
    */
-  subscription?: Subscription;
-  /**
-   * The customer who received the refund
-   */
-  customer: Customer;
+  originalPayment: Payment;
 }
 
 /**
@@ -113,12 +124,13 @@ export interface OnDowngradeParams {
 
 /**
  * Behavior handler type - receives context, params, and the default behavior function
+ * TResult defaults to void for behaviors that don't return a value
  */
-export type BehaviorHandler<TParams> = (
+export type BehaviorHandler<TParams, TResult = void> = (
   ctx: GenericBillingContext,
   params: TParams,
-  defaultBehavior: () => Promise<void>,
-) => Promise<void>;
+  defaultBehavior: () => Promise<TResult>,
+) => Promise<TResult>;
 
 /**
  * Configurable billing behaviors with sensible defaults.
@@ -134,13 +146,12 @@ export type BehaviorHandler<TParams> = (
  * ```typescript
  * billsdk({
  *   behaviors: {
- *     // Override: downgrade to free instead of cancel
- *     onRefund: async (ctx, { subscription }, defaultBehavior) => {
- *       if (subscription) {
- *         await ctx.internalAdapter.updateSubscription(subscription.id, {
- *           planCode: "free",
- *         });
- *       }
+ *     // Override: only refund, don't cancel subscription
+ *     onRefund: async (ctx, { paymentId }, defaultBehavior) => {
+ *       // Call default to process refund, but skip the cancel
+ *       const result = await defaultBehavior();
+ *       // Or do custom logic here
+ *       return result;
  *     },
  *
  *     // Extend: add logging but keep default
@@ -154,16 +165,16 @@ export type BehaviorHandler<TParams> = (
  */
 export interface BillingBehaviors {
   /**
-   * Triggered after a refund is processed.
+   * Triggered when a refund is requested.
    *
-   * Default: Cancels the associated subscription immediately.
+   * Default: Processes the refund and cancels the associated subscription immediately.
    *
    * Common overrides:
+   * - Only refund without canceling subscription (goodwill refunds)
    * - Downgrade to free plan instead of canceling
-   * - Keep subscription active (e.g., for goodwill refunds)
-   * - Send notification to support team
+   * - Add custom notification logic
    */
-  onRefund?: BehaviorHandler<OnRefundParams>;
+  onRefund?: BehaviorHandler<OnRefundParams, OnRefundResult>;
 
   /**
    * Triggered when a payment fails (e.g., card declined on renewal).
