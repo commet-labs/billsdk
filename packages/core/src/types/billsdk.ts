@@ -1,6 +1,7 @@
 import type {
   Customer,
   Feature,
+  Payment,
   Plan,
   PlanPrice,
   Subscription,
@@ -71,6 +72,14 @@ export interface InferredAPI<TFeatureCode extends string = string> {
     customerId: string;
   }) => Promise<FeatureAccess<TFeatureCode>[]>;
 
+  // Payment endpoints
+  listPayments: (params: {
+    customerId: string;
+    limit?: number;
+    offset?: number;
+  }) => Promise<Payment[]>;
+  getPayment: (params: { paymentId: string }) => Promise<Payment | null>;
+
   // Health check
   health: () => Promise<{ status: "ok"; timestamp: string }>;
 }
@@ -125,6 +134,7 @@ export interface BillSDK<Options extends BillSDKOptions<any> = BillSDKOptions> {
     PlanPrice: PlanPrice;
     Subscription: Subscription;
     Feature: Feature;
+    Payment: Payment;
   };
 
   /**
