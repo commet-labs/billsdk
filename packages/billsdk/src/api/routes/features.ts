@@ -75,7 +75,7 @@ export const featureEndpoints: Record<string, BillingEndpoint> = {
       const featureCodes = ctx.internalAdapter.getPlanFeatures(
         subscription.planCode,
       );
-      const features = featureCodes.map((code) => {
+      const features = featureCodes.map((code: string) => {
         const feature = ctx.internalAdapter.findFeatureByCode(code);
         return {
           code,
