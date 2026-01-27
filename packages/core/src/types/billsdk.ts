@@ -98,6 +98,22 @@ export interface InferredAPI<TFeatureCode extends string = string> {
   }) => Promise<Payment[]>;
   getPayment: (params: { paymentId: string }) => Promise<Payment | null>;
 
+  /**
+   * Create a refund for a payment
+   *
+   * @param paymentId - The BillSDK payment ID to refund
+   * @param amount - Optional amount to refund (partial refund). If omitted, full refund is issued.
+   * @param reason - Optional reason for the refund
+   */
+  createRefund: (params: {
+    paymentId: string;
+    amount?: number;
+    reason?: string;
+  }) => Promise<{
+    refund: Payment;
+    originalPayment: Payment;
+  }>;
+
   // Health check
   health: () => Promise<{ status: "ok"; timestamp: string }>;
 }
