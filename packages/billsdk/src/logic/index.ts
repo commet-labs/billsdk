@@ -6,6 +6,7 @@
  * the final amounts to charge.
  */
 
+export * from "./behaviors";
 export * from "./proration";
 export * from "./refund-service";
 export * from "./renewal";
