@@ -74,10 +74,10 @@ export default function HomePage() {
       />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto py-20">
-        <div className="space-y-20">
+      <div className="relative z-10 w-full max-w-(--fd-layout-width) mx-auto px-4 sm:px-6 pt-20 pb-12 md:py-20">
+        <div className="space-y-12 md:space-y-20">
           {/* Hero Section - 50/50 Split */}
-          <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[70vh]">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center min-h-0 lg:min-h-[70vh]">
             {/* Left: Hero Text */}
             <div className="space-y-8">
               <div className="space-y-6">
@@ -96,22 +96,26 @@ export default function HomePage() {
               </div>
 
               {/* Install Command */}
-              <CodeBlockTabs defaultValue="pnpm">
-                <CodeBlockTabsList>
-                  <CodeBlockTabsTrigger value="pnpm">pnpm</CodeBlockTabsTrigger>
-                  <CodeBlockTabsTrigger value="npm">npm</CodeBlockTabsTrigger>
-                  <CodeBlockTabsTrigger value="bun">bun</CodeBlockTabsTrigger>
-                </CodeBlockTabsList>
-                <CodeBlockTab value="pnpm">
-                  <DynamicCodeBlock lang="bash" code="pnpm add billsdk" />
-                </CodeBlockTab>
-                <CodeBlockTab value="npm">
-                  <DynamicCodeBlock lang="bash" code="npm i billsdk" />
-                </CodeBlockTab>
-                <CodeBlockTab value="bun">
-                  <DynamicCodeBlock lang="bash" code="bun add billsdk" />
-                </CodeBlockTab>
-              </CodeBlockTabs>
+              <div className="w-full max-w-full overflow-hidden">
+                <CodeBlockTabs defaultValue="pnpm">
+                  <CodeBlockTabsList>
+                    <CodeBlockTabsTrigger value="pnpm">
+                      pnpm
+                    </CodeBlockTabsTrigger>
+                    <CodeBlockTabsTrigger value="npm">npm</CodeBlockTabsTrigger>
+                    <CodeBlockTabsTrigger value="bun">bun</CodeBlockTabsTrigger>
+                  </CodeBlockTabsList>
+                  <CodeBlockTab value="pnpm">
+                    <DynamicCodeBlock lang="bash" code="pnpm add billsdk" />
+                  </CodeBlockTab>
+                  <CodeBlockTab value="npm">
+                    <DynamicCodeBlock lang="bash" code="npm i billsdk" />
+                  </CodeBlockTab>
+                  <CodeBlockTab value="bun">
+                    <DynamicCodeBlock lang="bash" code="bun add billsdk" />
+                  </CodeBlockTab>
+                </CodeBlockTabs>
+              </div>
 
               <div className="flex items-center gap-4">
                 <Link
@@ -132,29 +136,31 @@ export default function HomePage() {
             </div>
 
             {/* Right: Code Block */}
-            <CodeBlockTabs defaultValue="config">
-              <CodeBlockTabsList>
-                <CodeBlockTabsTrigger value="config">
-                  Config
-                </CodeBlockTabsTrigger>
-                <CodeBlockTabsTrigger value="check">
-                  Check Feature
-                </CodeBlockTabsTrigger>
-              </CodeBlockTabsList>
-              <CodeBlockTab value="config">
-                <DynamicCodeBlock lang="typescript" code={configExample} />
-              </CodeBlockTab>
-              <CodeBlockTab value="check">
-                <DynamicCodeBlock
-                  lang="typescript"
-                  code={checkFeatureExample}
-                />
-              </CodeBlockTab>
-            </CodeBlockTabs>
+            <div className="w-full max-w-full overflow-hidden">
+              <CodeBlockTabs defaultValue="config">
+                <CodeBlockTabsList>
+                  <CodeBlockTabsTrigger value="config">
+                    Config
+                  </CodeBlockTabsTrigger>
+                  <CodeBlockTabsTrigger value="check">
+                    Check Feature
+                  </CodeBlockTabsTrigger>
+                </CodeBlockTabsList>
+                <CodeBlockTab value="config">
+                  <DynamicCodeBlock lang="typescript" code={configExample} />
+                </CodeBlockTab>
+                <CodeBlockTab value="check">
+                  <DynamicCodeBlock
+                    lang="typescript"
+                    code={checkFeatureExample}
+                  />
+                </CodeBlockTab>
+              </CodeBlockTabs>
+            </div>
           </div>
 
           {/* Features Grid */}
-          <div className="grid md:grid-cols-3 gap-px dark:bg-[#8A8E88]/10 bg-[#5C5E58]/8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-px dark:md:bg-[#8A8E88]/10 md:bg-[#5C5E58]/8">
             <div className="dark:bg-[#222524]/60 bg-[#E4E6E0]/70 backdrop-blur-md p-8 space-y-3">
               <h3 className="text-lg font-medium dark:text-[#E8ECE6] text-[#1C1E1A]">
                 Zero Lock-In

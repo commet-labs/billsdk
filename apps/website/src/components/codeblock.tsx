@@ -201,7 +201,7 @@ export function CodeBlockTabs({ ref, ...props }: ComponentProps<typeof Tabs>) {
       ref={mergeRefs(containerRef, ref)}
       {...props}
       className={cn(
-        "bg-[#E4E6E0]/80 dark:bg-[#222524]/60 backdrop-blur-md border border-[#5C5E58]/12 dark:border-[#8A8E88]/15",
+        "bg-[#E4E6E0]/80 dark:bg-[#222524]/60 backdrop-blur-md border border-[#5C5E58]/12 dark:border-[#8A8E88]/15 max-w-full overflow-hidden",
         !nested && "my-4",
         props.className,
       )}
