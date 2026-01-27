@@ -51,7 +51,7 @@ jobs:
           echo "tag=$NPM_TAG" >> $GITHUB_OUTPUT
           echo "Publishing with npm tag: $NPM_TAG"
 
-      - name: Publish to npm with provenance
-        run: pnpm -r publish --access public --no-git-checks --tag ${{ steps.npm_tag.outputs.tag }}
+      - name: Publish to npm with provenance (OIDC)
+        run: pnpm release --tag ${{ steps.npm_tag.outputs.tag }}
         env:
           NPM_CONFIG_PROVENANCE: true
