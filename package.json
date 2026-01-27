@@ -10,9 +10,9 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "clean": "turbo clean && rm -rf node_modules .turbo",
-    "release": "turbo build --filter=./packages/* && bumpp && pnpm -r publish --access public --no-git-checks",
-    "release:canary": "turbo build --filter=./packages/* && bumpp --preid canary && pnpm -r publish --access public --tag canary --no-git-checks",
-    "release:beta": "turbo build --filter=./packages/* && bumpp --preid beta && pnpm -r publish --access public --tag beta --no-git-checks",
+    "release": "bumpp",
+    "release:canary": "bumpp --preid canary",
+    "release:beta": "bumpp --preid beta",
     "bump": "bumpp"
   },
   "devDependencies": {
