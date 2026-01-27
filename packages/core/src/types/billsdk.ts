@@ -63,6 +63,24 @@ export interface InferredAPI<TFeatureCode extends string = string> {
     cancelAt?: "period_end" | "immediately";
   }) => Promise<Subscription | null>;
 
+  /**
+   * Change a subscription to a different plan
+   *
+   * Automatically calculates proration (credit for unused time,
+   * charge for new plan's remaining time).
+   */
+  changeSubscription: (params: {
+    customerId: string;
+    newPlanCode: string;
+    /** Whether to calculate proration. Defaults to true. */
+    prorate?: boolean;
+  }) => Promise<{
+    subscription: Subscription | null;
+    previousPlan: Plan | null;
+    newPlan: Plan;
+    payment: Payment | null;
+  }>;
+
   // Feature endpoints
   checkFeature: (params: {
     customerId: string;
