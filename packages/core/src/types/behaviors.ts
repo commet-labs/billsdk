@@ -1,5 +1,5 @@
 import type { GenericBillingContext } from "./api";
-import type { Customer, Payment, Plan, Subscription } from "./models";
+import type { Payment, Subscription } from "./models";
 
 /**
  * Parameters for the onRefund behavior (inputs)
@@ -35,43 +35,41 @@ export interface OnRefundResult {
 }
 
 /**
- * Parameters for the onPaymentFailed behavior
+ * Parameters for the onPaymentFailed behavior (inputs)
  */
 export interface OnPaymentFailedParams {
   /**
-   * The subscription that failed to renew
+   * Subscription ID whose payment failed
    */
-  subscription: Subscription;
-  /**
-   * The customer whose payment failed
-   */
-  customer: Customer;
+  subscriptionId: string;
   /**
    * Error message from the payment provider
    */
   error?: string;
-  /**
-   * Number of consecutive failed attempts
-   */
-  failedAttempts?: number;
 }
 
 /**
- * Parameters for the onSubscriptionCancel behavior
+ * Result of the onPaymentFailed behavior
+ */
+export interface OnPaymentFailedResult {
+  /**
+   * The subscription that was marked as past_due
+   */
+  subscription: Subscription;
+}
+
+/**
+ * Parameters for the onSubscriptionCancel behavior (inputs)
  */
 export interface OnSubscriptionCancelParams {
   /**
-   * The subscription being canceled
+   * Customer ID (external ID)
    */
-  subscription: Subscription;
+  customerId: string;
   /**
-   * The customer canceling
+   * Whether to cancel immediately or at period end
    */
-  customer: Customer;
-  /**
-   * Whether the cancellation is immediate or at period end
-   */
-  cancelAt: "immediately" | "period_end";
+  cancelAt?: "immediately" | "period_end";
   /**
    * Reason for cancellation (if provided)
    */
@@ -79,47 +77,45 @@ export interface OnSubscriptionCancelParams {
 }
 
 /**
- * Parameters for the onTrialEnd behavior
+ * Result of the onSubscriptionCancel behavior
  */
-export interface OnTrialEndParams {
+export interface OnSubscriptionCancelResult {
   /**
-   * The subscription whose trial is ending
+   * The canceled subscription
    */
-  subscription: Subscription;
+  subscription: Subscription | null;
   /**
-   * The customer whose trial is ending
+   * Whether the subscription was canceled immediately
    */
-  customer: Customer;
+  canceledImmediately: boolean;
   /**
-   * The plan the customer was trialing
+   * Date until which the customer has access (if canceled at period end)
    */
-  plan: Plan;
+  accessUntil?: Date;
 }
 
 /**
- * Parameters for the onDowngrade behavior
+ * Parameters for the onTrialEnd behavior (inputs)
  */
-export interface OnDowngradeParams {
+export interface OnTrialEndParams {
   /**
-   * The subscription being downgraded
+   * Subscription ID whose trial is ending
+   */
+  subscriptionId: string;
+}
+
+/**
+ * Result of the onTrialEnd behavior
+ */
+export interface OnTrialEndResult {
+  /**
+   * The subscription after trial processing
    */
   subscription: Subscription;
   /**
-   * The customer downgrading
+   * Whether the subscription was converted to paid
    */
-  customer: Customer;
-  /**
-   * The previous (higher) plan
-   */
-  previousPlan: Plan;
-  /**
-   * The new (lower) plan
-   */
-  newPlan: Plan;
-  /**
-   * Credit amount in cents (unused portion of previous plan)
-   */
-  creditAmount: number;
+  converted: boolean;
 }
 
 /**
@@ -148,16 +144,17 @@ export type BehaviorHandler<TParams, TResult = void> = (
  *   behaviors: {
  *     // Override: only refund, don't cancel subscription
  *     onRefund: async (ctx, { paymentId }, defaultBehavior) => {
- *       // Call default to process refund, but skip the cancel
+ *       // Call default to process refund
  *       const result = await defaultBehavior();
- *       // Or do custom logic here
+ *       // Add custom logic
+ *       await sendEmail("Refund processed");
  *       return result;
  *     },
  *
- *     // Extend: add logging but keep default
- *     onPaymentFailed: async (ctx, params, defaultBehavior) => {
- *       await sendAlert(`Payment failed for ${params.customer.email}`);
- *       await defaultBehavior();
+ *     // Override: downgrade to free instead of canceling
+ *     onSubscriptionCancel: async (ctx, { customerId }, defaultBehavior) => {
+ *       // Don't call defaultBehavior - do something else
+ *       return ctx.api.changeSubscription({ customerId, newPlanCode: "free" });
  *     },
  *   },
  * });
@@ -186,41 +183,35 @@ export interface BillingBehaviors {
    * - Send dunning emails
    * - Downgrade to free plan after N failures
    */
-  onPaymentFailed?: BehaviorHandler<OnPaymentFailedParams>;
+  onPaymentFailed?: BehaviorHandler<
+    OnPaymentFailedParams,
+    OnPaymentFailedResult
+  >;
 
   /**
-   * Triggered after a subscription is canceled.
+   * Triggered when a subscription cancellation is requested.
    *
-   * Default: No additional action (subscription is already canceled).
+   * Default: Cancels the subscription (immediately or at period end).
    *
    * Common overrides:
-   * - Send retention email
-   * - Log cancellation reason for analytics
-   * - Trigger offboarding workflow
+   * - Downgrade to free plan instead of canceling
+   * - Send retention email before canceling
+   * - Add custom cancellation logic
    */
-  onSubscriptionCancel?: BehaviorHandler<OnSubscriptionCancelParams>;
+  onSubscriptionCancel?: BehaviorHandler<
+    OnSubscriptionCancelParams,
+    OnSubscriptionCancelResult
+  >;
 
   /**
    * Triggered when a trial period ends.
    *
-   * Default: Attempt to charge for the plan, cancel if no payment method.
+   * Default: Activates subscription if payment method exists, otherwise cancels.
    *
    * Common overrides:
    * - Extend trial for engaged users
    * - Downgrade to free plan instead of canceling
    * - Send trial-end notification
    */
-  onTrialEnd?: BehaviorHandler<OnTrialEndParams>;
-
-  /**
-   * Triggered when a customer downgrades to a lower plan.
-   *
-   * Default: No credit issued (change takes effect immediately).
-   *
-   * Common overrides:
-   * - Issue prorated credit
-   * - Apply credit to next invoice
-   * - Schedule downgrade at period end
-   */
-  onDowngrade?: BehaviorHandler<OnDowngradeParams>;
+  onTrialEnd?: BehaviorHandler<OnTrialEndParams, OnTrialEndResult>;
 }

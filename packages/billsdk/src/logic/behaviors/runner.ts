@@ -1,11 +1,12 @@
 import type {
-  BillingBehaviors,
-  OnDowngradeParams,
   OnPaymentFailedParams,
+  OnPaymentFailedResult,
   OnRefundParams,
   OnRefundResult,
   OnSubscriptionCancelParams,
+  OnSubscriptionCancelResult,
   OnTrialEndParams,
+  OnTrialEndResult,
 } from "@billsdk/core";
 import type { BillingContext } from "../../context/create-context";
 import { defaultBehaviors } from "./defaults";
@@ -16,10 +17,15 @@ import { defaultBehaviors } from "./defaults";
  */
 type BehaviorConfig = {
   onRefund: { params: OnRefundParams; result: OnRefundResult };
-  onPaymentFailed: { params: OnPaymentFailedParams; result: void };
-  onSubscriptionCancel: { params: OnSubscriptionCancelParams; result: void };
-  onTrialEnd: { params: OnTrialEndParams; result: void };
-  onDowngrade: { params: OnDowngradeParams; result: void };
+  onPaymentFailed: {
+    params: OnPaymentFailedParams;
+    result: OnPaymentFailedResult;
+  };
+  onSubscriptionCancel: {
+    params: OnSubscriptionCancelParams;
+    result: OnSubscriptionCancelResult;
+  };
+  onTrialEnd: { params: OnTrialEndParams; result: OnTrialEndResult };
 };
 
 /**
@@ -63,7 +69,7 @@ export async function runBehavior<T extends keyof BehaviorConfig>(
     ctx.logger.debug(`Running user-defined behavior: ${behaviorName}`);
     // User provided an override - call it with the default available
     // biome-ignore lint/suspicious/noExplicitAny: Type narrowing is handled by the caller
-    return userBehavior(ctx as any, params, defaultBehavior);
+    return userBehavior(ctx as any, params as any, defaultBehavior as any);
   }
 
   ctx.logger.debug(`Running default behavior: ${behaviorName}`);

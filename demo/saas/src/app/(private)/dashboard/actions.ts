@@ -12,15 +12,9 @@ export async function refundPaymentAction(paymentId: string) {
       return { success: false, error: "Not authenticated" };
     }
 
-    // Process the refund
+    // Process the refund (automatically cancels subscription via default behavior)
     const result = await billing.api.createRefund({
       paymentId,
-    });
-
-    // Cancel the subscription immediately (no plan after refund)
-    await billing.api.cancelSubscription({
-      customerId: session.user.id,
-      cancelAt: "immediately",
     });
 
     revalidatePath("/dashboard");

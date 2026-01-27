@@ -1,13 +1,18 @@
 import type {
-  OnDowngradeParams,
   OnPaymentFailedParams,
+  OnPaymentFailedResult,
   OnRefundParams,
   OnRefundResult,
   OnSubscriptionCancelParams,
+  OnSubscriptionCancelResult,
   OnTrialEndParams,
+  OnTrialEndResult,
 } from "@billsdk/core";
 import type { BillingContext } from "../../context/create-context";
+import { handlePaymentFailed as handlePaymentFailedService } from "../payment-failed-service";
 import { createRefund as createRefundService } from "../refund-service";
+import { cancelSubscription as cancelSubscriptionService } from "../subscription-service";
+import { handleTrialEnd as handleTrialEndService } from "../trial-end-service";
 
 /**
  * Default billing behaviors - these are the opinionated defaults that BillSDK
@@ -38,100 +43,59 @@ export const defaultBehaviors = {
   },
 
   /**
-   * Default onPaymentFailed behavior: Mark subscription as past_due.
+   * Default onPaymentFailed behavior: Delegates to payment-failed service.
    *
-   * Rationale: Give the customer a chance to update their payment method
-   * rather than immediately canceling. Most payment failures are recoverable
-   * (expired card, insufficient funds).
+   * The service handles all business logic:
+   * - Find subscription
+   * - Mark as past_due
+   *
+   * Override this behavior if you want different logic (e.g., immediate cancel).
    */
   onPaymentFailed: async (
     ctx: BillingContext,
     params: OnPaymentFailedParams,
-  ) => {
-    const { subscription } = params;
-
-    ctx.logger.info(
-      "Default onPaymentFailed: Marking subscription as past_due",
-      {
-        subscriptionId: subscription.id,
-        customerId: params.customer.id,
-        error: params.error,
-      },
-    );
-
-    await ctx.internalAdapter.updateSubscription(subscription.id, {
-      status: "past_due",
+  ): Promise<OnPaymentFailedResult> => {
+    return handlePaymentFailedService(ctx, {
+      subscriptionId: params.subscriptionId,
+      error: params.error,
     });
   },
 
   /**
-   * Default onSubscriptionCancel behavior: No additional action.
+   * Default onSubscriptionCancel behavior: Delegates to cancel service.
    *
-   * Rationale: The subscription is already canceled by the service.
-   * Additional actions (emails, analytics) are app-specific and should
-   * be implemented by the developer if needed.
+   * The service handles all business logic:
+   * - Find customer and subscription
+   * - Cancel immediately or at period end
+   *
+   * Override this behavior if you want different logic (e.g., downgrade to free).
    */
   onSubscriptionCancel: async (
     ctx: BillingContext,
     params: OnSubscriptionCancelParams,
-  ) => {
-    ctx.logger.info("Default onSubscriptionCancel: No additional action", {
-      subscriptionId: params.subscription.id,
-      customerId: params.customer.id,
+  ): Promise<OnSubscriptionCancelResult> => {
+    return cancelSubscriptionService(ctx, {
+      customerId: params.customerId,
       cancelAt: params.cancelAt,
     });
-    // No action by default - the cancellation is already handled
   },
 
   /**
-   * Default onTrialEnd behavior: Attempt to charge or cancel.
+   * Default onTrialEnd behavior: Delegates to trial-end service.
    *
-   * Rationale: When a trial ends, the customer should either convert to
-   * a paid subscription or lose access. We don't auto-extend trials.
-   */
-  onTrialEnd: async (ctx: BillingContext, params: OnTrialEndParams) => {
-    const { subscription, customer, plan } = params;
-
-    ctx.logger.info("Default onTrialEnd: Processing trial conversion", {
-      subscriptionId: subscription.id,
-      customerId: customer.id,
-      planCode: plan.code,
-    });
-
-    // If customer has no payment method, cancel the subscription
-    if (!customer.providerCustomerId) {
-      ctx.logger.info(
-        "Default onTrialEnd: No payment method, canceling subscription",
-        { subscriptionId: subscription.id },
-      );
-
-      await ctx.internalAdapter.cancelSubscription(subscription.id);
-      return;
-    }
-
-    // Otherwise, the subscription will be charged on renewal
-    // Update status to active to begin the paid period
-    await ctx.internalAdapter.updateSubscription(subscription.id, {
-      status: "active",
-    });
-  },
-
-  /**
-   * Default onDowngrade behavior: No credit issued.
+   * The service handles all business logic:
+   * - If customer has payment method: activates subscription
+   * - If no payment method: cancels subscription
    *
-   * Rationale: Downgrades take effect immediately without refunding
-   * the unused portion of the higher plan. This is simpler and avoids
-   * complex credit tracking. Developers can override to issue credits.
+   * Override this behavior if you want different logic (e.g., extend trial).
    */
-  onDowngrade: async (ctx: BillingContext, params: OnDowngradeParams) => {
-    ctx.logger.info("Default onDowngrade: No credit issued", {
-      subscriptionId: params.subscription.id,
-      customerId: params.customer.id,
-      previousPlan: params.previousPlan.code,
-      newPlan: params.newPlan.code,
-      creditAmount: params.creditAmount,
+  onTrialEnd: async (
+    ctx: BillingContext,
+    params: OnTrialEndParams,
+  ): Promise<OnTrialEndResult> => {
+    return handleTrialEndService(ctx, {
+      subscriptionId: params.subscriptionId,
     });
-    // No action by default - the plan change is already handled
   },
 };
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { BillingContext } from "../../context/create-context";
+import { runBehavior } from "../../logic/behaviors/runner";
 import {
-  cancelSubscription as cancelSubscriptionService,
   changeSubscription as changeSubscriptionService,
   createSubscription as createSubscriptionService,
 } from "../../logic/subscription-service";
@@ -133,8 +133,8 @@ export const subscriptionEndpoints: Record<string, BillingEndpoint> = {
     ) => {
       const { ctx, body } = context;
 
-      // Delegate to shared service
-      return cancelSubscriptionService(ctx as BillingContext, {
+      // Delegate to behavior (default: cancel subscription)
+      return runBehavior(ctx as BillingContext, "onSubscriptionCancel", {
         customerId: body.customerId,
         cancelAt: body.cancelAt,
       });
@@ -151,14 +151,8 @@ export const subscriptionEndpoints: Record<string, BillingEndpoint> = {
       context: EndpointContext<z.infer<typeof changeSubscriptionSchema>>,
     ) => {
       const { ctx, body } = context;
-
-      // Delegate to shared service
-      // Cast ctx to BillingContext - at runtime it's the same object
-      return changeSubscriptionService(ctx as BillingContext, {
-        customerId: body.customerId,
-        newPlanCode: body.newPlanCode,
-        prorate: body.prorate,
-      });
+      const billingCtx = ctx as BillingContext;
+      return changeSubscriptionService(billingCtx, body);
     },
   },
 };

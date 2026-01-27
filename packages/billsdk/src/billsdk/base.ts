@@ -7,7 +7,6 @@ import {
 } from "../context/create-context";
 import { runBehavior } from "../logic/behaviors/runner";
 import {
-  cancelSubscription as cancelSubscriptionService,
   changeSubscription as changeSubscriptionService,
   createSubscription as createSubscriptionService,
 } from "../logic/subscription-service";
@@ -82,8 +81,8 @@ function createAPI<TFeatureCode extends string = string>(
     async cancelSubscription(params) {
       const ctx = await contextPromise;
 
-      // Delegate to shared service
-      const result = await cancelSubscriptionService(ctx, {
+      // Delegate to behavior (default: cancel subscription)
+      const result = await runBehavior(ctx, "onSubscriptionCancel", {
         customerId: params.customerId,
         cancelAt: params.cancelAt,
       });
@@ -93,13 +92,7 @@ function createAPI<TFeatureCode extends string = string>(
 
     async changeSubscription(params) {
       const ctx = await contextPromise;
-
-      // Delegate to shared service
-      return changeSubscriptionService(ctx, {
-        customerId: params.customerId,
-        newPlanCode: params.newPlanCode,
-        prorate: params.prorate,
-      });
+      return changeSubscriptionService(ctx, params);
     },
 
     async checkFeature(params) {
