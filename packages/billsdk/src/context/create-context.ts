@@ -175,11 +175,16 @@ export async function createBillingContext(
     }
   }
 
+  // Reference to context for getNow function (resolved after context creation)
+  let contextRef: BillingContext | null = null;
+  const getNow = () => contextRef?.timeProvider.now() ?? new Date();
+
   // Create internal adapter with config (no DB seeding needed!)
   const internalAdapter = createInternalAdapter(
     adapter,
     options.plans ?? [],
     options.features ?? [],
+    getNow,
   );
 
   // Build context
@@ -209,7 +214,10 @@ export async function createBillingContext(
     },
   };
 
-  // Initialize plugins
+  // Link context reference so getNow() uses the correct timeProvider
+  contextRef = context;
+
+  // Initialize plugins (may override timeProvider)
   for (const plugin of plugins) {
     if (plugin.init) {
       await plugin.init(context);

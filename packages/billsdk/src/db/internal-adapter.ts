@@ -112,6 +112,7 @@ export function createInternalAdapter(
   adapter: DBAdapter,
   plans: PlanConfig[] = [],
   features: FeatureConfig[] = [],
+  getNow: () => Date = () => new Date(),
 ): InternalAdapter {
   // Build lookup maps for fast access
   const plansByCode = new Map<string, Plan>();
@@ -127,7 +128,7 @@ export function createInternalAdapter(
   return {
     // Customer operations (DB)
     async createCustomer(data: CreateCustomerInput): Promise<Customer> {
-      const now = new Date();
+      const now = getNow();
       return adapter.create<Customer>({
         model: TABLES.CUSTOMER,
         data: {
@@ -228,7 +229,7 @@ export function createInternalAdapter(
     async createSubscription(
       data: CreateSubscriptionInput,
     ): Promise<Subscription> {
-      const now = new Date();
+      const now = getNow();
       const interval = data.interval ?? "monthly";
       const currentPeriodEnd = new Date(now);
 
@@ -317,7 +318,7 @@ export function createInternalAdapter(
       return adapter.update<Subscription>({
         model: TABLES.SUBSCRIPTION,
         where: [{ field: "id", operator: "eq", value: id }],
-        update: { ...data, updatedAt: new Date() },
+        update: { ...data, updatedAt: getNow() },
       });
     },
 
@@ -325,7 +326,7 @@ export function createInternalAdapter(
       id: string,
       cancelAt?: Date,
     ): Promise<Subscription | null> {
-      const now = new Date();
+      const now = getNow();
       return adapter.update<Subscription>({
         model: TABLES.SUBSCRIPTION,
         where: [{ field: "id", operator: "eq", value: id }],
@@ -381,7 +382,7 @@ export function createInternalAdapter(
 
     // Payment operations (DB)
     async createPayment(data: CreatePaymentInput): Promise<Payment> {
-      const now = new Date();
+      const now = getNow();
       return adapter.create<Payment>({
         model: TABLES.PAYMENT,
         data: {

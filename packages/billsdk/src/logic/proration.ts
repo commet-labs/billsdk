@@ -1,7 +1,11 @@
 import type { BillingInterval } from "../types/models";
 
 /**
- * Result of a proration calculation
+ * Result of a proration calculation (period reset model)
+ *
+ * When upgrading, the billing period resets to start from the change date.
+ * The user gets credit for unused days on the old plan, which is deducted
+ * from the full price of the new plan.
  */
 export interface ProrationResult {
   /**
@@ -9,19 +13,19 @@ export interface ProrationResult {
    */
   credit: number;
   /**
-   * Charge for new plan prorated to remaining time (in cents)
+   * Full price of the new plan (in cents)
    */
   charge: number;
   /**
-   * Net amount to charge (charge - credit, can be negative = credit to customer)
+   * Net amount to charge: newPlanAmount - credit
    */
   netAmount: number;
   /**
-   * Number of days remaining in period
+   * Days used on old plan (from period start to change date)
    */
-  daysRemaining: number;
+  daysUsed: number;
   /**
-   * Total days in the billing period
+   * Total days in the original billing period
    */
   totalDays: number;
 }
@@ -61,25 +65,29 @@ function daysBetween(start: Date, end: Date): number {
 }
 
 /**
- * Calculate proration for a plan change
+ * Calculate proration for a plan upgrade (period reset model)
  *
- * BillSDK handles all proration logic. The payment adapter only sees
- * the final amount to charge.
+ * When upgrading:
+ * 1. Calculate credit for unused days on old plan
+ * 2. Charge full price of new plan minus the credit
+ * 3. Reset billing period to start from change date
  *
  * @example
  * ```typescript
- * // User on Pro ($20/mo) upgrading to Enterprise ($50/mo) mid-month
+ * // User on Starter ($10/mo) upgrading to Pro ($20/mo)
+ * // Subscribed Jan 1, upgrading Jan 7 (used 6 days, 25 remaining)
  * const result = calculateProration({
- *   oldPlanAmount: 2000,  // $20 in cents
- *   newPlanAmount: 5000,  // $50 in cents
+ *   oldPlanAmount: 1000,  // $10 in cents
+ *   newPlanAmount: 2000,  // $20 in cents
  *   currentPeriodStart: new Date('2024-01-01'),
- *   currentPeriodEnd: new Date('2024-01-31'),
- *   changeDate: new Date('2024-01-15'),
+ *   currentPeriodEnd: new Date('2024-02-01'),
+ *   changeDate: new Date('2024-01-07'),
  * });
  *
- * // result.credit = 1032 (unused Pro time)
- * // result.charge = 2581 (prorated Enterprise)
- * // result.netAmount = 1549 ($15.49 to charge)
+ * // result.credit = 806 ($8.06 - unused Starter time: 25/31 × $10)
+ * // result.charge = 2000 ($20 - full Pro price)
+ * // result.netAmount = 1194 ($11.94 to charge)
+ * // New period: Jan 7 - Feb 7
  * ```
  */
 export function calculateProration(params: ProrationParams): ProrationResult {
@@ -91,38 +99,31 @@ export function calculateProration(params: ProrationParams): ProrationResult {
     changeDate = new Date(),
   } = params;
 
-  // Calculate total days in billing period
   const totalDays = daysBetween(currentPeriodStart, currentPeriodEnd);
+  const daysUsed = daysBetween(currentPeriodStart, changeDate);
+  const daysRemaining = totalDays - daysUsed;
 
-  // Calculate days remaining (from change date to period end)
-  const daysRemaining = daysBetween(changeDate, currentPeriodEnd);
-
-  // Ensure daysRemaining is not negative or greater than totalDays
   const effectiveDaysRemaining = Math.max(
     0,
     Math.min(daysRemaining, totalDays),
   );
 
-  // Calculate credit for unused time on old plan
-  // credit = (oldPlanAmount / totalDays) * daysRemaining
+  // Credit = unused portion of old plan
   const credit = Math.round(
     (oldPlanAmount / totalDays) * effectiveDaysRemaining,
   );
 
-  // Calculate charge for new plan prorated
-  // charge = (newPlanAmount / totalDays) * daysRemaining
-  const charge = Math.round(
-    (newPlanAmount / totalDays) * effectiveDaysRemaining,
-  );
+  // Charge = full price of new plan (period resets)
+  const charge = newPlanAmount;
 
-  // Net amount (can be negative if downgrading)
-  const netAmount = charge - credit;
+  // Net = new plan price minus credit
+  const netAmount = Math.max(0, charge - credit);
 
   return {
     credit,
     charge,
     netAmount,
-    daysRemaining: effectiveDaysRemaining,
+    daysUsed: Math.max(0, Math.min(daysUsed, totalDays)),
     totalDays,
   };
 }

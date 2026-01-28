@@ -333,8 +333,9 @@ export async function changeSubscription(
     };
   }
 
-  // Upgrade: immediate change with proration
+  // Upgrade: immediate change with proration and period reset
   let payment: Payment | null = null;
+  const changeDate = ctx.timeProvider.now();
 
   if (prorate) {
     const prorationResult = calculateProration({
@@ -342,14 +343,14 @@ export async function changeSubscription(
       newPlanAmount: newPrice.amount,
       currentPeriodStart: subscription.currentPeriodStart,
       currentPeriodEnd: subscription.currentPeriodEnd,
-      changeDate: ctx.timeProvider.now(),
+      changeDate,
     });
 
     ctx.logger.info("Proration calculated", {
       credit: prorationResult.credit,
       charge: prorationResult.charge,
       netAmount: prorationResult.netAmount,
-      daysRemaining: prorationResult.daysRemaining,
+      daysUsed: prorationResult.daysUsed,
     });
 
     if (prorationResult.netAmount > 0) {
@@ -407,15 +408,33 @@ export async function changeSubscription(
     }
   }
 
+  // Calculate new period end based on interval
+  const newPeriodStart = changeDate;
+  const newPeriodEnd = new Date(changeDate);
+  if (targetInterval === "yearly") {
+    newPeriodEnd.setFullYear(newPeriodEnd.getFullYear() + 1);
+  } else if (targetInterval === "quarterly") {
+    newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 3);
+  } else {
+    newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 1);
+  }
+
   const updatedSubscription = await ctx.internalAdapter.updateSubscription(
     subscription.id,
     {
       planCode: newPlanCode,
       interval: targetInterval,
+      currentPeriodStart: newPeriodStart,
+      currentPeriodEnd: newPeriodEnd,
       scheduledPlanCode: undefined,
       scheduledInterval: undefined,
     },
   );
+
+  ctx.logger.info("Period reset", {
+    from: `${subscription.currentPeriodStart.toISOString()} - ${subscription.currentPeriodEnd.toISOString()}`,
+    to: `${newPeriodStart.toISOString()} - ${newPeriodEnd.toISOString()}`,
+  });
 
   return {
     subscription: updatedSubscription,
