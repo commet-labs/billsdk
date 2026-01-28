@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "pnpm db:migrate && next build",
+    "build:ci": "next build",
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
