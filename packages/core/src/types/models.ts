@@ -158,6 +158,14 @@ export interface Subscription {
    */
   trialEnd?: Date;
   /**
+   * Scheduled plan change (takes effect at period end)
+   */
+  scheduledPlanCode?: string;
+  /**
+   * Scheduled interval change (takes effect at period end)
+   */
+  scheduledInterval?: BillingInterval;
+  /**
    * Additional metadata
    */
   metadata?: Record<string, unknown>;
