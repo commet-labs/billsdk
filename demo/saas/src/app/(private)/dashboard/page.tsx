@@ -1,3 +1,4 @@
+import type { Payment } from "billsdk";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { getSession } from "@/lib/auth-server";
 import { billing } from "@/lib/billing";
 import { CancelButton } from "./cancel-button";
+import { RefundButton } from "./refund-button";
 import { SignOutButton } from "./sign-out-button";
 
 // All features defined in billing config
@@ -65,6 +67,11 @@ export default async function DashboardPage() {
     : null;
 
   const price = plan?.prices.find((p) => p.interval === subscription?.interval);
+  // Fetch payment history
+  const payments = await billing.api.listPayments({
+    customerId: user.id,
+    limit: 10,
+  });
 
   const formatDate = (date: Date | null | undefined) => {
     if (!date) return "N/A";
@@ -184,7 +191,7 @@ export default async function DashboardPage() {
             </Card>
 
             {/* Features Card */}
-            <Card>
+            <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Features</CardTitle>
                 <CardDescription>
@@ -220,6 +227,90 @@ export default async function DashboardPage() {
                     );
                   })}
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Payment History Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Payment History</CardTitle>
+                <CardDescription>
+                  Your recent payments and transactions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {payments.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">
+                    No payment history yet.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {payments.map((payment: Payment) => {
+                      const canRefund =
+                        payment.status === "succeeded" &&
+                        payment.type !== "refund" &&
+                        payment.amount > 0;
+
+                      return (
+                        <div
+                          key={payment.id}
+                          className="flex items-center justify-between p-3 rounded-lg border"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <p className="font-medium capitalize">
+                                {payment.type}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {formatDate(payment.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span
+                              className={`font-semibold ${
+                                payment.amount < 0 ? "text-green-500" : ""
+                              }`}
+                            >
+                              {payment.amount < 0 ? "+" : ""}
+                              {formatPrice(
+                                Math.abs(payment.amount),
+                                payment.currency,
+                              )}
+                            </span>
+                            <Badge
+                              variant={
+                                payment.status === "succeeded"
+                                  ? "default"
+                                  : payment.status === "refunded"
+                                    ? "secondary"
+                                    : payment.status === "failed"
+                                      ? "destructive"
+                                      : "outline"
+                              }
+                              className={
+                                payment.status === "succeeded"
+                                  ? "bg-green-500"
+                                  : ""
+                              }
+                            >
+                              {payment.status}
+                            </Badge>
+                            {canRefund && (
+                              <RefundButton
+                                paymentId={payment.id}
+                                amount={formatPrice(
+                                  payment.amount,
+                                  payment.currency,
+                                )}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </>

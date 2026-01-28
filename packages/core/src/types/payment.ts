@@ -101,12 +101,104 @@ export interface ConfirmResult {
 }
 
 /**
+ * Parameters for charging a customer directly
+ * Used for renewals, upgrades, and other charges (not checkout flow)
+ */
+export interface ChargeParams {
+  /**
+   * Customer information
+   */
+  customer: {
+    id: string;
+    email: string;
+    /**
+     * Provider customer ID - required for direct charges
+     */
+    providerCustomerId: string;
+  };
+  /**
+   * Amount to charge in cents
+   */
+  amount: number;
+  /**
+   * Currency code (ISO 4217)
+   */
+  currency: string;
+  /**
+   * Description of the charge
+   */
+  description: string;
+  /**
+   * Additional metadata
+   */
+  metadata?: Record<string, string>;
+}
+
+/**
+ * Result from charging a customer
+ */
+export interface ChargeResult {
+  /**
+   * Whether the charge succeeded
+   */
+  status: "success" | "failed";
+  /**
+   * Provider payment ID for tracking
+   */
+  providerPaymentId?: string;
+  /**
+   * Error message if failed
+   */
+  error?: string;
+}
+
+/**
+ * Parameters for refunding a payment
+ */
+export interface RefundParams {
+  /**
+   * Provider payment ID to refund
+   */
+  providerPaymentId: string;
+  /**
+   * Amount to refund in cents (partial refund if less than original)
+   * If omitted, full refund is issued
+   */
+  amount?: number;
+  /**
+   * Reason for the refund
+   */
+  reason?: string;
+}
+
+/**
+ * Result from refunding a payment
+ */
+export interface RefundResult {
+  /**
+   * Whether the refund succeeded
+   */
+  status: "refunded" | "failed";
+  /**
+   * Provider refund ID for tracking
+   */
+  providerRefundId?: string;
+  /**
+   * Error message if failed
+   */
+  error?: string;
+}
+
+/**
  * Payment adapter interface for integrating with payment providers
  *
  * The adapter decides the payment flow:
  * - Return "active" to activate immediately (e.g., free plans, no payment needed)
  * - Return "pending" to redirect user for payment (e.g., Stripe Checkout)
  * - Return "failed" if payment cannot be processed
+ *
+ * Adapters are thin wrappers - they only move money.
+ * BillSDK handles all billing logic (when to charge, how much, proration, etc.)
  */
 export interface PaymentAdapter {
   /**
@@ -115,7 +207,7 @@ export interface PaymentAdapter {
   id: string;
 
   /**
-   * Process payment for a subscription
+   * Process payment for a new subscription (checkout flow)
    *
    * The adapter decides the flow:
    * - Return { status: "active" } to activate immediately
@@ -133,4 +225,23 @@ export interface PaymentAdapter {
    * Return null for webhook events that don't need processing (e.g., customer.created)
    */
   confirmPayment?(request: Request): Promise<ConfirmResult | null>;
+
+  /**
+   * Charge a customer directly (for renewals, upgrades, etc.)
+   *
+   * Unlike processPayment, this charges immediately without a checkout flow.
+   * Requires the customer to have a saved payment method (providerCustomerId).
+   *
+   * Optional - if not implemented, BillSDK will use processPayment instead.
+   */
+  charge?(params: ChargeParams): Promise<ChargeResult>;
+
+  /**
+   * Refund a previous payment
+   *
+   * Can be full or partial refund based on the amount parameter.
+   *
+   * Optional - if not implemented, refunds must be handled manually.
+   */
+  refund?(params: RefundParams): Promise<RefundResult>;
 }

@@ -1,5 +1,5 @@
 /**
- * Customer - represents a billable entity (stored in DB)
+ * Customer - represents a billable entity
  */
 export interface Customer {
   [key: string]: unknown;
@@ -172,6 +172,68 @@ export interface Subscription {
 }
 
 /**
+ * Payment status
+ */
+export type PaymentStatus = "pending" | "succeeded" | "failed" | "refunded";
+
+/**
+ * Payment type - what triggered this payment
+ */
+export type PaymentType = "subscription" | "renewal" | "upgrade" | "refund";
+
+/**
+ * Payment - a record of a charge or refund (stored in DB)
+ */
+export interface Payment {
+  [key: string]: unknown;
+  id: string;
+  /**
+   * Associated customer ID
+   */
+  customerId: string;
+  /**
+   * Associated subscription ID (if applicable)
+   */
+  subscriptionId?: string;
+  /**
+   * What triggered this payment
+   */
+  type: PaymentType;
+  /**
+   * Current payment status
+   */
+  status: PaymentStatus;
+  /**
+   * Amount in cents
+   */
+  amount: number;
+  /**
+   * Currency code (ISO 4217)
+   */
+  currency: string;
+  /**
+   * Payment provider payment ID (e.g., Stripe charge ID)
+   */
+  providerPaymentId?: string;
+  /**
+   * Amount that has been refunded (for partial refunds)
+   */
+  refundedAmount?: number;
+  /**
+   * Additional metadata
+   */
+  metadata?: Record<string, unknown>;
+  /**
+   * Timestamp when the payment was created
+   */
+  createdAt: Date;
+  /**
+   * Timestamp when the payment was last updated
+   */
+  updatedAt: Date;
+}
+
+/**
  * Feature - a capability that can be included in plans (from config)
  */
 export interface Feature {
@@ -215,6 +277,24 @@ export interface CreateSubscriptionInput {
   providerSubscriptionId?: string;
   providerCheckoutSessionId?: string;
   trialDays?: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CreatePaymentInput {
+  customerId: string;
+  subscriptionId?: string;
+  type: PaymentType;
+  status?: PaymentStatus;
+  amount: number;
+  currency?: string;
+  providerPaymentId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface UpdatePaymentInput {
+  status?: PaymentStatus;
+  providerPaymentId?: string;
+  refundedAmount?: number;
   metadata?: Record<string, unknown>;
 }
 

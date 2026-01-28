@@ -1,6 +1,7 @@
 import type {
   Customer,
   Feature,
+  Payment,
   Plan,
   PlanPrice,
   Subscription,
@@ -62,6 +63,24 @@ export interface InferredAPI<TFeatureCode extends string = string> {
     cancelAt?: "period_end" | "immediately";
   }) => Promise<Subscription | null>;
 
+  /**
+   * Change a subscription to a different plan
+   *
+   * Automatically calculates proration (credit for unused time,
+   * charge for new plan's remaining time).
+   */
+  changeSubscription: (params: {
+    customerId: string;
+    newPlanCode: string;
+    /** Whether to calculate proration. Defaults to true. */
+    prorate?: boolean;
+  }) => Promise<{
+    subscription: Subscription | null;
+    previousPlan: Plan | null;
+    newPlan: Plan;
+    payment: Payment | null;
+  }>;
+
   // Feature endpoints
   checkFeature: (params: {
     customerId: string;
@@ -70,6 +89,30 @@ export interface InferredAPI<TFeatureCode extends string = string> {
   listFeatures: (params: {
     customerId: string;
   }) => Promise<FeatureAccess<TFeatureCode>[]>;
+
+  // Payment endpoints
+  listPayments: (params: {
+    customerId: string;
+    limit?: number;
+    offset?: number;
+  }) => Promise<Payment[]>;
+  getPayment: (params: { paymentId: string }) => Promise<Payment | null>;
+
+  /**
+   * Create a refund for a payment
+   *
+   * @param paymentId - The BillSDK payment ID to refund
+   * @param amount - Optional amount to refund (partial refund). If omitted, full refund is issued.
+   * @param reason - Optional reason for the refund
+   */
+  createRefund: (params: {
+    paymentId: string;
+    amount?: number;
+    reason?: string;
+  }) => Promise<{
+    refund: Payment;
+    originalPayment: Payment;
+  }>;
 
   // Health check
   health: () => Promise<{ status: "ok"; timestamp: string }>;
@@ -125,6 +168,7 @@ export interface BillSDK<Options extends BillSDKOptions<any> = BillSDKOptions> {
     PlanPrice: PlanPrice;
     Subscription: Subscription;
     Feature: Feature;
+    Payment: Payment;
   };
 
   /**

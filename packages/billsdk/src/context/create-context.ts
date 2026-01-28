@@ -130,6 +130,7 @@ function resolveOptions(
     features: options.features,
     plugins: options.plugins ?? [],
     hooks: options.hooks ?? {},
+    behaviors: options.behaviors,
     logger: {
       level: options.logger?.level ?? "info",
       disabled: options.logger?.disabled ?? false,

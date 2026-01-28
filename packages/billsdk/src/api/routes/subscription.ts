@@ -1,4 +1,10 @@
 import { z } from "zod";
+import type { BillingContext } from "../../context/create-context";
+import { runBehavior } from "../../logic/behaviors/runner";
+import {
+  changeSubscription as changeSubscriptionService,
+  createSubscription as createSubscriptionService,
+} from "../../logic/subscription-service";
 import type { BillingEndpoint, EndpointContext } from "../../types/api";
 
 /**
@@ -29,6 +35,19 @@ const cancelSubscriptionSchema = z.object({
     .enum(["period_end", "immediately"])
     .optional()
     .default("period_end"),
+});
+
+/**
+ * Change subscription (upgrade/downgrade) schema
+ */
+const changeSubscriptionSchema = z.object({
+  customerId: z.string().min(1),
+  newPlanCode: z.string().min(1),
+  /**
+   * Whether to prorate the charge/credit
+   * If false, the new plan starts at the next billing cycle
+   */
+  prorate: z.boolean().optional().default(true),
 });
 
 /**
@@ -92,132 +111,14 @@ export const subscriptionEndpoints: Record<string, BillingEndpoint> = {
     ) => {
       const { ctx, body } = context;
 
-      // Check if payment adapter is configured
-      if (!ctx.paymentAdapter) {
-        throw new Error("Payment adapter not configured");
-      }
-
-      // Find customer
-      const customer = await ctx.internalAdapter.findCustomerByExternalId(
-        body.customerId,
-      );
-      if (!customer) {
-        throw new Error("Customer not found");
-      }
-
-      // Find plan from config (synchronous)
-      const plan = ctx.internalAdapter.findPlanByCode(body.planCode);
-      if (!plan) {
-        throw new Error("Plan not found");
-      }
-
-      // Find price for interval (synchronous)
-      const price = ctx.internalAdapter.getPlanPrice(
-        body.planCode,
-        body.interval,
-      );
-      if (!price) {
-        throw new Error(
-          `No price found for plan ${body.planCode} with interval ${body.interval}`,
-        );
-      }
-
-      // Create subscription in pending state
-      const subscription = await ctx.internalAdapter.createSubscription({
-        customerId: customer.id,
+      // Delegate to shared service
+      return createSubscriptionService(ctx as BillingContext, {
+        customerId: body.customerId,
         planCode: body.planCode,
         interval: body.interval,
-        status: "pending_payment",
-        trialDays: price.trialDays,
-      });
-
-      // Process payment - adapter decides the flow
-      const result = await ctx.paymentAdapter.processPayment({
-        customer: {
-          id: customer.id,
-          email: customer.email,
-          providerCustomerId: customer.providerCustomerId,
-        },
-        plan: {
-          code: plan.code,
-          name: plan.name,
-        },
-        price: {
-          amount: price.amount,
-          currency: price.currency,
-          interval: price.interval,
-        },
-        subscription: {
-          id: subscription.id,
-        },
         successUrl: body.successUrl,
         cancelUrl: body.cancelUrl,
-        metadata: {
-          subscriptionId: subscription.id,
-          customerId: customer.id,
-        },
       });
-
-      // Handle payment result based on adapter's decision
-      if (result.status === "active") {
-        // Cancel any other active subscriptions for this customer
-        const existingSubscriptions =
-          await ctx.internalAdapter.listSubscriptions(customer.id);
-        for (const existing of existingSubscriptions) {
-          if (
-            existing.id !== subscription.id &&
-            (existing.status === "active" || existing.status === "trialing")
-          ) {
-            await ctx.internalAdapter.cancelSubscription(existing.id);
-          }
-        }
-
-        // Payment completed immediately - activate subscription
-        const activeSubscription = await ctx.internalAdapter.updateSubscription(
-          subscription.id,
-          { status: "active" },
-        );
-
-        // Update customer with provider ID if returned
-        if (result.providerCustomerId && !customer.providerCustomerId) {
-          await ctx.internalAdapter.updateCustomer(customer.id, {
-            providerCustomerId: result.providerCustomerId,
-          });
-        }
-
-        return {
-          subscription: activeSubscription ?? {
-            ...subscription,
-            status: "active",
-          },
-        };
-      }
-
-      if (result.status === "pending") {
-        // Payment pending - user needs to complete payment flow
-        await ctx.internalAdapter.updateSubscription(subscription.id, {
-          providerCheckoutSessionId: result.sessionId,
-        });
-
-        // Update customer with provider ID if returned
-        if (result.providerCustomerId && !customer.providerCustomerId) {
-          await ctx.internalAdapter.updateCustomer(customer.id, {
-            providerCustomerId: result.providerCustomerId,
-          });
-        }
-
-        return {
-          subscription,
-          redirectUrl: result.redirectUrl,
-        };
-      }
-
-      // result.status === "failed"
-      // Mark the subscription as canceled since payment failed
-      await ctx.internalAdapter.updateSubscription(subscription.id, {
-        status: "canceled",
-      });
-      throw new Error(result.error);
     },
   },
 
@@ -232,39 +133,26 @@ export const subscriptionEndpoints: Record<string, BillingEndpoint> = {
     ) => {
       const { ctx, body } = context;
 
-      // Find customer
-      const customer = await ctx.internalAdapter.findCustomerByExternalId(
-        body.customerId,
-      );
-      if (!customer) {
-        throw new Error("Customer not found");
-      }
+      // Delegate to behavior (default: cancel subscription)
+      return runBehavior(ctx as BillingContext, "onSubscriptionCancel", {
+        customerId: body.customerId,
+        cancelAt: body.cancelAt,
+      });
+    },
+  },
 
-      // Find active subscription
-      const subscription =
-        await ctx.internalAdapter.findSubscriptionByCustomerId(customer.id);
-      if (!subscription) {
-        throw new Error("No active subscription found");
-      }
-
-      // Cancel subscription
-      if (body.cancelAt === "immediately") {
-        const canceled = await ctx.internalAdapter.cancelSubscription(
-          subscription.id,
-        );
-        return { subscription: canceled, canceledImmediately: true };
-      }
-
-      // Cancel at period end
-      const canceled = await ctx.internalAdapter.cancelSubscription(
-        subscription.id,
-        subscription.currentPeriodEnd,
-      );
-      return {
-        subscription: canceled,
-        canceledImmediately: false,
-        accessUntil: subscription.currentPeriodEnd,
-      };
+  changeSubscription: {
+    path: "/subscription/change",
+    options: {
+      method: "POST",
+      body: changeSubscriptionSchema,
+    },
+    handler: async (
+      context: EndpointContext<z.infer<typeof changeSubscriptionSchema>>,
+    ) => {
+      const { ctx, body } = context;
+      const billingCtx = ctx as BillingContext;
+      return changeSubscriptionService(billingCtx, body);
     },
   },
 };

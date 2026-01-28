@@ -45,15 +45,17 @@ export const auth = betterAuth({
         });
         console.log("[auth] Customer created:", customer.id);
 
-        // Assign free plan automatically (no checkout needed)
-        const billingCtx = await billing.$context;
-        await billingCtx.internalAdapter.createSubscription({
-          customerId: customer.id,
+        // Assign free plan automatically using the API
+        const { subscription } = await billing.api.createSubscription({
+          customerId: user.id, // externalId
           planCode: "free",
           interval: "monthly",
-          status: "active",
         });
-        console.log("[auth] Free subscription created for user:", user.id);
+        console.log(
+          "[auth] Free subscription created for user:",
+          user.id,
+          subscription.id,
+        );
       } catch (error) {
         console.error(
           "[auth] Failed to setup billing for user:",

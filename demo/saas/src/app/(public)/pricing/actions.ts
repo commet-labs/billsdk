@@ -16,7 +16,6 @@ export async function subscribeAction(
 
   const user = session.user;
 
-  // Get or create customer
   let customer = await billing.api.getCustomer({ externalId: user.id });
 
   if (!customer) {
@@ -27,7 +26,20 @@ export async function subscribeAction(
     });
   }
 
-  // Create subscription
+  const currentSubscription = await billing.api.getSubscription({
+    customerId: user.id,
+  });
+
+  if (currentSubscription && currentSubscription.planCode !== planCode) {
+    await billing.api.changeSubscription({
+      customerId: user.id,
+      newPlanCode: planCode,
+      prorate: true,
+    });
+
+    redirect("/dashboard");
+  }
+
   const result = await billing.api.createSubscription({
     customerId: customer.externalId,
     planCode,
@@ -36,7 +48,6 @@ export async function subscribeAction(
     cancelUrl: "http://localhost:3001/cancel",
   });
 
-  // Redirect to payment or success
   if (result.redirectUrl) {
     redirect(result.redirectUrl);
   }
