@@ -1,6 +1,6 @@
 {
   "name": "@billsdk/stripe",
-  "version": "0.1.4",
+  "version": "1.0.0",
   "description": "Stripe payment adapter for BillSDK",
   "type": "module",
   "license": "MIT",

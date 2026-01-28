@@ -1,6 +1,6 @@
-# billsdk
+# @billsdk/payment-adapter
 
-## 0.2.0
+## 1.0.0
 
 ### Minor Changes
 
@@ -33,12 +33,3 @@
 
 - Updated dependencies [05561bb]
   - @billsdk/core@0.2.0
-  - @billsdk/payment-adapter@1.0.0
-  - @billsdk/drizzle-adapter@1.0.0
-  - @billsdk/memory-adapter@1.0.0
-
-## 0.1.5
-
-### Patch Changes
-
-- Fix README image path to use absolute GitHub URL so it displays correctly on npm
