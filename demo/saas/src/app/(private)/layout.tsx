@@ -16,7 +16,7 @@ export default async function PrivateLayout({
   return (
     <>
       {children}
-      <TimeTravelOverlay baseUrl="/api/billing" customerId={session.user.id} />
+      <TimeTravelOverlay customerId={session.user.id} />
     </>
   );
 }

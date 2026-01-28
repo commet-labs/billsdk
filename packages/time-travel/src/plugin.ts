@@ -76,7 +76,7 @@ export function timeTravelPlugin(): BillSDKPlugin {
         const { customerId } = body;
         const date = body.date ? new Date(body.date) : null;
 
-        // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
+        // biome-ignore lint/suspicious/noExplicitAny: Plugin context is loosely typed to keep plugin authoring simple
         await setSimulatedTime(ctx.adapter as any, customerId, date);
 
         return {
@@ -100,9 +100,9 @@ export function timeTravelPlugin(): BillSDKPlugin {
       }) => {
         const { body, ctx } = context;
         const { customerId } = body;
-        // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
         const simulatedTime = await getSimulatedTime(
           customerId,
+          // biome-ignore lint/suspicious/noExplicitAny: Plugin context is loosely typed to keep plugin authoring simple
           ctx.adapter as any,
         );
         return {
@@ -127,7 +127,7 @@ export function timeTravelPlugin(): BillSDKPlugin {
         const { body, ctx } = context;
         const { customerId, days = 0, hours = 0, months = 0 } = body;
 
-        // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
+        // biome-ignore lint/suspicious/noExplicitAny: Plugin context is loosely typed to keep plugin authoring simple
         const adapter = ctx.adapter as any;
 
         // Get current time for this customer (simulated or real)
@@ -163,7 +163,7 @@ export function timeTravelPlugin(): BillSDKPlugin {
         const { body, ctx } = context;
         const { customerId } = body;
 
-        // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
+        // biome-ignore lint/suspicious/noExplicitAny: Plugin context is loosely typed to keep plugin authoring simple
         await setSimulatedTime(ctx.adapter as any, customerId, null);
 
         return {
@@ -182,7 +182,7 @@ export function timeTravelPlugin(): BillSDKPlugin {
       },
       handler: async (context: { ctx: { adapter: unknown } }) => {
         const { ctx } = context;
-        // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
+        // biome-ignore lint/suspicious/noExplicitAny: Plugin context is loosely typed to keep plugin authoring simple
         const states = await listTimeTravelStates(ctx.adapter as any);
         return {
           customers: states.map((s) => ({
@@ -204,11 +204,11 @@ export function timeTravelPlugin(): BillSDKPlugin {
     endpoints,
 
     init: async (ctx) => {
-      // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
+      // biome-ignore lint/suspicious/noExplicitAny: Plugin context is loosely typed to keep plugin authoring simple
       const adapter = (ctx as any).adapter;
 
       // Replace the default time provider with our time travel provider
-      // biome-ignore lint/suspicious/noExplicitAny: Modifying context timeProvider
+      // biome-ignore lint/suspicious/noExplicitAny: Plugin init can modify context - this is intentional for extensibility
       (ctx as any).timeProvider = createTimeTravelProvider(adapter);
 
       ctx.logger.warn("Time Travel plugin enabled. DO NOT USE IN PRODUCTION.");

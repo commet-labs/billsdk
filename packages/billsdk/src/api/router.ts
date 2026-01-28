@@ -220,7 +220,7 @@ export function createRouter(ctx: BillingContext): {
       };
 
       // Execute handler
-      // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed to call handlers with different context types
+      // biome-ignore lint/suspicious/noExplicitAny: Each endpoint defines its own body/query types - router dispatches generically
       const response = await endpoint.handler(endpointContext as any);
 
       // Run after hooks

@@ -28,11 +28,11 @@ export interface GenericBillingContext {
     warn: (message: string, ...args: unknown[]) => void;
     error: (message: string, ...args: unknown[]) => void;
   };
-  // biome-ignore lint/suspicious/noExplicitAny: Generic context allows flexibility
+  // biome-ignore lint/suspicious/noExplicitAny: Loose typing keeps plugin authoring simple - avoids complex type imports
   internalAdapter: any;
-  // biome-ignore lint/suspicious/noExplicitAny: Generic context allows flexibility
+  // biome-ignore lint/suspicious/noExplicitAny: Loose typing keeps plugin authoring simple - avoids complex type imports
   plugins: any[];
-  // biome-ignore lint/suspicious/noExplicitAny: Generic context allows flexibility
+  // biome-ignore lint/suspicious/noExplicitAny: Loose typing keeps plugin authoring simple - avoids complex type imports
   options: any;
   /**
    * Payment adapter for processing payments
@@ -68,7 +68,7 @@ export type EndpointHandler<
 export interface BillingEndpoint {
   path: string;
   options: EndpointOptions;
-  // biome-ignore lint/suspicious/noExplicitAny: Handler accepts generic context for flexible endpoint typing
+  // biome-ignore lint/suspicious/noExplicitAny: Loose typing keeps plugin authoring simple - handlers can define their own context shape
   handler: (context: any) => Promise<unknown> | unknown;
 }
 

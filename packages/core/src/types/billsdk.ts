@@ -122,7 +122,7 @@ export interface InferredAPI<TFeatureCode extends string = string> {
  * Helper to extract feature codes from BillSDKOptions
  */
 
-// biome-ignore lint/suspicious/noExplicitAny: Generic constraint needs flexibility for readonly/mutable arrays
+// biome-ignore lint/suspicious/noExplicitAny: TypeScript requires `any` here to support both readonly and mutable feature arrays (const vs let)
 type ExtractFeatureCodesFromOptions<Options extends BillSDKOptions<any>> =
   Options extends BillSDKOptions<infer TFeatures>
     ? TFeatures extends readonly FeatureConfig<string>[]
@@ -133,7 +133,7 @@ type ExtractFeatureCodesFromOptions<Options extends BillSDKOptions<any>> =
 /**
  * The main BillSDK instance type
  */
-// biome-ignore lint/suspicious/noExplicitAny: Generic constraint needs flexibility for readonly/mutable arrays
+// biome-ignore lint/suspicious/noExplicitAny: TypeScript requires `any` here to support both readonly and mutable feature arrays (const vs let)
 export interface BillSDK<Options extends BillSDKOptions<any> = BillSDKOptions> {
   /**
    * Request handler for mounting to a framework
@@ -156,7 +156,7 @@ export interface BillSDK<Options extends BillSDKOptions<any> = BillSDKOptions> {
    * Internal context (Promise for lazy initialization)
    * The actual type is BillingContext from billsdk package
    */
-  // biome-ignore lint/suspicious/noExplicitAny: Internal context type varies by implementation
+  // biome-ignore lint/suspicious/noExplicitAny: Context type is defined in billsdk package, not core - keeping loose to avoid circular deps
   $context: Promise<any>;
 
   /**
