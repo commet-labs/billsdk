@@ -108,6 +108,9 @@ importers:
       '@billsdk/stripe':
         specifier: workspace:^
         version: link:../../packages/stripe
+      '@billsdk/time-travel':
+        specifier: workspace:^
+        version: link:../../packages/time-travel
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.9))(@types/react@19.2.9)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -339,6 +342,36 @@ importers:
       vitest:
         specifier: 4.0.17
         version: 4.0.17(@types/node@22.15.29)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2)
+
+  packages/time-travel:
+    devDependencies:
+      '@billsdk/core':
+        specifier: workspace:*
+        version: link:../core
+      '@biomejs/biome':
+        specifier: 2.3.11
+        version: 2.3.11
+      '@types/node':
+        specifier: 22.15.29
+        version: 22.15.29
+      '@types/react':
+        specifier: 19.1.8
+        version: 19.1.8
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      tsup:
+        specifier: 8.5.1
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 4.0.17
+        version: 4.0.17(@types/node@22.15.29)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2)
+      zod:
+        specifier: 4.3.5
+        version: 4.3.5
 
 packages:
 
@@ -1917,6 +1950,9 @@ packages:
     peerDependencies:
       '@types/react': ^19.2.0
 
+  '@types/react@19.1.8':
+    resolution: {integrity: sha512-AwAfQ2Wa5bCx9WP8nZL2uMZWod7J7/JSplxbTmBQ5ms6QpqNYm672H0Vu9ZVKVngQ+ii4R/byguVEUZQyeg44g==}
+
   '@types/react@19.2.9':
     resolution: {integrity: sha512-Lpo8kgb/igvMIPeNV2rsYKTgaORYdO1XGVZ4Qz3akwOj0ySGYMPlQWa8BaLn0G63D1aSaAQ5ldR06wCpChQCjA==}
 
@@ -3246,6 +3282,10 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  react@19.1.0:
+    resolution: {integrity: sha512-FS+XFBNvn3GTAWq26joslQgWNoFu08F4kl0J4CgdNKADkdSGXQyTCnKteIAJy96Br6YbpEU1LSzV5dYtjMkMDg==}
+    engines: {node: '>=0.10.0'}
 
   react@19.2.3:
     resolution: {integrity: sha512-Ku/hhYbVjOQnXDZFv2+RibmLFGwFdeeKHFcOTlrt7xplBnya5OGn/hIRDsqDiSUcfORsDC7MPxwork8jBwsIWA==}
@@ -5064,6 +5104,10 @@ snapshots:
     dependencies:
       '@types/react': 19.2.9
 
+  '@types/react@19.1.8':
+    dependencies:
+      csstype: 3.2.3
+
   '@types/react@19.2.9':
     dependencies:
       csstype: 3.2.3
@@ -6529,6 +6573,8 @@ snapshots:
       tslib: 2.8.1
     optionalDependencies:
       '@types/react': 19.2.9
+
+  react@19.1.0: {}
 
   react@19.2.3: {}
 

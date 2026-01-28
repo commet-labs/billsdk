@@ -1,3 +1,4 @@
+import { createDefaultTimeProvider, type TimeProvider } from "@billsdk/core";
 import {
   createInternalAdapter,
   type InternalAdapter,
@@ -66,6 +67,12 @@ export interface BillingContext {
    * Secret for signing
    */
   secret: string;
+
+  /**
+   * Time provider for getting current time
+   * Can be overridden by plugins (e.g., time-travel) for testing
+   */
+  timeProvider: TimeProvider;
 
   /**
    * Check if a plugin is registered
@@ -186,6 +193,7 @@ export async function createBillingContext(
     plugins,
     logger,
     secret: resolvedOptions.secret,
+    timeProvider: createDefaultTimeProvider(),
 
     hasPlugin(id: string): boolean {
       return plugins.some((p) => p.id === id);

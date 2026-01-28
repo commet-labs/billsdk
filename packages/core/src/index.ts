@@ -25,6 +25,9 @@ export { BASE_ERROR_CODES, BillingError, defineErrorCodes } from "./error";
 // Re-export all types
 export type * from "./types";
 
+// Re-export time provider
+export { createDefaultTimeProvider } from "./types/time";
+
 // Re-export utilities
 export {
   addDays,

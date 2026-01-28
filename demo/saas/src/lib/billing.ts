@@ -1,3 +1,4 @@
+import { timeTravelPlugin } from "@billsdk/time-travel";
 import { billsdk } from "billsdk";
 import { drizzleAdapter } from "billsdk/adapters/drizzle";
 import { db } from "./db";
@@ -11,6 +12,9 @@ export const billing = billsdk({
     schema,
     provider: "pg",
   }),
+
+  // Time Travel plugin for testing subscription cycles
+  plugins: [timeTravelPlugin()],
 
   features: [
     { code: "export", name: "Export Data" },

@@ -312,7 +312,7 @@ export async function changeSubscription(
       newPlanAmount: newPrice.amount,
       currentPeriodStart: subscription.currentPeriodStart,
       currentPeriodEnd: subscription.currentPeriodEnd,
-      changeDate: new Date(),
+      changeDate: ctx.timeProvider.now(),
     });
 
     ctx.logger.info("Proration calculated", {

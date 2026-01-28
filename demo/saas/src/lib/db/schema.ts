@@ -76,3 +76,14 @@ export const payment = pgTable("payment", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+/**
+ * Time Travel State - for @billsdk/time-travel plugin
+ * Only needed for development/testing
+ */
+export const time_travel_state = pgTable("time_travel_state", {
+  id: text("id").primaryKey(),
+  simulatedTime: timestamp("simulated_time"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
