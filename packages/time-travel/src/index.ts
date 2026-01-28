@@ -40,5 +40,6 @@ export {
   createTimeTravelProvider,
   getSimulatedTime,
   isTimeTravelActive,
+  listTimeTravelStates,
   type TimeTravelState,
 } from "./time-provider";

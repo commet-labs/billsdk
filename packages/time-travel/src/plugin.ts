@@ -4,6 +4,7 @@ import { timeTravelSchema } from "./schema";
 import {
   createTimeTravelProvider,
   getSimulatedTime,
+  listTimeTravelStates,
   setSimulatedTime,
 } from "./time-provider";
 
@@ -11,22 +12,38 @@ import {
  * Schema for set time endpoint
  */
 const setTimeSchema = z.object({
+  customerId: z.string(),
   date: z.string().nullable(), // ISO string or null
+});
+
+/**
+ * Schema for get time endpoint
+ */
+const getTimeSchema = z.object({
+  customerId: z.string(),
 });
 
 /**
  * Schema for advance time endpoint
  */
 const advanceTimeSchema = z.object({
+  customerId: z.string(),
   days: z.number().optional().default(0),
   hours: z.number().optional().default(0),
   months: z.number().optional().default(0),
 });
 
 /**
+ * Schema for reset time endpoint
+ */
+const resetTimeSchema = z.object({
+  customerId: z.string(),
+});
+
+/**
  * Time Travel Plugin for BillSDK
  *
- * Allows you to simulate time for testing subscription cycles,
+ * Allows you to simulate time per customer for testing subscription cycles,
  * trials, renewals, and other time-based billing logic.
  *
  * WARNING: This plugin is for development/testing only.
@@ -56,13 +73,15 @@ export function timeTravelPlugin(): BillSDKPlugin {
         ctx: { adapter: unknown };
       }) => {
         const { body, ctx } = context;
+        const { customerId } = body;
         const date = body.date ? new Date(body.date) : null;
 
         // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
-        await setSimulatedTime(ctx.adapter as any, date);
+        await setSimulatedTime(ctx.adapter as any, customerId, date);
 
         return {
           success: true,
+          customerId,
           simulatedTime: date?.toISOString() ?? null,
           isSimulated: date !== null,
         };
@@ -72,13 +91,22 @@ export function timeTravelPlugin(): BillSDKPlugin {
     timeTravelGet: {
       path: "/time-travel/get",
       options: {
-        method: "GET",
+        method: "POST",
+        body: getTimeSchema,
       },
-      handler: async (context: { ctx: { adapter: unknown } }) => {
-        const { ctx } = context;
+      handler: async (context: {
+        body: z.infer<typeof getTimeSchema>;
+        ctx: { adapter: unknown };
+      }) => {
+        const { body, ctx } = context;
+        const { customerId } = body;
         // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
-        const simulatedTime = await getSimulatedTime(ctx.adapter as any);
+        const simulatedTime = await getSimulatedTime(
+          customerId,
+          ctx.adapter as any,
+        );
         return {
+          customerId,
           simulatedTime: simulatedTime?.toISOString() ?? null,
           isSimulated: simulatedTime !== null,
           realTime: new Date().toISOString(),
@@ -97,13 +125,13 @@ export function timeTravelPlugin(): BillSDKPlugin {
         ctx: { adapter: unknown };
       }) => {
         const { body, ctx } = context;
-        const { days = 0, hours = 0, months = 0 } = body;
+        const { customerId, days = 0, hours = 0, months = 0 } = body;
 
         // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
         const adapter = ctx.adapter as any;
 
-        // Get current time (simulated or real)
-        const simulatedTime = await getSimulatedTime(adapter);
+        // Get current time for this customer (simulated or real)
+        const simulatedTime = await getSimulatedTime(customerId, adapter);
         const current = simulatedTime ? new Date(simulatedTime) : new Date();
 
         // Advance time
@@ -111,10 +139,11 @@ export function timeTravelPlugin(): BillSDKPlugin {
         current.setDate(current.getDate() + days);
         current.setHours(current.getHours() + hours);
 
-        await setSimulatedTime(adapter, current);
+        await setSimulatedTime(adapter, customerId, current);
 
         return {
           success: true,
+          customerId,
           simulatedTime: current.toISOString(),
           advanced: { days, hours, months },
         };
@@ -125,16 +154,43 @@ export function timeTravelPlugin(): BillSDKPlugin {
       path: "/time-travel/reset",
       options: {
         method: "POST",
+        body: resetTimeSchema,
       },
-      handler: async (context: { ctx: { adapter: unknown } }) => {
-        const { ctx } = context;
+      handler: async (context: {
+        body: z.infer<typeof resetTimeSchema>;
+        ctx: { adapter: unknown };
+      }) => {
+        const { body, ctx } = context;
+        const { customerId } = body;
 
         // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
-        await setSimulatedTime(ctx.adapter as any, null);
+        await setSimulatedTime(ctx.adapter as any, customerId, null);
 
         return {
           success: true,
+          customerId,
           simulatedTime: null,
+          realTime: new Date().toISOString(),
+        };
+      },
+    },
+
+    timeTravelList: {
+      path: "/time-travel/list",
+      options: {
+        method: "GET",
+      },
+      handler: async (context: { ctx: { adapter: unknown } }) => {
+        const { ctx } = context;
+        // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
+        const states = await listTimeTravelStates(ctx.adapter as any);
+        return {
+          customers: states.map((s) => ({
+            customerId: s.id,
+            simulatedTime: s.simulatedTime
+              ? new Date(s.simulatedTime).toISOString()
+              : null,
+          })),
           realTime: new Date().toISOString(),
         };
       },
@@ -157,10 +213,11 @@ export function timeTravelPlugin(): BillSDKPlugin {
 
       ctx.logger.warn("Time Travel plugin enabled. DO NOT USE IN PRODUCTION.");
 
-      const simulatedTime = await getSimulatedTime(adapter);
-      if (simulatedTime) {
+      // Log active time travel states
+      const states = await listTimeTravelStates(adapter);
+      if (states.length > 0) {
         ctx.logger.info(
-          `Time Travel: Currently simulating ${simulatedTime.toISOString()}`,
+          `Time Travel: ${states.length} customer(s) with simulated time`,
         );
       }
     },

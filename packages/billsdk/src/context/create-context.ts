@@ -149,13 +149,11 @@ function resolveOptions(
  * Generate a default secret (for development only)
  */
 function generateDefaultSecret(): string {
-  // In production, users should provide their own secret
   return "billsdk-development-secret-change-in-production";
 }
 
 /**
  * Create the billing context
- * Plans and features are read from config, not seeded to DB
  */
 export async function createBillingContext(
   adapter: DBAdapter,
@@ -175,11 +173,9 @@ export async function createBillingContext(
     }
   }
 
-  // Reference to context for getNow function (resolved after context creation)
-  let contextRef: BillingContext | null = null;
-  const getNow = async () => contextRef?.timeProvider.now() ?? new Date();
+  // Timestamps like createdAt/updatedAt should always be real system time
+  const getNow = async () => new Date();
 
-  // Create internal adapter with config (no DB seeding needed!)
   const internalAdapter = createInternalAdapter(
     adapter,
     options.plans ?? [],
@@ -213,9 +209,6 @@ export async function createBillingContext(
       return crypto.randomUUID();
     },
   };
-
-  // Link context reference so getNow() uses the correct timeProvider
-  contextRef = context;
 
   // Initialize plugins (may override timeProvider)
   for (const plugin of plugins) {

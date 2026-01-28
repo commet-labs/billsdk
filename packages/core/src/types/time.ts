@@ -7,9 +7,10 @@
 export interface TimeProvider {
   /**
    * Get the current time
-   * Returns simulated time if set, otherwise real time
+   * @param customerId - Optional customer ID for per-customer time simulation
+   * @returns Simulated time for the customer if set, otherwise real time
    */
-  now(): Promise<Date>;
+  now(customerId?: string): Promise<Date>;
 }
 
 /**
@@ -17,6 +18,6 @@ export interface TimeProvider {
  */
 export function createDefaultTimeProvider(): TimeProvider {
   return {
-    now: async () => new Date(),
+    now: async (_customerId?: string) => new Date(),
   };
 }

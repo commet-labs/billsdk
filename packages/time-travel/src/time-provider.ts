@@ -1,7 +1,7 @@
 import type { DBAdapter, TimeProvider } from "@billsdk/core";
 
 export interface TimeTravelState extends Record<string, unknown> {
-  id: string;
+  id: string; // customerId
   simulatedTime: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -12,15 +12,20 @@ let dbAdapter: DBAdapter | null = null;
 
 /**
  * Create a time travel provider that reads directly from the database
+ * Supports per-customer time simulation
  */
 export function createTimeTravelProvider(adapter: DBAdapter): TimeProvider {
   dbAdapter = adapter;
   return {
-    now: async () => {
+    now: async (customerId?: string) => {
+      if (!customerId) {
+        return new Date();
+      }
+
       try {
         const state = await adapter.findOne<TimeTravelState>({
           model: "time_travel_state",
-          where: [{ field: "id", operator: "eq", value: "current" }],
+          where: [{ field: "id", operator: "eq", value: customerId }],
         });
         return state?.simulatedTime
           ? new Date(state.simulatedTime)
@@ -33,23 +38,24 @@ export function createTimeTravelProvider(adapter: DBAdapter): TimeProvider {
 }
 
 /**
- * Set the simulated time in the database
+ * Set the simulated time for a specific customer
  */
 export async function setSimulatedTime(
   adapter: DBAdapter,
+  customerId: string,
   time: Date | null,
 ): Promise<void> {
   const realNow = new Date();
 
   const existing = await adapter.findOne<TimeTravelState>({
     model: "time_travel_state",
-    where: [{ field: "id", operator: "eq", value: "current" }],
+    where: [{ field: "id", operator: "eq", value: customerId }],
   });
 
   if (existing) {
     await adapter.update<TimeTravelState>({
       model: "time_travel_state",
-      where: [{ field: "id", operator: "eq", value: "current" }],
+      where: [{ field: "id", operator: "eq", value: customerId }],
       update: {
         simulatedTime: time,
         updatedAt: realNow,
@@ -59,7 +65,7 @@ export async function setSimulatedTime(
     await adapter.create<TimeTravelState>({
       model: "time_travel_state",
       data: {
-        id: "current",
+        id: customerId,
         simulatedTime: time,
         createdAt: realNow,
         updatedAt: realNow,
@@ -69,9 +75,10 @@ export async function setSimulatedTime(
 }
 
 /**
- * Get the simulated time from the database
+ * Get the simulated time for a specific customer
  */
 export async function getSimulatedTime(
+  customerId: string,
   adapter?: DBAdapter,
 ): Promise<Date | null> {
   const db = adapter ?? dbAdapter;
@@ -80,7 +87,7 @@ export async function getSimulatedTime(
   try {
     const state = await db.findOne<TimeTravelState>({
       model: "time_travel_state",
-      where: [{ field: "id", operator: "eq", value: "current" }],
+      where: [{ field: "id", operator: "eq", value: customerId }],
     });
     return state?.simulatedTime ? new Date(state.simulatedTime) : null;
   } catch {
@@ -89,11 +96,42 @@ export async function getSimulatedTime(
 }
 
 /**
- * Check if time travel is active (has simulated time set)
+ * Check if time travel is active for a specific customer
  */
 export async function isTimeTravelActive(
+  customerId: string,
   adapter?: DBAdapter,
 ): Promise<boolean> {
-  const time = await getSimulatedTime(adapter);
+  const time = await getSimulatedTime(customerId, adapter);
   return time !== null;
+}
+
+/**
+ * List all customers with active time travel
+ */
+export async function listTimeTravelStates(
+  adapter?: DBAdapter,
+): Promise<TimeTravelState[]> {
+  const db = adapter ?? dbAdapter;
+  if (!db) return [];
+
+  try {
+    const states = await db.findMany<TimeTravelState>({
+      model: "time_travel_state",
+      where: [],
+    });
+    return states.filter((s) => s.simulatedTime !== null);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Reset time travel for a specific customer (remove simulated time)
+ */
+export async function resetSimulatedTime(
+  adapter: DBAdapter,
+  customerId: string,
+): Promise<void> {
+  await setSimulatedTime(adapter, customerId, null);
 }

@@ -21,12 +21,24 @@ export interface TimeTravelOverlayProps {
    * @default true
    */
   defaultCollapsed?: boolean;
+
+  /**
+   * Customer ID to control time for
+   * Required for per-customer time simulation
+   */
+  customerId?: string;
 }
 
 interface TimeTravelState {
+  customerId: string;
   simulatedTime: string | null;
   isSimulated: boolean;
   realTime: string;
+}
+
+interface CustomerTimeState {
+  customerId: string;
+  simulatedTime: string | null;
 }
 
 /**
@@ -40,11 +52,15 @@ interface TimeTravelState {
  * import { TimeTravelOverlay } from "@billsdk/time-travel/react";
  *
  * function App() {
+ *   const { user } = useAuth();
  *   return (
  *     <>
  *       <YourApp />
- *       {process.env.NODE_ENV === "development" && (
- *         <TimeTravelOverlay baseUrl="/api/billing" />
+ *       {process.env.NODE_ENV === "development" && user?.customerId && (
+ *         <TimeTravelOverlay
+ *           baseUrl="/api/billing"
+ *           customerId={user.customerId}
+ *         />
  *       )}
  *     </>
  *   );
@@ -55,16 +71,31 @@ export function TimeTravelOverlay({
   baseUrl = "/api/billing",
   position = "bottom-right",
   defaultCollapsed = true,
+  customerId,
 }: TimeTravelOverlayProps) {
   const [state, setState] = useState<TimeTravelState | null>(null);
+  const [allCustomers, setAllCustomers] = useState<CustomerTimeState[]>([]);
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const [isLoading, setIsLoading] = useState(false);
   const [dateInput, setDateInput] = useState("");
+  const [customerIdInput, setCustomerIdInput] = useState(customerId ?? "");
+  const [showAllCustomers, setShowAllCustomers] = useState(false);
 
-  // Fetch current state
+  const activeCustomerId = customerId ?? customerIdInput;
+
+  // Fetch current state for the active customer
   const fetchState = useCallback(async () => {
+    if (!activeCustomerId) {
+      setState(null);
+      return;
+    }
+
     try {
-      const res = await fetch(`${baseUrl}/time-travel/get`);
+      const res = await fetch(`${baseUrl}/time-travel/get`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId: activeCustomerId }),
+      });
       if (res.ok) {
         const data = (await res.json()) as TimeTravelState;
         setState(data);
@@ -78,23 +109,45 @@ export function TimeTravelOverlay({
     } catch (error) {
       console.error("[TimeTravelOverlay] Failed to fetch state:", error);
     }
+  }, [baseUrl, activeCustomerId]);
+
+  // Fetch all customers with simulated time
+  const fetchAllCustomers = useCallback(async () => {
+    try {
+      const res = await fetch(`${baseUrl}/time-travel/list`);
+      if (res.ok) {
+        const data = (await res.json()) as { customers: CustomerTimeState[] };
+        setAllCustomers(data.customers);
+      }
+    } catch (error) {
+      console.error("[TimeTravelOverlay] Failed to fetch customers:", error);
+    }
   }, [baseUrl]);
 
   useEffect(() => {
     fetchState();
-  }, [fetchState]);
+    fetchAllCustomers();
+  }, [fetchState, fetchAllCustomers]);
 
   // Advance time
   const advance = async (days: number, months = 0, hours = 0) => {
+    if (!activeCustomerId) return;
+
     setIsLoading(true);
     try {
       const res = await fetch(`${baseUrl}/time-travel/advance`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ days, months, hours }),
+        body: JSON.stringify({
+          customerId: activeCustomerId,
+          days,
+          months,
+          hours,
+        }),
       });
       if (res.ok) {
         await fetchState();
+        await fetchAllCustomers();
       }
     } catch (error) {
       console.error("[TimeTravelOverlay] Failed to advance:", error);
@@ -105,15 +158,18 @@ export function TimeTravelOverlay({
 
   // Set specific time
   const setTime = async (date: string | null) => {
+    if (!activeCustomerId) return;
+
     setIsLoading(true);
     try {
       const res = await fetch(`${baseUrl}/time-travel/set`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date }),
+        body: JSON.stringify({ customerId: activeCustomerId, date }),
       });
       if (res.ok) {
         await fetchState();
+        await fetchAllCustomers();
       }
     } catch (error) {
       console.error("[TimeTravelOverlay] Failed to set time:", error);
@@ -124,14 +180,19 @@ export function TimeTravelOverlay({
 
   // Reset to real time
   const reset = async () => {
+    if (!activeCustomerId) return;
+
     setIsLoading(true);
     try {
       const res = await fetch(`${baseUrl}/time-travel/reset`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId: activeCustomerId }),
       });
       if (res.ok) {
         setDateInput("");
         await fetchState();
+        await fetchAllCustomers();
       }
     } catch (error) {
       console.error("[TimeTravelOverlay] Failed to reset:", error);
@@ -143,7 +204,6 @@ export function TimeTravelOverlay({
   // Handle date input submission
   const handleDateSubmit = () => {
     if (dateInput) {
-      // Convert date to ISO string at midnight UTC
       const date = new Date(dateInput);
       date.setUTCHours(12, 0, 0, 0);
       setTime(date.toISOString());
@@ -174,6 +234,11 @@ export function TimeTravelOverlay({
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const truncateId = (id: string) => {
+    if (id.length <= 12) return id;
+    return `${id.slice(0, 6)}...${id.slice(-4)}`;
   };
 
   return (
@@ -216,12 +281,26 @@ export function TimeTravelOverlay({
               ? formatDate(state.simulatedTime)
               : "Real Time"}
           </span>
+          {allCustomers.length > 0 && (
+            <span
+              style={{
+                backgroundColor: "#3b82f6",
+                color: "white",
+                borderRadius: 9999,
+                padding: "2px 6px",
+                fontSize: 11,
+                fontWeight: 600,
+              }}
+            >
+              {allCustomers.length}
+            </span>
+          )}
         </button>
       ) : (
         /* Expanded Panel */
         <div
           style={{
-            width: 280,
+            width: 320,
             backgroundColor: "white",
             borderRadius: 12,
             boxShadow:
@@ -267,166 +346,303 @@ export function TimeTravelOverlay({
             </button>
           </div>
 
-          {/* Current Time Display */}
           <div style={{ padding: 16 }}>
-            <div
-              style={{
-                marginBottom: 16,
-                padding: 12,
-                backgroundColor: "#f9fafb",
-                borderRadius: 8,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#6b7280",
-                  marginBottom: 4,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                {state?.isSimulated ? "Simulated Time" : "Current Time"}
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>
-                {state?.simulatedTime
-                  ? formatDate(state.simulatedTime)
-                  : state?.realTime
-                    ? formatDate(state.realTime)
-                    : "Loading..."}
-              </div>
-              <div style={{ fontSize: 14, color: "#6b7280" }}>
-                {state?.simulatedTime
-                  ? formatTime(state.simulatedTime)
-                  : state?.realTime
-                    ? formatTime(state.realTime)
-                    : ""}
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div style={{ marginBottom: 16 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#6b7280",
-                  marginBottom: 8,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                Quick Advance
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3, 1fr)",
-                  gap: 8,
-                }}
-              >
-                {[
-                  { label: "+1 day", days: 1 },
-                  { label: "+1 week", days: 7 },
-                  { label: "+1 month", months: 1 },
-                ].map((action) => (
-                  <button
-                    key={action.label}
-                    type="button"
-                    onClick={() =>
-                      advance(action.days ?? 0, action.months ?? 0)
-                    }
-                    disabled={isLoading}
-                    style={{
-                      padding: "8px 12px",
-                      borderRadius: 6,
-                      border: "1px solid #e5e7eb",
-                      backgroundColor: "white",
-                      cursor: isLoading ? "not-allowed" : "pointer",
-                      color: "#374151",
-                      fontSize: 13,
-                      fontWeight: 500,
-                      transition: "all 0.15s",
-                      opacity: isLoading ? 0.5 : 1,
-                    }}
-                  >
-                    {action.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Date Picker */}
-            <div style={{ marginBottom: 16 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#6b7280",
-                  marginBottom: 8,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                Go to Date
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  type="date"
-                  value={dateInput}
-                  onChange={(e) => {
-                    const target = e.target as HTMLInputElement;
-                    setDateInput(target.value);
-                  }}
+            {/* Customer ID Input (only if not provided via prop) */}
+            {!customerId && (
+              <div style={{ marginBottom: 16 }}>
+                <div
                   style={{
-                    flex: 1,
+                    fontSize: 12,
+                    color: "#6b7280",
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Customer ID
+                </div>
+                <input
+                  type="text"
+                  value={customerIdInput}
+                  onChange={(e) => setCustomerIdInput(e.target.value)}
+                  onBlur={fetchState}
+                  placeholder="Enter customer ID…"
+                  style={{
+                    width: "100%",
                     padding: "8px 12px",
                     borderRadius: 6,
                     border: "1px solid #e5e7eb",
                     fontSize: 14,
                     color: "#374151",
+                    boxSizing: "border-box",
                   }}
                 />
-                <button
-                  type="button"
-                  onClick={handleDateSubmit}
-                  disabled={isLoading || !dateInput}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: 6,
-                    border: "none",
-                    backgroundColor: "#3b82f6",
-                    color: "white",
-                    cursor: isLoading || !dateInput ? "not-allowed" : "pointer",
-                    fontSize: 14,
-                    fontWeight: 500,
-                    opacity: isLoading || !dateInput ? 0.5 : 1,
-                  }}
-                >
-                  Go
-                </button>
               </div>
-            </div>
+            )}
 
-            {/* Reset Button */}
-            {state?.isSimulated && (
-              <button
-                type="button"
-                onClick={reset}
-                disabled={isLoading}
+            {/* Customer indicator (when provided via prop) */}
+            {customerId && (
+              <div
                 style={{
-                  width: "100%",
-                  padding: "10px 16px",
+                  marginBottom: 16,
+                  padding: "8px 12px",
+                  backgroundColor: "#eff6ff",
                   borderRadius: 6,
-                  border: "1px solid #ef4444",
-                  backgroundColor: "white",
-                  color: "#ef4444",
-                  cursor: isLoading ? "not-allowed" : "pointer",
-                  fontSize: 14,
-                  fontWeight: 500,
-                  opacity: isLoading ? 0.5 : 1,
+                  fontSize: 12,
+                  color: "#1e40af",
                 }}
               >
-                Reset to Real Time
-              </button>
+                Customer: <strong>{truncateId(customerId)}</strong>
+              </div>
+            )}
+
+            {activeCustomerId ? (
+              <>
+                {/* Current Time Display */}
+                <div
+                  style={{
+                    marginBottom: 16,
+                    padding: 12,
+                    backgroundColor: "#f9fafb",
+                    borderRadius: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#6b7280",
+                      marginBottom: 4,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {state?.isSimulated ? "Simulated Time" : "Current Time"}
+                  </div>
+                  <div
+                    style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}
+                  >
+                    {state?.simulatedTime
+                      ? formatDate(state.simulatedTime)
+                      : state?.realTime
+                        ? formatDate(state.realTime)
+                        : "Loading..."}
+                  </div>
+                  <div style={{ fontSize: 14, color: "#6b7280" }}>
+                    {state?.simulatedTime
+                      ? formatTime(state.simulatedTime)
+                      : state?.realTime
+                        ? formatTime(state.realTime)
+                        : ""}
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div style={{ marginBottom: 16 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#6b7280",
+                      marginBottom: 8,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Quick Advance
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, 1fr)",
+                      gap: 8,
+                    }}
+                  >
+                    {[
+                      { label: "+1 day", days: 1 },
+                      { label: "+1 week", days: 7 },
+                      { label: "+1 month", months: 1 },
+                    ].map((action) => (
+                      <button
+                        key={action.label}
+                        type="button"
+                        onClick={() =>
+                          advance(action.days ?? 0, action.months ?? 0)
+                        }
+                        disabled={isLoading}
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: 6,
+                          border: "1px solid #e5e7eb",
+                          backgroundColor: "white",
+                          cursor: isLoading ? "not-allowed" : "pointer",
+                          color: "#374151",
+                          fontSize: 13,
+                          fontWeight: 500,
+                          transition: "all 0.15s",
+                          opacity: isLoading ? 0.5 : 1,
+                        }}
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Date Picker */}
+                <div style={{ marginBottom: 16 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#6b7280",
+                      marginBottom: 8,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Go to Date
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      type="date"
+                      value={dateInput}
+                      onChange={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        setDateInput(target.value);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        borderRadius: 6,
+                        border: "1px solid #e5e7eb",
+                        fontSize: 14,
+                        color: "#374151",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleDateSubmit}
+                      disabled={isLoading || !dateInput}
+                      style={{
+                        padding: "8px 16px",
+                        borderRadius: 6,
+                        border: "none",
+                        backgroundColor: "#3b82f6",
+                        color: "white",
+                        cursor:
+                          isLoading || !dateInput ? "not-allowed" : "pointer",
+                        fontSize: 14,
+                        fontWeight: 500,
+                        opacity: isLoading || !dateInput ? 0.5 : 1,
+                      }}
+                    >
+                      Go
+                    </button>
+                  </div>
+                </div>
+
+                {/* Reset Button */}
+                {state?.isSimulated && (
+                  <button
+                    type="button"
+                    onClick={reset}
+                    disabled={isLoading}
+                    style={{
+                      width: "100%",
+                      padding: "10px 16px",
+                      borderRadius: 6,
+                      border: "1px solid #ef4444",
+                      backgroundColor: "white",
+                      color: "#ef4444",
+                      cursor: isLoading ? "not-allowed" : "pointer",
+                      fontSize: 14,
+                      fontWeight: 500,
+                      opacity: isLoading ? 0.5 : 1,
+                      marginBottom: 16,
+                    }}
+                  >
+                    Reset to Real Time
+                  </button>
+                )}
+              </>
+            ) : (
+              <div
+                style={{
+                  padding: 16,
+                  textAlign: "center",
+                  color: "#6b7280",
+                }}
+              >
+                Enter a customer ID to control time
+              </div>
+            )}
+
+            {/* All Customers Toggle */}
+            {allCustomers.length > 0 && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowAllCustomers(!showAllCustomers)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: 6,
+                    border: "1px solid #e5e7eb",
+                    backgroundColor: "#f9fafb",
+                    cursor: "pointer",
+                    color: "#374151",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span>
+                    {allCustomers.length} customer(s) with simulated time
+                  </span>
+                  <span>{showAllCustomers ? "▲" : "▼"}</span>
+                </button>
+
+                {showAllCustomers && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      maxHeight: 150,
+                      overflowY: "auto",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 6,
+                    }}
+                  >
+                    {allCustomers.map((c) => (
+                      <div
+                        key={c.customerId}
+                        style={{
+                          padding: "8px 12px",
+                          borderBottom: "1px solid #f3f4f6",
+                          fontSize: 12,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          backgroundColor:
+                            c.customerId === activeCustomerId
+                              ? "#eff6ff"
+                              : "transparent",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: "monospace",
+                            color: "#374151",
+                          }}
+                        >
+                          {truncateId(c.customerId)}
+                        </span>
+                        <span style={{ color: "#6b7280" }}>
+                          {c.simulatedTime ? formatDate(c.simulatedTime) : "—"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 

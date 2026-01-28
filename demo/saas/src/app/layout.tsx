@@ -1,4 +1,3 @@
-import { TimeTravelOverlay } from "@billsdk/time-travel/react";
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono } from "next/font/google";
@@ -38,7 +37,6 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`${ibmPlexMono.className} antialiased`}>
         <NuqsAdapter>{children}</NuqsAdapter>
-        <TimeTravelOverlay baseUrl="/api/billing" />
         <Analytics />
       </body>
     </html>
