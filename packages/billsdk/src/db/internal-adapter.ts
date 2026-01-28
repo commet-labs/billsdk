@@ -112,7 +112,7 @@ export function createInternalAdapter(
   adapter: DBAdapter,
   plans: PlanConfig[] = [],
   features: FeatureConfig[] = [],
-  getNow: () => Date = () => new Date(),
+  getNow: () => Promise<Date> = async () => new Date(),
 ): InternalAdapter {
   // Build lookup maps for fast access
   const plansByCode = new Map<string, Plan>();
@@ -128,7 +128,7 @@ export function createInternalAdapter(
   return {
     // Customer operations (DB)
     async createCustomer(data: CreateCustomerInput): Promise<Customer> {
-      const now = getNow();
+      const now = await getNow();
       return adapter.create<Customer>({
         model: TABLES.CUSTOMER,
         data: {
@@ -229,7 +229,7 @@ export function createInternalAdapter(
     async createSubscription(
       data: CreateSubscriptionInput,
     ): Promise<Subscription> {
-      const now = getNow();
+      const now = await getNow();
       const interval = data.interval ?? "monthly";
       const currentPeriodEnd = new Date(now);
 
@@ -315,10 +315,11 @@ export function createInternalAdapter(
       id: string,
       data: Partial<Subscription>,
     ): Promise<Subscription | null> {
+      const now = await getNow();
       return adapter.update<Subscription>({
         model: TABLES.SUBSCRIPTION,
         where: [{ field: "id", operator: "eq", value: id }],
-        update: { ...data, updatedAt: getNow() },
+        update: { ...data, updatedAt: now },
       });
     },
 
@@ -326,7 +327,7 @@ export function createInternalAdapter(
       id: string,
       cancelAt?: Date,
     ): Promise<Subscription | null> {
-      const now = getNow();
+      const now = await getNow();
       return adapter.update<Subscription>({
         model: TABLES.SUBSCRIPTION,
         where: [{ field: "id", operator: "eq", value: id }],
@@ -382,7 +383,7 @@ export function createInternalAdapter(
 
     // Payment operations (DB)
     async createPayment(data: CreatePaymentInput): Promise<Payment> {
-      const now = getNow();
+      const now = await getNow();
       return adapter.create<Payment>({
         model: TABLES.PAYMENT,
         data: {

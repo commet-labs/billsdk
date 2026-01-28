@@ -335,7 +335,12 @@ export async function changeSubscription(
 
   // Upgrade: immediate change with proration and period reset
   let payment: Payment | null = null;
-  const changeDate = ctx.timeProvider.now();
+  const changeDate = await ctx.timeProvider.now();
+
+  ctx.logger.info("changeDate from timeProvider", {
+    changeDate: changeDate.toISOString(),
+    realTime: new Date().toISOString(),
+  });
 
   if (prorate) {
     const prorationResult = calculateProration({

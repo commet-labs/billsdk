@@ -9,7 +9,7 @@ export interface TimeProvider {
    * Get the current time
    * Returns simulated time if set, otherwise real time
    */
-  now(): Date;
+  now(): Promise<Date>;
 }
 
 /**
@@ -17,6 +17,6 @@ export interface TimeProvider {
  */
 export function createDefaultTimeProvider(): TimeProvider {
   return {
-    now: () => new Date(),
+    now: async () => new Date(),
   };
 }

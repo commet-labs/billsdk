@@ -7,47 +7,38 @@ export interface TimeTravelState extends Record<string, unknown> {
   updatedAt: Date;
 }
 
-export const timeTravelCache: {
-  simulatedTime: Date | null;
-  initialized: boolean;
-} = {
-  simulatedTime: null,
-  initialized: false,
-};
+// Store adapter reference for the time provider
+let dbAdapter: DBAdapter | null = null;
 
-export function createTimeTravelProvider(): TimeProvider {
+/**
+ * Create a time travel provider that reads directly from the database
+ */
+export function createTimeTravelProvider(adapter: DBAdapter): TimeProvider {
+  dbAdapter = adapter;
   return {
-    now: () => {
-      return timeTravelCache.simulatedTime
-        ? new Date(timeTravelCache.simulatedTime)
-        : new Date();
+    now: async () => {
+      try {
+        const state = await adapter.findOne<TimeTravelState>({
+          model: "time_travel_state",
+          where: [{ field: "id", operator: "eq", value: "current" }],
+        });
+        return state?.simulatedTime
+          ? new Date(state.simulatedTime)
+          : new Date();
+      } catch {
+        return new Date();
+      }
     },
   };
 }
 
-export async function initializeTimeTravelCache(
-  adapter: DBAdapter,
-): Promise<void> {
-  try {
-    const state = await adapter.findOne<TimeTravelState>({
-      model: "time_travel_state",
-      where: [{ field: "id", operator: "eq", value: "current" }],
-    });
-    if (state?.simulatedTime) {
-      timeTravelCache.simulatedTime = new Date(state.simulatedTime);
-    }
-    timeTravelCache.initialized = true;
-  } catch {
-    timeTravelCache.initialized = true;
-  }
-}
-
+/**
+ * Set the simulated time in the database
+ */
 export async function setSimulatedTime(
   adapter: DBAdapter,
   time: Date | null,
 ): Promise<void> {
-  timeTravelCache.simulatedTime = time;
-
   const realNow = new Date();
 
   const existing = await adapter.findOne<TimeTravelState>({
@@ -77,10 +68,32 @@ export async function setSimulatedTime(
   }
 }
 
-export function getSimulatedTime(): Date | null {
-  return timeTravelCache.simulatedTime;
+/**
+ * Get the simulated time from the database
+ */
+export async function getSimulatedTime(
+  adapter?: DBAdapter,
+): Promise<Date | null> {
+  const db = adapter ?? dbAdapter;
+  if (!db) return null;
+
+  try {
+    const state = await db.findOne<TimeTravelState>({
+      model: "time_travel_state",
+      where: [{ field: "id", operator: "eq", value: "current" }],
+    });
+    return state?.simulatedTime ? new Date(state.simulatedTime) : null;
+  } catch {
+    return null;
+  }
 }
 
-export function isTimeTravelActive(): boolean {
-  return timeTravelCache.simulatedTime !== null;
+/**
+ * Check if time travel is active (has simulated time set)
+ */
+export async function isTimeTravelActive(
+  adapter?: DBAdapter,
+): Promise<boolean> {
+  const time = await getSimulatedTime(adapter);
+  return time !== null;
 }

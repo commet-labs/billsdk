@@ -4,10 +4,7 @@ import { timeTravelSchema } from "./schema";
 import {
   createTimeTravelProvider,
   getSimulatedTime,
-  initializeTimeTravelCache,
-  isTimeTravelActive,
   setSimulatedTime,
-  timeTravelCache,
 } from "./time-provider";
 
 /**
@@ -77,11 +74,13 @@ export function timeTravelPlugin(): BillSDKPlugin {
       options: {
         method: "GET",
       },
-      handler: async () => {
-        const simulatedTime = getSimulatedTime();
+      handler: async (context: { ctx: { adapter: unknown } }) => {
+        const { ctx } = context;
+        // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
+        const simulatedTime = await getSimulatedTime(ctx.adapter as any);
         return {
           simulatedTime: simulatedTime?.toISOString() ?? null,
-          isSimulated: isTimeTravelActive(),
+          isSimulated: simulatedTime !== null,
           realTime: new Date().toISOString(),
         };
       },
@@ -100,18 +99,19 @@ export function timeTravelPlugin(): BillSDKPlugin {
         const { body, ctx } = context;
         const { days = 0, hours = 0, months = 0 } = body;
 
+        // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
+        const adapter = ctx.adapter as any;
+
         // Get current time (simulated or real)
-        const current = timeTravelCache.simulatedTime
-          ? new Date(timeTravelCache.simulatedTime)
-          : new Date();
+        const simulatedTime = await getSimulatedTime(adapter);
+        const current = simulatedTime ? new Date(simulatedTime) : new Date();
 
         // Advance time
         current.setMonth(current.getMonth() + months);
         current.setDate(current.getDate() + days);
         current.setHours(current.getHours() + hours);
 
-        // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
-        await setSimulatedTime(ctx.adapter as any, current);
+        await setSimulatedTime(adapter, current);
 
         return {
           success: true,
@@ -148,19 +148,19 @@ export function timeTravelPlugin(): BillSDKPlugin {
     endpoints,
 
     init: async (ctx) => {
-      // Initialize cache from database
       // biome-ignore lint/suspicious/noExplicitAny: Using adapter from context
-      await initializeTimeTravelCache((ctx as any).adapter);
+      const adapter = (ctx as any).adapter;
 
       // Replace the default time provider with our time travel provider
       // biome-ignore lint/suspicious/noExplicitAny: Modifying context timeProvider
-      (ctx as any).timeProvider = createTimeTravelProvider();
+      (ctx as any).timeProvider = createTimeTravelProvider(adapter);
 
       ctx.logger.warn("Time Travel plugin enabled. DO NOT USE IN PRODUCTION.");
 
-      if (isTimeTravelActive()) {
+      const simulatedTime = await getSimulatedTime(adapter);
+      if (simulatedTime) {
         ctx.logger.info(
-          `Time Travel: Currently simulating ${getSimulatedTime()?.toISOString()}`,
+          `Time Travel: Currently simulating ${simulatedTime.toISOString()}`,
         );
       }
     },
