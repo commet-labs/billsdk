@@ -200,29 +200,28 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
 
         // Payment mode (paid plans): get payment method from PaymentIntent
         const paymentIntentId = session.payment_intent as string;
-        let amount: number | undefined;
-        let currency: string | undefined;
 
-        if (paymentIntentId) {
-          const paymentIntent =
-            await stripeClient.paymentIntents.retrieve(paymentIntentId);
-          providerPaymentMethodId =
-            typeof paymentIntent.payment_method === "string"
-              ? paymentIntent.payment_method
-              : paymentIntent.payment_method?.id;
+        if (!paymentIntentId) {
+          throw new Error("Missing payment_intent in payment mode session");
+        }
 
-          // Capture amount and currency for payment record
-          amount = paymentIntent.amount;
-          currency = paymentIntent.currency;
+        const paymentIntent =
+          await stripeClient.paymentIntents.retrieve(paymentIntentId);
+        providerPaymentMethodId =
+          typeof paymentIntent.payment_method === "string"
+            ? paymentIntent.payment_method
+            : paymentIntent.payment_method?.id;
 
-          // Set as default for future off_session charges
-          if (providerPaymentMethodId && customerId) {
-            await stripeClient.customers.update(customerId, {
-              invoice_settings: {
-                default_payment_method: providerPaymentMethodId,
-              },
-            });
-          }
+        const amount = paymentIntent.amount;
+        const currency = paymentIntent.currency;
+
+        // Set as default for future off_session charges
+        if (providerPaymentMethodId && customerId) {
+          await stripeClient.customers.update(customerId, {
+            invoice_settings: {
+              default_payment_method: providerPaymentMethodId,
+            },
+          });
         }
 
         return {
@@ -302,6 +301,9 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
           off_session: true,
           metadata: {
             billsdkCustomerId: params.customer.id,
+            ...(params.metadata?.subscriptionId && {
+              billsdkSubscriptionId: params.metadata.subscriptionId,
+            }),
             ...params.metadata,
           },
         });

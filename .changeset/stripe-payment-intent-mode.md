@@ -17,6 +17,8 @@ BillSDK now owns all billing logic (subscriptions, proration, renewals). Stripe 
 - Added `refund()` method for processing refunds
 - Webhook now sets `default_payment_method` on Stripe customer after checkout
 - Webhook handles both `checkout.session.completed` (setup and payment modes) and `payment_intent.payment_failed`
+- `charge()` now includes `billsdkSubscriptionId` in metadata for failed payment tracking
+- Payment mode webhook throws error if `payment_intent` is missing (fail-fast)
 
 ### @billsdk/core
 
