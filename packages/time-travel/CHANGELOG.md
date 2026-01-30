@@ -9,3 +9,4 @@
 - React overlay component for controlling simulated time
 - Persistent simulated time state in database
 - API endpoints for get/set/advance/reset time
+- "Process Renewals" button in overlay for easy testing

@@ -1,5 +1,32 @@
 # billsdk
 
+## 0.3.0
+
+### Minor Changes
+
+- 3ec3adb: Add recurring billing/renewals and time-travel support
+
+  **@billsdk/core:**
+
+  - Add `TimeProvider` interface for time abstraction
+  - Add `scheduledPlanCode` and `scheduledInterval` fields to Subscription model
+  - Add `processRenewals` to InferredAPI types
+
+  **billsdk:**
+
+  - Add `processRenewals()` API for processing subscription renewals
+  - Add `GET /renewals` endpoint (built-in, zero code for users)
+  - Add scheduled downgrade support (applies at period end)
+  - Integrate TimeProvider for time-based operations
+
+### Patch Changes
+
+- Updated dependencies [3ec3adb]
+  - @billsdk/core@0.3.0
+  - @billsdk/drizzle-adapter@1.0.1
+  - @billsdk/memory-adapter@1.0.1
+  - @billsdk/payment-adapter@1.0.1
+
 ## 0.2.0
 
 ### Minor Changes
