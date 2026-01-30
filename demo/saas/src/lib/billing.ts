@@ -1,3 +1,4 @@
+import { stripePayment } from "@billsdk/stripe";
 import { timeTravelPlugin } from "@billsdk/time-travel";
 import { billsdk } from "billsdk";
 import { drizzleAdapter } from "billsdk/adapters/drizzle";
@@ -13,7 +14,11 @@ export const billing = billsdk({
     provider: "pg",
   }),
 
-  // Time Travel plugin for testing subscription cycles
+  payment: stripePayment({
+    secretKey: process.env.STRIPE_SECRET_KEY!,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
+  }),
+
   plugins: [timeTravelPlugin()],
 
   features: [

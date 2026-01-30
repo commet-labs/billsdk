@@ -36,6 +36,7 @@ export const webhookEndpoints: Record<string, BillingEndpoint> = {
       ctx.logger.debug("Payment confirmation received", {
         subscriptionId: result.subscriptionId,
         status: result.status,
+        amount: result.amount,
       });
 
       if (result.status === "active") {
@@ -80,6 +81,31 @@ export const webhookEndpoints: Record<string, BillingEndpoint> = {
                 providerCustomerId: result.providerCustomerId,
               });
             }
+          }
+
+          // Create payment record if a payment was made
+          if (result.amount && result.amount > 0) {
+            await ctx.internalAdapter.createPayment({
+              customerId: subscription.customerId,
+              subscriptionId: subscription.id,
+              type: "subscription",
+              status: "succeeded",
+              amount: result.amount,
+              currency: result.currency ?? "usd",
+              providerPaymentId: result.providerPaymentId,
+              metadata: {
+                planCode: subscription.planCode,
+                interval: subscription.interval,
+                confirmedVia: "webhook",
+              },
+            });
+
+            ctx.logger.info("Payment record created", {
+              subscriptionId: subscription.id,
+              amount: result.amount,
+              currency: result.currency,
+              providerPaymentId: result.providerPaymentId,
+            });
           }
 
           ctx.logger.info("Subscription activated via webhook", {
