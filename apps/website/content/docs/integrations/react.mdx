@@ -1,0 +1,65 @@
+---
+title: React
+description: React hooks for billing UI
+---
+
+## Setup
+
+```typescript title="lib/billing-client.ts"
+import { createBillingClient } from "billsdk/react";
+
+export const billing = createBillingClient({
+  baseURL: "/api/billing",
+});
+```
+
+| Option | Type | Default |
+|--------|------|---------|
+| `baseURL` | `string` | `"/api/billing"` |
+| `credentials` | `"include" \| "omit" \| "same-origin"` | `"include"` |
+
+## Hooks
+
+All return `{ data, isLoading, error, refresh }`.
+
+```tsx
+// Subscription
+const { data: subscription } = billing.useSubscription();
+subscription?.status  // "active" | "trialing" | ...
+subscription?.planCode
+
+// Plans
+const { data: plans } = billing.usePlans();
+
+// Customer
+const { data: customer } = billing.useCustomer();
+```
+
+## Set Customer ID
+
+```tsx
+// After auth
+billing.setCustomerId(user.id);
+
+// On logout
+billing.setCustomerId("");
+```
+
+## Refresh
+
+```tsx
+// Global refresh
+billing.refresh();
+
+// Per-hook refresh
+const { refresh } = billing.useSubscription();
+```
+
+## Atoms
+
+For non-React contexts:
+
+```typescript
+billing.$subscription.subscribe(sub => console.log(sub));
+billing.$subscription.get();
+```

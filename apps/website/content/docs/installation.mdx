@@ -1,0 +1,25 @@
+---
+title: Installation
+description: Install BillSDK in your project
+---
+
+```bash
+npm install billsdk @billsdk/stripe @billsdk/drizzle-adapter
+```
+
+## Environment Variables
+
+```bash title=".env"
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+Get these from [Stripe Dashboard](https://dashboard.stripe.com/apikeys).
+
+## Database
+
+Add the billing tables to your Drizzle schema. See [Drizzle Adapter](/docs/adapters/drizzle) for the full schema.
+
+```bash
+npx drizzle-kit push
+```

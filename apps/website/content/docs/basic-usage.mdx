@@ -1,0 +1,108 @@
+---
+title: Basic Usage
+description: Your first subscription in 5 minutes
+---
+
+## Configure
+
+```typescript title="lib/billing.ts"
+import { billsdk } from "billsdk";
+import { drizzleAdapter } from "@billsdk/drizzle-adapter";
+import { stripePayment } from "@billsdk/stripe";
+import { db } from "./db";
+import * as schema from "./db/schema";
+
+export const billing = billsdk({
+  database: drizzleAdapter(db, { schema, provider: "pg" }),
+  payment: stripePayment({
+    secretKey: process.env.STRIPE_SECRET_KEY!,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
+  }),
+  features: [
+    { code: "export", name: "Export Data" },
+    { code: "api_access", name: "API Access" },
+  ],
+  plans: [
+    {
+      code: "free",
+      name: "Free",
+      prices: [{ amount: 0, interval: "monthly" }],
+      features: ["export"],
+    },
+    {
+      code: "pro",
+      name: "Pro",
+      prices: [
+        { amount: 2000, interval: "monthly" },
+        { amount: 20000, interval: "yearly" },
+      ],
+      features: ["export", "api_access"],
+    },
+  ],
+});
+```
+
+## Mount API
+
+```typescript title="app/api/billing/[...all]/route.ts"
+import { billingHandler } from "billsdk/next";
+import { billing } from "@/lib/billing";
+
+export const { GET, POST } = billingHandler(billing);
+```
+
+Configure Stripe webhooks at `/api/billing/webhook`. See [Stripe Adapter](/docs/adapters/stripe).
+
+## Customer
+
+```typescript
+// Link to your user
+await billing.api.createCustomer({
+  externalId: user.id,
+  email: user.email,
+});
+```
+
+## Subscription
+
+```typescript
+const result = await billing.api.createSubscription({
+  customerId: user.id,
+  planCode: "pro",
+  successUrl: "/success",
+  cancelUrl: "/pricing",
+});
+
+// Paid plans redirect to Stripe Checkout
+if (result.redirectUrl) {
+  redirect(result.redirectUrl);
+}
+// Free plans activate immediately
+```
+
+## Feature Check
+
+```typescript
+const allowed = await billing.api.checkFeature({
+  customerId: user.id,
+  feature: "api_access",
+});
+```
+
+## Cancel
+
+```typescript
+await billing.api.cancelSubscription({
+  customerId: user.id,
+  cancelAt: "period_end", // or "immediately"
+});
+```
+
+## Change Plan
+
+```typescript
+await billing.api.changeSubscription({
+  customerId: user.id,
+  newPlanCode: "enterprise",
+});
+```

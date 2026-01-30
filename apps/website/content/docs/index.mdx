@@ -1,27 +1,37 @@
 ---
 title: Introduction
-description: Billing SDK that runs inside your application
+description: Billing SDK that runs inside your app
 ---
 
-BillSDK is a billing engine that runs inside your application. You define plans and features in code, integrate with Stripe (or any payment provider), and ship billing in minutes.
+BillSDK handles billing logic. You own your data. Swap providers without rewriting code.
 
 ## Why BillSDK
 
-Billing SaaS platforms (Stripe Billing, Chargebee) lock you into their ecosystem, charge a percentage of your revenue, and run your billing logic on their servers.
+- **vs SaaS platforms**: No revenue share, no vendor lock-in, data stays yours
+- **vs building yourself**: Skip months of edge cases (trials, proration, failures)
 
-Building billing yourself takes months and every edge case (trials, proration, failures) costs you revenue or angry customers.
+```typescript
+const billing = billsdk({
+  database: drizzleAdapter(db, { schema, provider: "pg" }),
+  payment: stripePayment({ secretKey, webhookSecret }),
+  plans: [
+    { code: "free", prices: [{ amount: 0, interval: "monthly" }] },
+    { code: "pro", prices: [{ amount: 2000, interval: "monthly" }] },
+  ],
+});
+```
 
-
-## Current Status
+## Status
 
 | Feature | Status |
 |---------|--------|
-| Fixed-price plans | Done |
-| Boolean features (on/off gating) | Done |
-| Stripe Checkout | Done |
-| Webhook handling | Done |
-| Trial periods | Done |
+| Subscriptions (create, cancel, change) | Done |
+| Boolean features | Done |
+| Stripe Checkout + Webhooks | Done |
+| Trials | Done |
+| React hooks | Done |
+| Refunds | Done |
+| Renewals | Done |
 | Metered usage | Planned |
-| Seats (per-user) | Planned |
-| Credits & Balance | Planned |
-| Proration | Planned |
+| Seats | Planned |
+| Credits | Planned |

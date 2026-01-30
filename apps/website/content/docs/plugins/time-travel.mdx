@@ -1,0 +1,62 @@
+---
+title: Time Travel
+description: Test subscription cycles in development
+---
+
+<Callout type="warn">
+Development only.
+</Callout>
+
+## Setup
+
+```typescript
+import { timeTravelPlugin } from "@billsdk/time-travel";
+
+billsdk({
+  plugins: [timeTravelPlugin()],
+});
+```
+
+Add `time_travel_state` table to your schema.
+
+## React Overlay
+
+```tsx
+import { TimeTravelOverlay } from "@billsdk/time-travel/react";
+
+{process.env.NODE_ENV === "development" && (
+  <TimeTravelOverlay customerId={user.id} />
+)}
+```
+
+| Prop | Default |
+|------|---------|
+| `baseUrl` | `"/api/billing"` |
+| `position` | `"bottom-right"` |
+| `defaultCollapsed` | `true` |
+
+## API
+
+| Endpoint | Body |
+|----------|------|
+| `POST /time-travel/advance` | `{ customerId, days?, hours?, months? }` |
+| `POST /time-travel/set` | `{ customerId, date }` |
+| `POST /time-travel/reset` | `{ customerId }` |
+| `POST /time-travel/get` | `{ customerId }` |
+| `GET /time-travel/list` | — |
+
+## Test Renewal
+
+```typescript
+// Advance past period end
+await fetch("/api/billing/time-travel/set", {
+  method: "POST",
+  body: JSON.stringify({
+    customerId: user.id,
+    date: subscription.currentPeriodEnd,
+  }),
+});
+
+// Process
+await billing.api.processRenewals({ customerId: user.id });
+```

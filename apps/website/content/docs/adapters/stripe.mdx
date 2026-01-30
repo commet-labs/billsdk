@@ -1,0 +1,59 @@
+---
+title: Stripe
+description: Payment processing with Stripe
+---
+
+## Setup
+
+```typescript
+import { stripePayment } from "@billsdk/stripe";
+
+payment: stripePayment({
+  secretKey: process.env.STRIPE_SECRET_KEY!,
+  webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
+})
+```
+
+## Webhooks
+
+**Endpoint:** `/api/billing/webhook`
+
+**Events to enable:**
+- `checkout.session.completed` — activates subscription
+- `payment_intent.payment_failed` — marks as failed
+
+### Stripe Dashboard
+
+1. [Developers → Webhooks](https://dashboard.stripe.com/webhooks) → Add endpoint
+2. URL: `https://your-domain.com/api/billing/webhook`
+3. Copy signing secret to `STRIPE_WEBHOOK_SECRET`
+
+### Local Development
+
+```bash
+stripe listen --forward-to localhost:3000/api/billing/webhook
+```
+
+## Payment Modes
+
+| Price | Mode | Behavior |
+|-------|------|----------|
+| `0` | Setup | Collects payment method, no charge |
+| `>0` | Payment | Charges immediately, saves method |
+
+## Renewals
+
+```typescript
+await billing.api.processRenewals();
+await billing.api.processRenewals({ dryRun: true });
+await billing.api.processRenewals({ customerId: user.id });
+```
+
+## Refunds
+
+```typescript
+await billing.api.createRefund({
+  paymentId: "...",
+  amount: 1000, // partial, in cents
+});
+```

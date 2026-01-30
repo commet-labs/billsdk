@@ -1,4 +1,19 @@
 {
   "title": "Documentation",
-  "pages": ["index", "getting-started", "configuration", "api-reference"]
+  "pages": [
+    "index",
+    "installation",
+    "basic-usage",
+    "---Integrations---",
+    "integrations",
+    "---Concepts---",
+    "concepts",
+    "---Adapters---",
+    "adapters",
+    "---Plugins---",
+    "plugins",
+    "---Reference---",
+    "configuration",
+    "api-reference"
+  ]
 }

@@ -1,0 +1,66 @@
+---
+title: Next.js
+description: Next.js App Router integration
+---
+
+## Route Handler
+
+```typescript title="app/api/billing/[...all]/route.ts"
+import { billingHandler } from "billsdk/next";
+import { billing } from "@/lib/billing";
+
+export const { GET, POST } = billingHandler(billing);
+```
+
+## Server Actions
+
+```typescript title="app/actions.ts"
+"use server";
+
+import { billing } from "@/lib/billing";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+
+export async function subscribe(planCode: string) {
+  const user = await getCurrentUser();
+  
+  const result = await billing.api.createSubscription({
+    customerId: user.id,
+    planCode,
+    successUrl: `${process.env.NEXT_PUBLIC_URL}/success`,
+    cancelUrl: `${process.env.NEXT_PUBLIC_URL}/pricing`,
+  });
+
+  if (result.redirectUrl) redirect(result.redirectUrl);
+  revalidatePath("/dashboard");
+}
+```
+
+## Server Components
+
+```tsx title="app/dashboard/page.tsx"
+import { billing } from "@/lib/billing";
+
+export default async function DashboardPage() {
+  const user = await getCurrentUser();
+  const subscription = await billing.api.getSubscription({ customerId: user.id });
+  
+  return <div>Plan: {subscription?.planCode}</div>;
+}
+```
+
+## Cron for Renewals
+
+```json title="vercel.json"
+{
+  "crons": [{ "path": "/api/billing/renewals", "schedule": "0 * * * *" }]
+}
+```
+
+```typescript title="app/api/billing/renewals/route.ts"
+import { billing } from "@/lib/billing";
+
+export async function GET() {
+  return Response.json(await billing.api.processRenewals());
+}
+```

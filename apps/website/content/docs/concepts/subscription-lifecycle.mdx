@@ -1,0 +1,56 @@
+---
+title: Subscription Lifecycle
+description: States and transitions
+---
+
+## States
+
+| Status | When |
+|--------|------|
+| `pending_payment` | Waiting for Stripe Checkout |
+| `trialing` | In trial period |
+| `active` | Paid and active |
+| `past_due` | Payment failed |
+| `canceled` | Ended |
+| `paused` | Temporarily paused |
+| `incomplete` | Setup incomplete |
+
+## Flow
+
+```
+pending_payment ──webhook──► active
+                          └► trialing ──trial ends──► active
+                                                   └► canceled (no payment method)
+
+active ──payment fails──► past_due ──retries fail──► canceled
+```
+
+## Cancellation
+
+```typescript
+// Keep access until period ends
+await billing.api.cancelSubscription({
+  customerId: user.id,
+  cancelAt: "period_end",
+});
+// status stays "active", cancelAt is set
+
+// End immediately
+await billing.api.cancelSubscription({
+  customerId: user.id,
+  cancelAt: "immediately",
+});
+// status becomes "canceled"
+```
+
+## Trials
+
+Configure per price:
+
+```typescript
+prices: [
+  { amount: 2000, interval: "monthly", trialDays: 14 },
+]
+```
+
+During trial: `status: "trialing"`, payment method collected but not charged.

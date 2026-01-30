@@ -1,0 +1,62 @@
+---
+title: Behaviors
+description: Override default billing logic
+---
+
+## Available
+
+| Behavior | Default |
+|----------|---------|
+| `onRefund` | Refund + cancel subscription |
+| `onPaymentFailed` | Mark as `past_due` |
+| `onSubscriptionCancel` | Cancel at period end |
+| `onTrialEnd` | Charge or cancel |
+
+## Usage
+
+```typescript
+billsdk({
+  behaviors: {
+    onRefund: async (ctx, params, defaultBehavior) => {
+      // Option 1: Custom logic
+      await ctx.paymentAdapter.refund({ ... });
+      return { refund, originalPayment };
+      
+      // Option 2: Run default + side effects
+      const result = await defaultBehavior();
+      await sendEmail("Refund processed");
+      return result;
+    },
+  },
+});
+```
+
+## Example: Refund Without Canceling
+
+```typescript
+onRefund: async (ctx, params) => {
+  const payment = await ctx.internalAdapter.findOne("payment", {
+    where: [{ field: "id", operator: "eq", value: params.paymentId }],
+  });
+  
+  await ctx.paymentAdapter.refund({
+    providerPaymentId: payment.providerPaymentId!,
+  });
+  
+  // Don't cancel subscription
+  return { refund: payment, originalPayment: payment };
+},
+```
+
+## Example: Downgrade Instead of Cancel
+
+```typescript
+onSubscriptionCancel: async (ctx, params) => {
+  await ctx.internalAdapter.update("subscription", {
+    where: [{ field: "customerId", operator: "eq", value: params.customerId }],
+    data: { planCode: "free" },
+  });
+  
+  return { subscription, canceledImmediately: false };
+},
+```

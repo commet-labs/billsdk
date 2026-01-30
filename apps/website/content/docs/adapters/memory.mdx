@@ -1,0 +1,27 @@
+---
+title: Memory
+description: In-memory adapter for testing
+---
+
+```typescript
+import { memoryAdapter } from "@billsdk/memory-adapter";
+
+database: memoryAdapter()
+```
+
+Data lost on restart. Use for tests.
+
+```typescript
+import { billsdk, memoryAdapter, paymentAdapter } from "billsdk";
+
+const billing = billsdk({
+  database: memoryAdapter(),
+  payment: paymentAdapter(), // Mock payments
+  plans: [...],
+});
+
+// Test
+const customer = await billing.api.createCustomer({ ... });
+const { subscription } = await billing.api.createSubscription({ ... });
+expect(subscription.status).toBe("active");
+```
