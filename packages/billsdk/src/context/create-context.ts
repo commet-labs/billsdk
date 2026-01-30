@@ -1,3 +1,4 @@
+import { createDefaultTimeProvider, type TimeProvider } from "@billsdk/core";
 import {
   createInternalAdapter,
   type InternalAdapter,
@@ -66,6 +67,12 @@ export interface BillingContext {
    * Secret for signing
    */
   secret: string;
+
+  /**
+   * Time provider for getting current time
+   * Can be overridden by plugins (e.g., time-travel) for testing
+   */
+  timeProvider: TimeProvider;
 
   /**
    * Check if a plugin is registered
@@ -142,13 +149,11 @@ function resolveOptions(
  * Generate a default secret (for development only)
  */
 function generateDefaultSecret(): string {
-  // In production, users should provide their own secret
   return "billsdk-development-secret-change-in-production";
 }
 
 /**
  * Create the billing context
- * Plans and features are read from config, not seeded to DB
  */
 export async function createBillingContext(
   adapter: DBAdapter,
@@ -168,11 +173,14 @@ export async function createBillingContext(
     }
   }
 
-  // Create internal adapter with config (no DB seeding needed!)
+  // Timestamps like createdAt/updatedAt should always be real system time
+  const getNow = async () => new Date();
+
   const internalAdapter = createInternalAdapter(
     adapter,
     options.plans ?? [],
     options.features ?? [],
+    getNow,
   );
 
   // Build context
@@ -186,6 +194,7 @@ export async function createBillingContext(
     plugins,
     logger,
     secret: resolvedOptions.secret,
+    timeProvider: createDefaultTimeProvider(),
 
     hasPlugin(id: string): boolean {
       return plugins.some((p) => p.id === id);
@@ -201,7 +210,7 @@ export async function createBillingContext(
     },
   };
 
-  // Initialize plugins
+  // Initialize plugins (may override timeProvider)
   for (const plugin of plugins) {
     if (plugin.init) {
       await plugin.init(context);

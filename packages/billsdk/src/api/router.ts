@@ -6,6 +6,7 @@ import { healthEndpoint } from "./routes/health";
 import { paymentEndpoints } from "./routes/payment";
 import { planEndpoints } from "./routes/plan";
 import { refundEndpoints } from "./routes/refund";
+import { renewalEndpoints } from "./routes/renewals";
 import { subscriptionEndpoints } from "./routes/subscription";
 import { webhookEndpoints } from "./routes/webhook";
 
@@ -23,6 +24,7 @@ export function getEndpoints(
     ...featureEndpoints,
     ...paymentEndpoints,
     ...refundEndpoints,
+    ...renewalEndpoints,
     ...webhookEndpoints,
   };
 
@@ -220,7 +222,7 @@ export function createRouter(ctx: BillingContext): {
       };
 
       // Execute handler
-      // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed to call handlers with different context types
+      // biome-ignore lint/suspicious/noExplicitAny: Each endpoint defines its own body/query types - router dispatches generically
       const response = await endpoint.handler(endpointContext as any);
 
       // Run after hooks

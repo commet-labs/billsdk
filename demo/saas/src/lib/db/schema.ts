@@ -46,6 +46,10 @@ export const subscription = pgTable("subscription", {
   cancelAt: timestamp("cancel_at"),
   trialStart: timestamp("trial_start"),
   trialEnd: timestamp("trial_end"),
+  // Scheduled plan change (for downgrades, takes effect at period end)
+  scheduledPlanCode: text("scheduled_plan_code"),
+  // Scheduled interval change (for downgrades, takes effect at period end)
+  scheduledInterval: text("scheduled_interval"),
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -73,6 +77,17 @@ export const payment = pgTable("payment", {
   // Amount refunded (for partial refunds)
   refundedAmount: integer("refunded_amount"),
   metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+/**
+ * Time Travel State - for @billsdk/time-travel plugin
+ * Only needed for development/testing
+ */
+export const time_travel_state = pgTable("time_travel_state", {
+  id: text("id").primaryKey(),
+  simulatedTime: timestamp("simulated_time"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

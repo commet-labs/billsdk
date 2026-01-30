@@ -6,6 +6,7 @@ import {
   createBillingContext,
 } from "../context/create-context";
 import { runBehavior } from "../logic/behaviors/runner";
+import { processRenewals as processRenewalsService } from "../logic/renewal-service";
 import {
   changeSubscription as changeSubscriptionService,
   createSubscription as createSubscriptionService,
@@ -164,6 +165,11 @@ function createAPI<TFeatureCode extends string = string>(
         reason: params.reason,
       });
     },
+
+    async processRenewals(params) {
+      const ctx = await contextPromise;
+      return processRenewalsService(ctx, params);
+    },
   };
 }
 
@@ -182,7 +188,7 @@ async function init(options: BillSDKOptions): Promise<BillingContext> {
  * @param options - Configuration options
  * @returns BillSDK instance
  */
-// biome-ignore lint/suspicious/noExplicitAny: Generic constraint flexibility for readonly/mutable arrays
+// biome-ignore lint/suspicious/noExplicitAny: TypeScript requires `any` here to support both readonly and mutable feature arrays (const vs let)
 export function createBillSDK<Options extends BillSDKOptions<any>>(
   options: Options,
 ): BillSDK<Options> {
@@ -242,6 +248,6 @@ export function createBillSDK<Options extends BillSDKOptions<any>>(
 export function billsdk<
   const TFeatures extends readonly FeatureConfig<string>[],
 >(options: BillSDKOptions<TFeatures>): BillSDK<BillSDKOptions<TFeatures>> {
-  // biome-ignore lint/suspicious/noExplicitAny: Type coercion needed for generic constraint compatibility
+  // biome-ignore lint/suspicious/noExplicitAny: Bridging `const` inference (readonly[]) to createBillSDK's mutable array expectation
   return createBillSDK(options as any);
 }

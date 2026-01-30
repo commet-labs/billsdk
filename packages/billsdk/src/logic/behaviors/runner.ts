@@ -61,14 +61,14 @@ export async function runBehavior<T extends keyof BehaviorConfig>(
 
   // Create the default behavior function that the user can optionally call
   const defaultBehavior = async (): Promise<BehaviorConfig[T]["result"]> => {
-    // biome-ignore lint/suspicious/noExplicitAny: Type narrowing is handled by the caller
+    // biome-ignore lint/suspicious/noExplicitAny: Generic behavior dispatch - type safety is ensured by BehaviorConfig mapping
     return defaultFn(ctx, params as any);
   };
 
   if (userBehavior) {
     ctx.logger.debug(`Running user-defined behavior: ${behaviorName}`);
     // User provided an override - call it with the default available
-    // biome-ignore lint/suspicious/noExplicitAny: Type narrowing is handled by the caller
+    // biome-ignore lint/suspicious/noExplicitAny: Generic behavior dispatch - type safety is ensured by BehaviorConfig mapping
     return userBehavior(ctx as any, params as any, defaultBehavior as any);
   }
 

@@ -1,0 +1,225 @@
+import type { BillingEndpoint, BillSDKPlugin } from "@billsdk/core";
+import { z } from "zod";
+import { timeTravelSchema } from "./schema";
+import {
+  createTimeTravelProvider,
+  getSimulatedTime,
+  listTimeTravelStates,
+  setSimulatedTime,
+} from "./time-provider";
+
+/**
+ * Schema for set time endpoint
+ */
+const setTimeSchema = z.object({
+  customerId: z.string(),
+  date: z.string().nullable(), // ISO string or null
+});
+
+/**
+ * Schema for get time endpoint
+ */
+const getTimeSchema = z.object({
+  customerId: z.string(),
+});
+
+/**
+ * Schema for advance time endpoint
+ */
+const advanceTimeSchema = z.object({
+  customerId: z.string(),
+  days: z.number().optional().default(0),
+  hours: z.number().optional().default(0),
+  months: z.number().optional().default(0),
+});
+
+/**
+ * Schema for reset time endpoint
+ */
+const resetTimeSchema = z.object({
+  customerId: z.string(),
+});
+
+/**
+ * Time Travel Plugin for BillSDK
+ *
+ * Allows you to simulate time per customer for testing subscription cycles,
+ * trials, renewals, and other time-based billing logic.
+ *
+ * WARNING: This plugin is for development/testing only.
+ * Do NOT use in production.
+ *
+ * @example
+ * ```typescript
+ * import { billsdk } from "billsdk";
+ * import { timeTravelPlugin } from "@billsdk/time-travel";
+ *
+ * const billing = billsdk({
+ *   // ... your config
+ *   plugins: [timeTravelPlugin()],
+ * });
+ * ```
+ */
+export function timeTravelPlugin(): BillSDKPlugin {
+  const endpoints: Record<string, BillingEndpoint> = {
+    timeTravelSet: {
+      path: "/time-travel/set",
+      options: {
+        method: "POST",
+        body: setTimeSchema,
+      },
+      handler: async (context: {
+        body: z.infer<typeof setTimeSchema>;
+        ctx: { adapter: unknown };
+      }) => {
+        const { body, ctx } = context;
+        const { customerId } = body;
+        const date = body.date ? new Date(body.date) : null;
+
+        // biome-ignore lint/suspicious/noExplicitAny: Plugin context is loosely typed to keep plugin authoring simple
+        await setSimulatedTime(ctx.adapter as any, customerId, date);
+
+        return {
+          success: true,
+          customerId,
+          simulatedTime: date?.toISOString() ?? null,
+          isSimulated: date !== null,
+        };
+      },
+    },
+
+    timeTravelGet: {
+      path: "/time-travel/get",
+      options: {
+        method: "POST",
+        body: getTimeSchema,
+      },
+      handler: async (context: {
+        body: z.infer<typeof getTimeSchema>;
+        ctx: { adapter: unknown };
+      }) => {
+        const { body, ctx } = context;
+        const { customerId } = body;
+        const simulatedTime = await getSimulatedTime(
+          customerId,
+          // biome-ignore lint/suspicious/noExplicitAny: Plugin context is loosely typed to keep plugin authoring simple
+          ctx.adapter as any,
+        );
+        return {
+          customerId,
+          simulatedTime: simulatedTime?.toISOString() ?? null,
+          isSimulated: simulatedTime !== null,
+          realTime: new Date().toISOString(),
+        };
+      },
+    },
+
+    timeTravelAdvance: {
+      path: "/time-travel/advance",
+      options: {
+        method: "POST",
+        body: advanceTimeSchema,
+      },
+      handler: async (context: {
+        body: z.infer<typeof advanceTimeSchema>;
+        ctx: { adapter: unknown };
+      }) => {
+        const { body, ctx } = context;
+        const { customerId, days = 0, hours = 0, months = 0 } = body;
+
+        // biome-ignore lint/suspicious/noExplicitAny: Plugin context is loosely typed to keep plugin authoring simple
+        const adapter = ctx.adapter as any;
+
+        // Get current time for this customer (simulated or real)
+        const simulatedTime = await getSimulatedTime(customerId, adapter);
+        const current = simulatedTime ? new Date(simulatedTime) : new Date();
+
+        // Advance time
+        current.setMonth(current.getMonth() + months);
+        current.setDate(current.getDate() + days);
+        current.setHours(current.getHours() + hours);
+
+        await setSimulatedTime(adapter, customerId, current);
+
+        return {
+          success: true,
+          customerId,
+          simulatedTime: current.toISOString(),
+          advanced: { days, hours, months },
+        };
+      },
+    },
+
+    timeTravelReset: {
+      path: "/time-travel/reset",
+      options: {
+        method: "POST",
+        body: resetTimeSchema,
+      },
+      handler: async (context: {
+        body: z.infer<typeof resetTimeSchema>;
+        ctx: { adapter: unknown };
+      }) => {
+        const { body, ctx } = context;
+        const { customerId } = body;
+
+        // biome-ignore lint/suspicious/noExplicitAny: Plugin context is loosely typed to keep plugin authoring simple
+        await setSimulatedTime(ctx.adapter as any, customerId, null);
+
+        return {
+          success: true,
+          customerId,
+          simulatedTime: null,
+          realTime: new Date().toISOString(),
+        };
+      },
+    },
+
+    timeTravelList: {
+      path: "/time-travel/list",
+      options: {
+        method: "GET",
+      },
+      handler: async (context: { ctx: { adapter: unknown } }) => {
+        const { ctx } = context;
+        // biome-ignore lint/suspicious/noExplicitAny: Plugin context is loosely typed to keep plugin authoring simple
+        const states = await listTimeTravelStates(ctx.adapter as any);
+        return {
+          customers: states.map((s) => ({
+            customerId: s.id,
+            simulatedTime: s.simulatedTime
+              ? new Date(s.simulatedTime).toISOString()
+              : null,
+          })),
+          realTime: new Date().toISOString(),
+        };
+      },
+    },
+  };
+
+  return {
+    id: "time-travel",
+    name: "Time Travel",
+    schema: timeTravelSchema,
+    endpoints,
+
+    init: async (ctx) => {
+      // biome-ignore lint/suspicious/noExplicitAny: Plugin context is loosely typed to keep plugin authoring simple
+      const adapter = (ctx as any).adapter;
+
+      // Replace the default time provider with our time travel provider
+      // biome-ignore lint/suspicious/noExplicitAny: Plugin init can modify context - this is intentional for extensibility
+      (ctx as any).timeProvider = createTimeTravelProvider(adapter);
+
+      ctx.logger.warn("Time Travel plugin enabled. DO NOT USE IN PRODUCTION.");
+
+      // Log active time travel states
+      const states = await listTimeTravelStates(adapter);
+      if (states.length > 0) {
+        ctx.logger.info(
+          `Time Travel: ${states.length} customer(s) with simulated time`,
+        );
+      }
+    },
+  };
+}

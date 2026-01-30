@@ -58,14 +58,25 @@ export function calculateNextPeriod(
  * - Current period end is in the past or today
  * - Not scheduled for cancellation
  *
+ * @param subscription - The subscription to check
+ * @param now - Optional current time (defaults to new Date()). Use for time-travel testing.
+ *
  * @example
  * ```typescript
  * if (isRenewalDue(subscription)) {
  *   // Trigger renewal charge
  * }
+ *
+ * // With time-travel
+ * if (isRenewalDue(subscription, ctx.timeProvider.now())) {
+ *   // Trigger renewal charge
+ * }
  * ```
  */
-export function isRenewalDue(subscription: Subscription): boolean {
+export function isRenewalDue(
+  subscription: Subscription,
+  now: Date = new Date(),
+): boolean {
   // Only active or trialing subscriptions can renew
   if (subscription.status !== "active" && subscription.status !== "trialing") {
     return false;
@@ -77,21 +88,31 @@ export function isRenewalDue(subscription: Subscription): boolean {
   }
 
   // Check if current period has ended
-  const now = new Date();
   return subscription.currentPeriodEnd <= now;
 }
 
 /**
  * Check if a trial period has ended and subscription should convert to paid
  *
+ * @param subscription - The subscription to check
+ * @param now - Optional current time (defaults to new Date()). Use for time-travel testing.
+ *
  * @example
  * ```typescript
  * if (isTrialEnded(subscription)) {
  *   // Charge for first paid period
  * }
+ *
+ * // With time-travel
+ * if (isTrialEnded(subscription, ctx.timeProvider.now())) {
+ *   // Charge for first paid period
+ * }
  * ```
  */
-export function isTrialEnded(subscription: Subscription): boolean {
+export function isTrialEnded(
+  subscription: Subscription,
+  now: Date = new Date(),
+): boolean {
   if (subscription.status !== "trialing") {
     return false;
   }
@@ -100,17 +121,20 @@ export function isTrialEnded(subscription: Subscription): boolean {
     return false;
   }
 
-  const now = new Date();
   return subscription.trialEnd <= now;
 }
 
 /**
  * Calculate the number of days until renewal
  *
+ * @param subscription - The subscription to check
+ * @param now - Optional current time (defaults to new Date()). Use for time-travel testing.
  * @returns Number of days until renewal, or -1 if already past due
  */
-export function daysUntilRenewal(subscription: Subscription): number {
-  const now = new Date();
+export function daysUntilRenewal(
+  subscription: Subscription,
+  now: Date = new Date(),
+): number {
   const msPerDay = 1000 * 60 * 60 * 24;
   const diff = subscription.currentPeriodEnd.getTime() - now.getTime();
 
@@ -126,16 +150,20 @@ export function daysUntilRenewal(subscription: Subscription): number {
  *
  * Grace period is typically 3-7 days after currentPeriodEnd where
  * the subscription is still accessible but marked as "past_due"
+ *
+ * @param subscription - The subscription to check
+ * @param gracePeriodDays - Number of days for grace period (default: 3)
+ * @param now - Optional current time (defaults to new Date()). Use for time-travel testing.
  */
 export function isInGracePeriod(
   subscription: Subscription,
   gracePeriodDays = 3,
+  now: Date = new Date(),
 ): boolean {
   if (subscription.status !== "past_due") {
     return false;
   }
 
-  const now = new Date();
   const graceEnd = new Date(subscription.currentPeriodEnd);
   graceEnd.setDate(graceEnd.getDate() + gracePeriodDays);
 

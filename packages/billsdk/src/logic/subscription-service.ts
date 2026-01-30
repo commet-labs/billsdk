@@ -1,4 +1,9 @@
-import type { Payment, Plan, Subscription } from "@billsdk/core";
+import type {
+  BillingInterval,
+  Payment,
+  Plan,
+  Subscription,
+} from "@billsdk/core";
 import type { BillingContext } from "../context/create-context";
 import { calculateProration } from "./proration";
 
@@ -15,12 +20,6 @@ export interface CreateSubscriptionResult {
   redirectUrl?: string;
 }
 
-/**
- * Create a new subscription for a customer.
- *
- * This is the single source of truth for subscription creation logic.
- * Both HTTP endpoints and direct API methods should use this function.
- */
 export async function createSubscription(
   ctx: BillingContext,
   params: CreateSubscriptionParams,
@@ -33,25 +32,21 @@ export async function createSubscription(
     cancelUrl,
   } = params;
 
-  // Check if payment adapter is configured
   if (!ctx.paymentAdapter) {
     throw new Error("Payment adapter not configured");
   }
 
-  // Find customer by external ID
   const customer =
     await ctx.internalAdapter.findCustomerByExternalId(customerId);
   if (!customer) {
     throw new Error("Customer not found");
   }
 
-  // Find plan from config (synchronous)
   const plan = ctx.internalAdapter.findPlanByCode(planCode);
   if (!plan) {
     throw new Error("Plan not found");
   }
 
-  // Find price for interval (synchronous)
   const price = ctx.internalAdapter.getPlanPrice(planCode, interval);
   if (!price) {
     throw new Error(
@@ -59,7 +54,6 @@ export async function createSubscription(
     );
   }
 
-  // Create subscription in pending state
   const subscription = await ctx.internalAdapter.createSubscription({
     customerId: customer.id,
     planCode,
@@ -68,7 +62,6 @@ export async function createSubscription(
     trialDays: price.trialDays,
   });
 
-  // Process payment - adapter decides the flow
   const result = await ctx.paymentAdapter.processPayment({
     customer: {
       id: customer.id,
@@ -95,9 +88,7 @@ export async function createSubscription(
     },
   });
 
-  // Handle payment result based on adapter's decision
   if (result.status === "active") {
-    // Cancel any other active subscriptions for this customer
     const existingSubscriptions = await ctx.internalAdapter.listSubscriptions(
       customer.id,
     );
@@ -110,20 +101,17 @@ export async function createSubscription(
       }
     }
 
-    // Payment completed immediately - activate subscription
     const activeSubscription = await ctx.internalAdapter.updateSubscription(
       subscription.id,
       { status: "active" },
     );
 
-    // Update customer with provider ID if returned
     if (result.providerCustomerId && !customer.providerCustomerId) {
       await ctx.internalAdapter.updateCustomer(customer.id, {
         providerCustomerId: result.providerCustomerId,
       });
     }
 
-    // Record the payment (only if amount > 0)
     if (price.amount > 0) {
       await ctx.internalAdapter.createPayment({
         customerId: customer.id,
@@ -148,12 +136,10 @@ export async function createSubscription(
   }
 
   if (result.status === "pending") {
-    // Payment pending - user needs to complete payment flow
     await ctx.internalAdapter.updateSubscription(subscription.id, {
       providerCheckoutSessionId: result.sessionId,
     });
 
-    // Update customer with provider ID if returned
     if (result.providerCustomerId && !customer.providerCustomerId) {
       await ctx.internalAdapter.updateCustomer(customer.id, {
         providerCustomerId: result.providerCustomerId,
@@ -166,8 +152,6 @@ export async function createSubscription(
     };
   }
 
-  // result.status === "failed"
-  // Mark the subscription as canceled since payment failed
   await ctx.internalAdapter.updateSubscription(subscription.id, {
     status: "canceled",
   });
@@ -185,26 +169,18 @@ export interface CancelSubscriptionResult {
   accessUntil?: Date;
 }
 
-/**
- * Cancel an existing subscription.
- *
- * This is the single source of truth for subscription cancellation logic.
- * Both HTTP endpoints and direct API methods should use this function.
- */
 export async function cancelSubscription(
   ctx: BillingContext,
   params: CancelSubscriptionParams,
 ): Promise<CancelSubscriptionResult> {
   const { customerId, cancelAt = "period_end" } = params;
 
-  // Find customer by external ID
   const customer =
     await ctx.internalAdapter.findCustomerByExternalId(customerId);
   if (!customer) {
     throw new Error("Customer not found");
   }
 
-  // Find active subscription
   const subscription = await ctx.internalAdapter.findSubscriptionByCustomerId(
     customer.id,
   );
@@ -212,7 +188,6 @@ export async function cancelSubscription(
     throw new Error("No active subscription found");
   }
 
-  // Cancel subscription
   if (cancelAt === "immediately") {
     const canceled = await ctx.internalAdapter.cancelSubscription(
       subscription.id,
@@ -220,7 +195,6 @@ export async function cancelSubscription(
     return { subscription: canceled, canceledImmediately: true };
   }
 
-  // Cancel at period end
   const canceled = await ctx.internalAdapter.cancelSubscription(
     subscription.id,
     subscription.currentPeriodEnd,
@@ -235,6 +209,7 @@ export async function cancelSubscription(
 export interface ChangeSubscriptionParams {
   customerId: string;
   newPlanCode: string;
+  newInterval?: BillingInterval;
   prorate?: boolean;
 }
 
@@ -243,28 +218,40 @@ export interface ChangeSubscriptionResult {
   previousPlan: Plan | null;
   newPlan: Plan;
   payment: Payment | null;
+  scheduled: boolean;
+  effectiveAt?: Date;
 }
 
-/**
- * Change a subscription to a different plan.
- *
- * This is the single source of truth for subscription change logic.
- * Both HTTP endpoints and direct API methods should use this function.
- */
+const intervalRank: Record<BillingInterval, number> = {
+  monthly: 1,
+  quarterly: 2,
+  yearly: 3,
+};
+
+function isUpgrade(
+  oldPrice: number,
+  newPrice: number,
+  oldInterval: BillingInterval,
+  newInterval: BillingInterval,
+): boolean {
+  if (oldInterval !== newInterval) {
+    return intervalRank[newInterval] > intervalRank[oldInterval];
+  }
+  return newPrice > oldPrice;
+}
+
 export async function changeSubscription(
   ctx: BillingContext,
   params: ChangeSubscriptionParams,
 ): Promise<ChangeSubscriptionResult> {
-  const { customerId, newPlanCode, prorate = true } = params;
+  const { customerId, newPlanCode, newInterval, prorate = true } = params;
 
-  // Find customer by external ID
   const customer =
     await ctx.internalAdapter.findCustomerByExternalId(customerId);
   if (!customer) {
     throw new Error("Customer not found");
   }
 
-  // Find active subscription
   const subscription = await ctx.internalAdapter.findSubscriptionByCustomerId(
     customer.id,
   );
@@ -272,12 +259,15 @@ export async function changeSubscription(
     throw new Error("No active subscription found");
   }
 
-  // Check if already on the same plan
-  if (subscription.planCode === newPlanCode) {
+  const targetInterval = newInterval ?? subscription.interval;
+
+  if (
+    subscription.planCode === newPlanCode &&
+    subscription.interval === targetInterval
+  ) {
     throw new Error("Already on this plan");
   }
 
-  // Get current plan and price
   const oldPlan = ctx.internalAdapter.findPlanByCode(subscription.planCode);
   const oldPrice = ctx.internalAdapter.getPlanPrice(
     subscription.planCode,
@@ -287,7 +277,6 @@ export async function changeSubscription(
     throw new Error("Current plan price not found");
   }
 
-  // Get new plan and price
   const newPlan = ctx.internalAdapter.findPlanByCode(newPlanCode);
   if (!newPlan) {
     throw new Error("New plan not found");
@@ -295,50 +284,93 @@ export async function changeSubscription(
 
   const newPrice = ctx.internalAdapter.getPlanPrice(
     newPlanCode,
-    subscription.interval,
+    targetInterval,
   );
   if (!newPrice) {
     throw new Error(
-      `No price found for plan ${newPlanCode} with interval ${subscription.interval}`,
+      `No price found for plan ${newPlanCode} with interval ${targetInterval}`,
     );
   }
 
-  let payment: Payment | null = null;
+  const upgrade = isUpgrade(
+    oldPrice.amount,
+    newPrice.amount,
+    subscription.interval,
+    targetInterval,
+  );
 
-  // Calculate and process proration if enabled
+  ctx.logger.info("Plan change detected", {
+    from: `${subscription.planCode} (${subscription.interval})`,
+    to: `${newPlanCode} (${targetInterval})`,
+    oldAmount: oldPrice.amount,
+    newAmount: newPrice.amount,
+    isUpgrade: upgrade,
+  });
+
+  // Downgrade: schedule for period end
+  if (!upgrade) {
+    ctx.logger.info("Downgrade scheduled for period end", {
+      scheduledPlanCode: newPlanCode,
+      scheduledInterval: targetInterval,
+      effectiveAt: subscription.currentPeriodEnd,
+    });
+
+    const updatedSubscription = await ctx.internalAdapter.updateSubscription(
+      subscription.id,
+      {
+        scheduledPlanCode: newPlanCode,
+        scheduledInterval: targetInterval,
+      },
+    );
+
+    return {
+      subscription: updatedSubscription,
+      previousPlan: oldPlan,
+      newPlan,
+      payment: null,
+      scheduled: true,
+      effectiveAt: subscription.currentPeriodEnd,
+    };
+  }
+
+  // Upgrade: immediate change with proration and period reset
+  let payment: Payment | null = null;
+  const changeDate = await ctx.timeProvider.now(params.customerId);
+
+  ctx.logger.info("changeDate from timeProvider", {
+    changeDate: changeDate.toISOString(),
+    realTime: new Date().toISOString(),
+  });
+
   if (prorate) {
     const prorationResult = calculateProration({
       oldPlanAmount: oldPrice.amount,
       newPlanAmount: newPrice.amount,
       currentPeriodStart: subscription.currentPeriodStart,
       currentPeriodEnd: subscription.currentPeriodEnd,
-      changeDate: new Date(),
+      changeDate,
     });
 
     ctx.logger.info("Proration calculated", {
       credit: prorationResult.credit,
       charge: prorationResult.charge,
       netAmount: prorationResult.netAmount,
-      daysRemaining: prorationResult.daysRemaining,
+      daysUsed: prorationResult.daysUsed,
     });
 
-    // If there's a positive net amount, charge the customer
     if (prorationResult.netAmount > 0) {
-      // Check if adapter supports direct charging
       if (!ctx.paymentAdapter?.charge) {
         throw new Error(
           "Payment adapter does not support direct charging. Cannot process upgrade.",
         );
       }
 
-      // Customer must have a saved payment method
       if (!customer.providerCustomerId) {
         throw new Error(
           "Customer does not have a saved payment method. Cannot process upgrade.",
         );
       }
 
-      // Charge the difference
       const chargeResult = await ctx.paymentAdapter.charge({
         customer: {
           id: customer.id,
@@ -361,7 +393,6 @@ export async function changeSubscription(
         throw new Error(chargeResult.error ?? "Charge failed");
       }
 
-      // Record the payment
       payment = await ctx.internalAdapter.createPayment({
         customerId: customer.id,
         subscriptionId: subscription.id,
@@ -380,20 +411,41 @@ export async function changeSubscription(
         },
       });
     }
-    // If netAmount is negative (downgrade), we could issue a credit
-    // For now, we just update the plan without refunding
   }
 
-  // Update subscription with new plan
+  // Calculate new period end based on interval
+  const newPeriodStart = changeDate;
+  const newPeriodEnd = new Date(changeDate);
+  if (targetInterval === "yearly") {
+    newPeriodEnd.setFullYear(newPeriodEnd.getFullYear() + 1);
+  } else if (targetInterval === "quarterly") {
+    newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 3);
+  } else {
+    newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 1);
+  }
+
   const updatedSubscription = await ctx.internalAdapter.updateSubscription(
     subscription.id,
-    { planCode: newPlanCode },
+    {
+      planCode: newPlanCode,
+      interval: targetInterval,
+      currentPeriodStart: newPeriodStart,
+      currentPeriodEnd: newPeriodEnd,
+      scheduledPlanCode: undefined,
+      scheduledInterval: undefined,
+    },
   );
+
+  ctx.logger.info("Period reset", {
+    from: `${subscription.currentPeriodStart.toISOString()} - ${subscription.currentPeriodEnd.toISOString()}`,
+    to: `${newPeriodStart.toISOString()} - ${newPeriodEnd.toISOString()}`,
+  });
 
   return {
     subscription: updatedSubscription,
     previousPlan: oldPlan,
     newPlan,
     payment,
+    scheduled: false,
   };
 }

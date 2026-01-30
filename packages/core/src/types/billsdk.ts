@@ -116,13 +116,65 @@ export interface InferredAPI<TFeatureCode extends string = string> {
 
   // Health check
   health: () => Promise<{ status: "ok"; timestamp: string }>;
+
+  // Renewals
+  /**
+   * Process all due subscription renewals
+   *
+   * This function:
+   * 1. Finds all subscriptions where currentPeriodEnd <= now
+   * 2. Applies any scheduled plan changes (downgrades)
+   * 3. Charges the customer for the new period
+   * 4. Updates the subscription period dates
+   * 5. Creates payment records
+   *
+   * Idempotent: Running twice won't double-charge because period dates are updated.
+   *
+   * @example
+   * ```typescript
+   * // From a cron job
+   * const result = await billing.api.processRenewals();
+   *
+   * // Dry run (no charges)
+   * const result = await billing.api.processRenewals({ dryRun: true });
+   *
+   * // Single customer (for testing)
+   * const result = await billing.api.processRenewals({ customerId: "user_123" });
+   * ```
+   */
+  processRenewals: (params?: {
+    /** Process only a specific customer (useful for testing) */
+    customerId?: string;
+    /** Dry run - don't actually charge, just report what would happen */
+    dryRun?: boolean;
+    /** Maximum number of subscriptions to process (for batching) */
+    limit?: number;
+  }) => Promise<{
+    /** Total subscriptions processed */
+    processed: number;
+    /** Successful renewals */
+    succeeded: number;
+    /** Failed renewals */
+    failed: number;
+    /** Skipped (already renewed, etc.) */
+    skipped: number;
+    /** Details for each renewal */
+    renewals: Array<{
+      subscriptionId: string;
+      customerId: string;
+      status: "succeeded" | "failed" | "skipped";
+      amount?: number;
+      error?: string;
+      planChanged?: { from: string; to: string };
+    }>;
+  }>;
 }
 
 /**
  * Helper to extract feature codes from BillSDKOptions
  */
 
-// biome-ignore lint/suspicious/noExplicitAny: Generic constraint needs flexibility for readonly/mutable arrays
+// biome-ignore lint/suspicious/noExplicitAny: TypeScript requires `any` here to support both readonly and mutable feature arrays (const vs let)
 type ExtractFeatureCodesFromOptions<Options extends BillSDKOptions<any>> =
   Options extends BillSDKOptions<infer TFeatures>
     ? TFeatures extends readonly FeatureConfig<string>[]
@@ -133,7 +185,7 @@ type ExtractFeatureCodesFromOptions<Options extends BillSDKOptions<any>> =
 /**
  * The main BillSDK instance type
  */
-// biome-ignore lint/suspicious/noExplicitAny: Generic constraint needs flexibility for readonly/mutable arrays
+// biome-ignore lint/suspicious/noExplicitAny: TypeScript requires `any` here to support both readonly and mutable feature arrays (const vs let)
 export interface BillSDK<Options extends BillSDKOptions<any> = BillSDKOptions> {
   /**
    * Request handler for mounting to a framework
@@ -156,7 +208,7 @@ export interface BillSDK<Options extends BillSDKOptions<any> = BillSDKOptions> {
    * Internal context (Promise for lazy initialization)
    * The actual type is BillingContext from billsdk package
    */
-  // biome-ignore lint/suspicious/noExplicitAny: Internal context type varies by implementation
+  // biome-ignore lint/suspicious/noExplicitAny: Context type is defined in billsdk package, not core - keeping loose to avoid circular deps
   $context: Promise<any>;
 
   /**

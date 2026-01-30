@@ -4,5 +4,6 @@ export { healthEndpoint } from "./health";
 export { paymentEndpoints } from "./payment";
 export { planEndpoints } from "./plan";
 export { refundEndpoints } from "./refund";
+export { renewalEndpoints } from "./renewals";
 export { subscriptionEndpoints } from "./subscription";
 export { webhookEndpoints } from "./webhook";

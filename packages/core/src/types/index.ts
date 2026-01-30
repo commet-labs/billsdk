@@ -6,3 +6,4 @@ export type * from "./models";
 export type * from "./options";
 export type * from "./payment";
 export type * from "./plugins";
+export type * from "./time";

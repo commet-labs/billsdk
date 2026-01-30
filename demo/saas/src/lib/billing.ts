@@ -1,3 +1,4 @@
+import { timeTravelPlugin } from "@billsdk/time-travel";
 import { billsdk } from "billsdk";
 import { drizzleAdapter } from "billsdk/adapters/drizzle";
 import { db } from "./db";
@@ -11,6 +12,9 @@ export const billing = billsdk({
     schema,
     provider: "pg",
   }),
+
+  // Time Travel plugin for testing subscription cycles
+  plugins: [timeTravelPlugin()],
 
   features: [
     { code: "export", name: "Export Data" },
@@ -28,12 +32,22 @@ export const billing = billsdk({
       features: ["export"],
     },
     {
+      code: "starter",
+      name: "Starter",
+      description: "Starter plan",
+      prices: [
+        { amount: 1000, interval: "monthly" },
+        { amount: 10000, interval: "yearly" },
+      ],
+      features: ["export", "api_access"],
+    },
+    {
       code: "pro",
       name: "Pro",
       description: "Everything you need",
       prices: [
-        { amount: 2000, interval: "monthly" }, // $20/mo
-        { amount: 20000, interval: "yearly" }, // $200/yr (2 months free)
+        { amount: 2000, interval: "monthly" },
+        { amount: 20000, interval: "yearly" },
       ],
       features: ["export", "api_access", "custom_domain", "priority_support"],
     },

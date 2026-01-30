@@ -1,0 +1,81 @@
+{
+  "name": "@billsdk/time-travel",
+  "version": "0.1.0",
+  "description": "Time travel plugin for BillSDK - test subscription cycles by simulating time",
+  "type": "module",
+  "license": "MIT",
+  "author": {
+    "name": "decker",
+    "url": "https://github.com/decker-dev"
+  },
+  "homepage": "https://github.com/commet-labs/billsdk/tree/main/packages/time-travel#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/commet-labs/billsdk.git",
+    "directory": "packages/time-travel"
+  },
+  "bugs": {
+    "url": "https://github.com/commet-labs/billsdk/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/client/index.d.ts",
+      "default": "./dist/client/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check . --write",
+    "clean": "rm -rf dist .turbo node_modules"
+  },
+  "peerDependencies": {
+    "@billsdk/core": "workspace:*",
+    "react": ">=18",
+    "zod": ">=4"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@billsdk/core": "workspace:*",
+    "@biomejs/biome": "2.3.11",
+    "@types/node": "22.15.29",
+    "@types/react": "19.1.8",
+    "react": "19.1.0",
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "4.0.17",
+    "zod": "4.3.5"
+  },
+  "keywords": [
+    "billing",
+    "sdk",
+    "time-travel",
+    "testing",
+    "development",
+    "plugin",
+    "subscription",
+    "trial"
+  ]
+}

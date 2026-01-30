@@ -118,6 +118,16 @@ export const billingSchema: DBSchema = {
       type: "date",
       required: false,
     }),
+    // Scheduled plan change (for downgrades, takes effect at period end)
+    scheduledPlanCode: defineField({
+      type: "string",
+      required: false,
+    }),
+    // Scheduled interval change (for downgrades, takes effect at period end)
+    scheduledInterval: defineField({
+      type: "string",
+      required: false,
+    }),
     metadata: defineField({
       type: "json",
       required: false,
