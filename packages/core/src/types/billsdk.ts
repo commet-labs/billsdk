@@ -116,6 +116,58 @@ export interface InferredAPI<TFeatureCode extends string = string> {
 
   // Health check
   health: () => Promise<{ status: "ok"; timestamp: string }>;
+
+  // Renewals
+  /**
+   * Process all due subscription renewals
+   *
+   * This function:
+   * 1. Finds all subscriptions where currentPeriodEnd <= now
+   * 2. Applies any scheduled plan changes (downgrades)
+   * 3. Charges the customer for the new period
+   * 4. Updates the subscription period dates
+   * 5. Creates payment records
+   *
+   * Idempotent: Running twice won't double-charge because period dates are updated.
+   *
+   * @example
+   * ```typescript
+   * // From a cron job
+   * const result = await billing.api.processRenewals();
+   *
+   * // Dry run (no charges)
+   * const result = await billing.api.processRenewals({ dryRun: true });
+   *
+   * // Single customer (for testing)
+   * const result = await billing.api.processRenewals({ customerId: "user_123" });
+   * ```
+   */
+  processRenewals: (params?: {
+    /** Process only a specific customer (useful for testing) */
+    customerId?: string;
+    /** Dry run - don't actually charge, just report what would happen */
+    dryRun?: boolean;
+    /** Maximum number of subscriptions to process (for batching) */
+    limit?: number;
+  }) => Promise<{
+    /** Total subscriptions processed */
+    processed: number;
+    /** Successful renewals */
+    succeeded: number;
+    /** Failed renewals */
+    failed: number;
+    /** Skipped (already renewed, etc.) */
+    skipped: number;
+    /** Details for each renewal */
+    renewals: Array<{
+      subscriptionId: string;
+      customerId: string;
+      status: "succeeded" | "failed" | "skipped";
+      amount?: number;
+      error?: string;
+      planChanged?: { from: string; to: string };
+    }>;
+  }>;
 }
 
 /**

@@ -41,6 +41,13 @@ interface CustomerTimeState {
   simulatedTime: string | null;
 }
 
+interface RenewalResult {
+  processed: number;
+  succeeded: number;
+  failed: number;
+  skipped: number;
+}
+
 /**
  * Time Travel Overlay Component
  *
@@ -77,6 +84,10 @@ export function TimeTravelOverlay({
   const [allCustomers, setAllCustomers] = useState<CustomerTimeState[]>([]);
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const [isLoading, setIsLoading] = useState(false);
+  const [isProcessingRenewals, setIsProcessingRenewals] = useState(false);
+  const [renewalResult, setRenewalResult] = useState<RenewalResult | null>(
+    null,
+  );
   const [dateInput, setDateInput] = useState("");
   const [customerIdInput, setCustomerIdInput] = useState(customerId ?? "");
   const [showAllCustomers, setShowAllCustomers] = useState(false);
@@ -207,6 +218,31 @@ export function TimeTravelOverlay({
       const date = new Date(dateInput);
       date.setUTCHours(12, 0, 0, 0);
       setTime(date.toISOString());
+    }
+  };
+
+  // Process renewals for the current customer
+  const processRenewals = async (dryRun = false) => {
+    if (!activeCustomerId) return;
+
+    setIsProcessingRenewals(true);
+    setRenewalResult(null);
+    try {
+      const params = new URLSearchParams({
+        customerId: activeCustomerId,
+        ...(dryRun && { dryRun: "true" }),
+      });
+      const res = await fetch(`${baseUrl}/renewals?${params.toString()}`);
+      if (res.ok) {
+        const data = (await res.json()) as RenewalResult;
+        setRenewalResult(data);
+      } else {
+        console.error("[TimeTravelOverlay] Renewals failed:", res.statusText);
+      }
+    } catch (error) {
+      console.error("[TimeTravelOverlay] Failed to process renewals:", error);
+    } finally {
+      setIsProcessingRenewals(false);
     }
   };
 
@@ -562,6 +598,112 @@ export function TimeTravelOverlay({
                     Reset to Real Time
                   </button>
                 )}
+
+                {/* Billing Actions */}
+                <div style={{ marginBottom: 16 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#6b7280",
+                      marginBottom: 8,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Billing Actions
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => processRenewals(true)}
+                      disabled={isProcessingRenewals}
+                      title="Check what would happen without actually charging"
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        borderRadius: 6,
+                        border: "1px solid #e5e7eb",
+                        backgroundColor: "white",
+                        cursor: isProcessingRenewals
+                          ? "not-allowed"
+                          : "pointer",
+                        color: "#374151",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        opacity: isProcessingRenewals ? 0.5 : 1,
+                      }}
+                    >
+                      {isProcessingRenewals ? "..." : "Dry Run"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => processRenewals(false)}
+                      disabled={isProcessingRenewals}
+                      title="Process renewals and charge customers"
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        borderRadius: 6,
+                        border: "none",
+                        backgroundColor: "#10b981",
+                        cursor: isProcessingRenewals
+                          ? "not-allowed"
+                          : "pointer",
+                        color: "white",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        opacity: isProcessingRenewals ? 0.5 : 1,
+                      }}
+                    >
+                      {isProcessingRenewals
+                        ? "Processing..."
+                        : "Process Renewals"}
+                    </button>
+                  </div>
+
+                  {/* Renewal Result */}
+                  {renewalResult && (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        padding: 12,
+                        backgroundColor:
+                          renewalResult.failed > 0 ? "#fef2f2" : "#f0fdf4",
+                        borderRadius: 6,
+                        fontSize: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(2, 1fr)",
+                          gap: 4,
+                        }}
+                      >
+                        <div>
+                          <span style={{ color: "#6b7280" }}>Processed:</span>{" "}
+                          <strong>{renewalResult.processed}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "#059669" }}>Succeeded:</span>{" "}
+                          <strong style={{ color: "#059669" }}>
+                            {renewalResult.succeeded}
+                          </strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "#dc2626" }}>Failed:</span>{" "}
+                          <strong style={{ color: "#dc2626" }}>
+                            {renewalResult.failed}
+                          </strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "#6b7280" }}>Skipped:</span>{" "}
+                          <strong>{renewalResult.skipped}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <div

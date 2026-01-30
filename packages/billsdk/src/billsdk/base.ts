@@ -6,6 +6,7 @@ import {
   createBillingContext,
 } from "../context/create-context";
 import { runBehavior } from "../logic/behaviors/runner";
+import { processRenewals as processRenewalsService } from "../logic/renewal-service";
 import {
   changeSubscription as changeSubscriptionService,
   createSubscription as createSubscriptionService,
@@ -163,6 +164,11 @@ function createAPI<TFeatureCode extends string = string>(
         amount: params.amount,
         reason: params.reason,
       });
+    },
+
+    async processRenewals(params) {
+      const ctx = await contextPromise;
+      return processRenewalsService(ctx, params);
     },
   };
 }

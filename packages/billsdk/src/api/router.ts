@@ -6,6 +6,7 @@ import { healthEndpoint } from "./routes/health";
 import { paymentEndpoints } from "./routes/payment";
 import { planEndpoints } from "./routes/plan";
 import { refundEndpoints } from "./routes/refund";
+import { renewalEndpoints } from "./routes/renewals";
 import { subscriptionEndpoints } from "./routes/subscription";
 import { webhookEndpoints } from "./routes/webhook";
 
@@ -23,6 +24,7 @@ export function getEndpoints(
     ...featureEndpoints,
     ...paymentEndpoints,
     ...refundEndpoints,
+    ...renewalEndpoints,
     ...webhookEndpoints,
   };
 
