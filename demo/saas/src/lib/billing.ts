@@ -18,7 +18,7 @@ export const billing = billsdk({
     secretKey: process.env.STRIPE_SECRET_KEY!,
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
   }),
-  // Time Travel plugin for testing subscription cycles
+
   plugins: [timeTravelPlugin()],
 
   features: [

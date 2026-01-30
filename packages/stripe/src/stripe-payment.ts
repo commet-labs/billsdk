@@ -200,6 +200,9 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
 
         // Payment mode (paid plans): get payment method from PaymentIntent
         const paymentIntentId = session.payment_intent as string;
+        let amount: number | undefined;
+        let currency: string | undefined;
+
         if (paymentIntentId) {
           const paymentIntent =
             await stripeClient.paymentIntents.retrieve(paymentIntentId);
@@ -207,6 +210,10 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
             typeof paymentIntent.payment_method === "string"
               ? paymentIntent.payment_method
               : paymentIntent.payment_method?.id;
+
+          // Capture amount and currency for payment record
+          amount = paymentIntent.amount;
+          currency = paymentIntent.currency;
 
           // Set as default for future off_session charges
           if (providerPaymentMethodId && customerId) {
@@ -222,6 +229,9 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
           subscriptionId,
           status: "active",
           providerCustomerId: customerId,
+          providerPaymentId: paymentIntentId,
+          amount,
+          currency,
           providerData: {
             paymentIntentId,
             paymentMethodId: providerPaymentMethodId,

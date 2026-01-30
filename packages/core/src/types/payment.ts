@@ -95,6 +95,18 @@ export interface ConfirmResult {
    */
   providerCustomerId?: string;
   /**
+   * Provider payment ID for tracking
+   */
+  providerPaymentId?: string;
+  /**
+   * Amount charged in cents
+   */
+  amount?: number;
+  /**
+   * Currency code (ISO 4217)
+   */
+  currency?: string;
+  /**
    * Additional provider-specific data
    */
   providerData?: Record<string, unknown>;
