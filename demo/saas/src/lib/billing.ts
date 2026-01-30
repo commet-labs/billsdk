@@ -3,6 +3,7 @@ import { billsdk } from "billsdk";
 import { drizzleAdapter } from "billsdk/adapters/drizzle";
 import { db } from "./db";
 import * as schema from "./db/schema";
+import { stripePayment } from "@billsdk/stripe";
 
 /**
  * BillSDK - Demo SaaS billing configuration
@@ -13,6 +14,10 @@ export const billing = billsdk({
     provider: "pg",
   }),
 
+  payment: stripePayment({
+    secretKey: process.env.STRIPE_SECRET_KEY!,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
+  }),
   // Time Travel plugin for testing subscription cycles
   plugins: [timeTravelPlugin()],
 
