@@ -241,8 +241,11 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
 
       if (event.type === "payment_intent.payment_failed") {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const subscriptionId =
-          paymentIntent.metadata?.billsdkSubscriptionId ?? "";
+        const subscriptionId = paymentIntent.metadata?.billsdkSubscriptionId;
+
+        if (!subscriptionId) {
+          return null;
+        }
 
         return {
           subscriptionId,
