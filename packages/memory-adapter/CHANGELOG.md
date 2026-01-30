@@ -1,5 +1,12 @@
 # @billsdk/memory-adapter
 
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [66c98fc]
+  - @billsdk/core@0.3.1
+
 ## 1.0.1
 
 ### Patch Changes

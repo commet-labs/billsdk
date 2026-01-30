@@ -1,5 +1,16 @@
 # @billsdk/core
 
+## 0.3.1
+
+### Patch Changes
+
+- 66c98fc: Add payment adapter types for direct charging and refunds
+
+  - Added `providerPaymentId`, `amount`, and `currency` fields to `ConfirmResult` interface
+  - Added `ChargeParams` and `ChargeResult` types for direct charging
+  - Added `RefundParams` and `RefundResult` types for refund processing
+  - Added optional `charge()` and `refund()` methods to `PaymentAdapter` interface
+
 ## 0.3.0
 
 ### Minor Changes

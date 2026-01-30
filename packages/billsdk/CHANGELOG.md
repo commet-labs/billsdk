@@ -1,5 +1,19 @@
 # billsdk
 
+## 0.3.1
+
+### Patch Changes
+
+- 66c98fc: Webhook handler now creates payment records when payments are confirmed
+
+  - Payment records include amount, currency, provider payment ID, and subscription metadata
+
+- Updated dependencies [66c98fc]
+  - @billsdk/core@0.3.1
+  - @billsdk/drizzle-adapter@1.0.2
+  - @billsdk/memory-adapter@1.0.2
+  - @billsdk/payment-adapter@1.0.2
+
 ## 0.3.0
 
 ### Minor Changes

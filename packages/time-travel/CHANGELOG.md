@@ -1,5 +1,12 @@
 # @billsdk/time-travel
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [66c98fc]
+  - @billsdk/core@0.3.1
+
 ## 0.1.0
 
 ### Features
