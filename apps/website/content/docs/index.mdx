@@ -1,37 +1,13 @@
 ---
 title: Introduction
-description: Billing SDK that runs inside your app
+description: Introduction to BillSDK
 ---
 
-BillSDK handles billing logic. You own your data. Swap providers without rewriting code.
+BillSDK is a TypeScript library that handles billing logic inside your app. Define plans in code, store data in your database, swap payment providers without rewriting your integration. No SaaS middleman, no revenue share, no vendor lock-in.
 
-## Why BillSDK
 
-- **vs SaaS platforms**: No revenue share, no vendor lock-in, data stays yours
-- **vs building yourself**: Skip months of edge cases (trials, proration, failures)
+### LLMs.txt
 
-```typescript
-const billing = billsdk({
-  database: drizzleAdapter(db, { schema, provider: "pg" }),
-  payment: stripePayment({ secretKey, webhookSecret }),
-  plans: [
-    { code: "free", prices: [{ amount: 0, interval: "monthly" }] },
-    { code: "pro", prices: [{ amount: 2000, interval: "monthly" }] },
-  ],
-});
-```
+BillSDK exposes an `llms.txt` that helps AI models understand how to integrate and interact with your billing system. See it at [billsdk.com/llms.txt](https://billsdk.com/llms.txt).
 
-## Status
-
-| Feature | Status |
-|---------|--------|
-| Subscriptions (create, cancel, change) | Done |
-| Boolean features | Done |
-| Stripe Checkout + Webhooks | Done |
-| Trials | Done |
-| React hooks | Done |
-| Refunds | Done |
-| Renewals | Done |
-| Metered usage | Planned |
-| Seats | Planned |
-| Credits | Planned |
+For complete documentation in a single file, use [billsdk.com/llms-full.txt](https://billsdk.com/llms-full.txt).

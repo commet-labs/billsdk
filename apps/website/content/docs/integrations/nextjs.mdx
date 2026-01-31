@@ -53,14 +53,13 @@ export default async function DashboardPage() {
 
 ```json title="vercel.json"
 {
-  "crons": [{ "path": "/api/billing/renewals", "schedule": "0 * * * *" }]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/billing/renewals",
+      "schedule": "0 * * * *"
+    }
+  ]
 }
-```
 
-```typescript title="app/api/billing/renewals/route.ts"
-import { billing } from "@/lib/billing";
-
-export async function GET() {
-  return Response.json(await billing.api.processRenewals());
-}
 ```
