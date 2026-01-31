@@ -2,6 +2,27 @@
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
+/* Sharp corners globally */
+@theme {
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-full: 0px;
+}
+
+/* Override fumadocs rounded corners */
+:root {
+  --fd-radius: 0px;
+}
+
+/* Steps bullet - sharp square with visible number */
+.fd-step::before {
+  border-radius: 0;
+}
+
 @theme {
   /* Light Mode - Sage Clay (warm with subtle green undertone) */
   --color-fd-background: #eceee8;
