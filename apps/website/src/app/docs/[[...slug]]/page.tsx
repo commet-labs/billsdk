@@ -17,6 +17,9 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   if (!page) notFound();
 
   const MDX = page.data.body;
+  const filePath =
+    page.slugs.length > 0 ? `${page.slugs.join("/")}.mdx` : "index.mdx";
+
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
       <DocsTitle>{page.data.title}</DocsTitle>
@@ -27,7 +30,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         <LLMCopyButton markdownUrl={`${page.url}.mdx`} />
         <ViewOptions
           markdownUrl={`${page.url}.mdx`}
-          githubUrl={`https://github.com/commet-labs/billsdk/blob/main/apps/website/content/docs/${page.path}`}
+          githubUrl={`https://github.com/commet-labs/billsdk/blob/main/apps/website/content/docs/${filePath}`}
         />
       </div>
       <DocsBody>
