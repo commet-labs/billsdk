@@ -8,7 +8,7 @@
     "name": "decker",
     "url": "https://github.com/decker-dev"
   },
-  "homepage": "https://github.com/commet-labs/billsdk/tree/main/packages/cli#readme",
+  "homepage": "https://billsdk.com/docs/concepts/cli",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/commet-labs/billsdk.git",
