@@ -66,3 +66,4 @@ export function getSupportedAdapters(): string[] {
 }
 
 export { generateDrizzleSchema } from "./drizzle";
+export type { DrizzleGeneratorOptions } from "./drizzle";

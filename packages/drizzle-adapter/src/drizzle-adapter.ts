@@ -386,13 +386,13 @@ export function drizzleAdapter(
                     supportsBooleans: config.provider !== "sqlite",
                     supportsArrays: config.provider === "pg",
                   },
-                  adapter: () => createCustomAdapter(tx as DrizzleDB),
+                  adapter: (_helpers) => createCustomAdapter(tx as DrizzleDB),
                 })({});
                 return callback(txAdapter);
               });
             }
           : false,
     },
-    adapter: () => createCustomAdapter(db),
+    adapter: (_helpers) => createCustomAdapter(db),
   })({});
 }

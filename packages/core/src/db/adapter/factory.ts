@@ -72,7 +72,6 @@ function transformInput(
 function transformOutput(
   data: Record<string, unknown> | null,
   config: AdapterFactoryConfig,
-  schema?: Record<string, { type: string }>,
 ): Record<string, unknown> | null {
   if (!data) return null;
 
@@ -87,15 +86,6 @@ function transformOutput(
       if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
         transformed = new Date(value);
       }
-    }
-
-    // Handle booleans stored as numbers
-    if (
-      !config.supportsBooleans &&
-      (value === 0 || value === 1) &&
-      schema?.[key]?.type === "boolean"
-    ) {
-      transformed = value === 1;
     }
 
     // Handle JSON stored as strings

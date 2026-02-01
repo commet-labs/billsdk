@@ -294,11 +294,11 @@ export function memoryAdapter(): DBAdapter {
             supportsBooleans: true,
             supportsArrays: true,
           },
-          adapter: createCustomAdapter,
+          adapter: (_helpers) => createCustomAdapter(),
         })({});
         return callback(adapter);
       },
     },
-    adapter: createCustomAdapter,
+    adapter: (_helpers) => createCustomAdapter(),
   })({});
 }
