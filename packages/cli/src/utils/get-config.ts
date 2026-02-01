@@ -7,16 +7,10 @@ import { createJiti } from "jiti";
 const CONFIG_FILES = [
   "billing.ts",
   "billing.js",
-  "billing.mts",
-  "billing.mjs",
   "src/billing.ts",
   "src/billing.js",
-  "src/billing.mts",
-  "src/billing.mjs",
   "lib/billing.ts",
   "lib/billing.js",
-  "app/billing.ts",
-  "app/billing.js",
 ];
 
 /**
@@ -96,8 +90,7 @@ export async function getConfig(
     const found = await findConfigFile(cwd);
     if (!found) {
       throw new Error(
-        `Could not find billing config. Looked for: ${CONFIG_FILES.join(", ")}\n` +
-          "Create a billing.ts file or specify the path with --config",
+        "Config file not found. Run:\n\n  npx @billsdk/cli init\n",
       );
     }
     resolvedPath = found;
