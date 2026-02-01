@@ -4,4 +4,8 @@
  * React components for the time travel plugin.
  */
 
-export { TimeTravelOverlay, type TimeTravelOverlayProps } from "./overlay";
+export {
+  type Corner,
+  TimeTravelOverlay,
+  type TimeTravelOverlayProps,
+} from "./overlay";

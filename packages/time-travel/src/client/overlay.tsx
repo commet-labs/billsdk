@@ -1,52 +1,26 @@
 "use client";
 
-import type { CSSProperties } from "react";
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { useClickOutside, useDrag } from "./hooks";
+import { BillSDKLogo, ChevronIcon, CloseIcon } from "./icons";
+import { OVERLAY_STYLES } from "./styles";
+import type {
+  Corner,
+  CustomerTimeState,
+  RenewalResult,
+  TimeTravelOverlayProps,
+  TimeTravelState,
+} from "./types";
 
-export interface TimeTravelOverlayProps {
-  /**
-   * Base URL for the BillSDK API
-   * @default "/api/billing"
-   */
-  baseUrl?: string;
+export type { Corner, TimeTravelOverlayProps } from "./types";
 
-  /**
-   * Position of the overlay
-   * @default "bottom-right"
-   */
-  position?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
-
-  /**
-   * Initial collapsed state
-   * @default true
-   */
-  defaultCollapsed?: boolean;
-
-  /**
-   * Customer ID to control time for
-   * Required for per-customer time simulation
-   */
-  customerId?: string;
-}
-
-interface TimeTravelState {
-  customerId: string;
-  simulatedTime: string | null;
-  isSimulated: boolean;
-  realTime: string;
-}
-
-interface CustomerTimeState {
-  customerId: string;
-  simulatedTime: string | null;
-}
-
-interface RenewalResult {
-  processed: number;
-  succeeded: number;
-  failed: number;
-  skipped: number;
-}
+const STORAGE_KEY = "billsdk-time-travel-position";
 
 /**
  * Time Travel Overlay Component
@@ -76,10 +50,25 @@ interface RenewalResult {
  */
 export function TimeTravelOverlay({
   baseUrl = "/api/billing",
-  position = "bottom-right",
+  defaultPosition = "bottom-right",
   defaultCollapsed = true,
   customerId,
 }: TimeTravelOverlayProps) {
+  // Load position from localStorage
+  const [position, setPosition] = useState<Corner>(() => {
+    if (typeof window === "undefined") return defaultPosition;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (
+        saved &&
+        ["bottom-right", "bottom-left", "top-right", "top-left"].includes(saved)
+      ) {
+        return saved as Corner;
+      }
+    } catch {}
+    return defaultPosition;
+  });
+
   const [state, setState] = useState<TimeTravelState | null>(null);
   const [allCustomers, setAllCustomers] = useState<CustomerTimeState[]>([]);
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
@@ -91,8 +80,47 @@ export function TimeTravelOverlay({
   const [dateInput, setDateInput] = useState("");
   const [customerIdInput, setCustomerIdInput] = useState(customerId ?? "");
   const [showAllCustomers, setShowAllCustomers] = useState(false);
+  const [panelVisible, setPanelVisible] = useState(false);
 
+  const panelRef = useRef<HTMLDivElement>(null);
   const activeCustomerId = customerId ?? customerIdInput;
+
+  // Handle position change and persist to localStorage
+  const handlePositionChange = useCallback((newPosition: Corner) => {
+    setPosition(newPosition);
+    try {
+      localStorage.setItem(STORAGE_KEY, newPosition);
+    } catch {}
+  }, []);
+
+  // Draggable badge
+  const { ref: dragRef, isDragging } = useDrag({
+    position,
+    onPositionChange: handlePositionChange,
+    disabled: !isCollapsed,
+  });
+
+  // Close panel on click outside
+  useClickOutside(
+    panelRef,
+    () => {
+      setIsCollapsed(true);
+      setPanelVisible(false);
+    },
+    !isCollapsed,
+  );
+
+  // Animate panel visibility
+  useLayoutEffect(() => {
+    if (!isCollapsed) {
+      // Small delay to trigger CSS transition
+      requestAnimationFrame(() => {
+        setPanelVisible(true);
+      });
+    } else {
+      setPanelVisible(false);
+    }
+  }, [isCollapsed]);
 
   // Fetch current state for the active customer
   const fetchState = useCallback(async () => {
@@ -141,7 +169,7 @@ export function TimeTravelOverlay({
   }, [fetchState, fetchAllCustomers]);
 
   // Advance time
-  const advance = async (days: number, months = 0, hours = 0) => {
+  const advance = async (days: number, months = 0) => {
     if (!activeCustomerId) return;
 
     setIsLoading(true);
@@ -153,12 +181,10 @@ export function TimeTravelOverlay({
           customerId: activeCustomerId,
           days,
           months,
-          hours,
         }),
       });
       if (res.ok) {
-        await fetchState();
-        await fetchAllCustomers();
+        await Promise.all([fetchState(), fetchAllCustomers()]);
       }
     } catch (error) {
       console.error("[TimeTravelOverlay] Failed to advance:", error);
@@ -179,8 +205,7 @@ export function TimeTravelOverlay({
         body: JSON.stringify({ customerId: activeCustomerId, date }),
       });
       if (res.ok) {
-        await fetchState();
-        await fetchAllCustomers();
+        await Promise.all([fetchState(), fetchAllCustomers()]);
       }
     } catch (error) {
       console.error("[TimeTravelOverlay] Failed to set time:", error);
@@ -202,8 +227,7 @@ export function TimeTravelOverlay({
       });
       if (res.ok) {
         setDateInput("");
-        await fetchState();
-        await fetchAllCustomers();
+        await Promise.all([fetchState(), fetchAllCustomers()]);
       }
     } catch (error) {
       console.error("[TimeTravelOverlay] Failed to reset:", error);
@@ -236,8 +260,6 @@ export function TimeTravelOverlay({
       if (res.ok) {
         const data = (await res.json()) as RenewalResult;
         setRenewalResult(data);
-      } else {
-        console.error("[TimeTravelOverlay] Renewals failed:", res.statusText);
       }
     } catch (error) {
       console.error("[TimeTravelOverlay] Failed to process renewals:", error);
@@ -246,19 +268,18 @@ export function TimeTravelOverlay({
     }
   };
 
-  // Position styles
-  const positionStyles: Record<string, CSSProperties> = {
-    "bottom-right": { bottom: 16, right: 16 },
-    "bottom-left": { bottom: 16, left: 16 },
-    "top-right": { top: 16, right: 16 },
-    "top-left": { top: 16, left: 16 },
-  };
-
   const formatDate = (isoString: string) => {
     const date = new Date(isoString);
     return date.toLocaleDateString(undefined, {
-      weekday: "short",
+      month: "short",
+      day: "numeric",
       year: "numeric",
+    });
+  };
+
+  const formatShortDate = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
     });
@@ -273,161 +294,110 @@ export function TimeTravelOverlay({
   };
 
   const truncateId = (id: string) => {
-    if (id.length <= 12) return id;
-    return `${id.slice(0, 6)}...${id.slice(-4)}`;
+    if (id.length <= 10) return id;
+    return `${id.slice(0, 5)}…${id.slice(-4)}`;
   };
+
+  // Position styles
+  const [vertical, horizontal] = position.split("-") as [string, string];
+  const positionStyles: Record<string, string> = {
+    [vertical]: "var(--tt-padding)",
+    [horizontal]: "var(--tt-padding)",
+  };
+
+  // Panel transform origin based on position
+  const panelOrigin = position.replace("-", " ");
 
   return (
     <div
+      data-tt-root
       style={{
         position: "fixed",
-        ...positionStyles[position],
-        zIndex: 99999,
-        fontFamily:
-          'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        fontSize: 14,
+        ...positionStyles,
+        zIndex: 2147483646,
       }}
     >
-      {/* Collapsed Badge */}
+      <style>{OVERLAY_STYLES}</style>
+
       {isCollapsed ? (
-        <button
-          type="button"
-          onClick={() => setIsCollapsed(false)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "8px 12px",
-            borderRadius: 8,
-            border: "none",
-            cursor: "pointer",
-            boxShadow:
-              "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-            backgroundColor: state?.isSimulated ? "#fef3c7" : "#f3f4f6",
-            color: state?.isSimulated ? "#92400e" : "#374151",
-            fontWeight: 500,
-            transition: "all 0.2s",
-          }}
-        >
-          <span style={{ fontSize: 16 }}>
-            {state?.isSimulated ? "⏰" : "🕐"}
-          </span>
-          <span>
-            {state?.isSimulated && state.simulatedTime
-              ? formatDate(state.simulatedTime)
-              : "Real Time"}
-          </span>
-          {allCustomers.length > 0 && (
-            <span
-              style={{
-                backgroundColor: "#3b82f6",
-                color: "white",
-                borderRadius: 9999,
-                padding: "2px 6px",
-                fontSize: 11,
-                fontWeight: 600,
-              }}
-            >
-              {allCustomers.length}
+        /* Collapsed Badge */
+        <div ref={dragRef}>
+          <button
+            type="button"
+            data-tt-badge
+            data-simulated={state?.isSimulated ?? false}
+            onClick={() => {
+              // Only open if not dragging
+              if (!isDragging) {
+                setIsCollapsed(false);
+              }
+            }}
+            aria-label="Open Time Travel panel"
+          >
+            <span data-tt-badge-icon>
+              <BillSDKLogo />
             </span>
-          )}
-        </button>
+            <span>
+              {state?.isSimulated && state.simulatedTime
+                ? formatShortDate(state.simulatedTime)
+                : "Real Time"}
+            </span>
+            {allCustomers.length > 0 && (
+              <span data-tt-badge-count>{allCustomers.length}</span>
+            )}
+          </button>
+        </div>
       ) : (
         /* Expanded Panel */
         <div
-          style={{
-            width: 320,
-            backgroundColor: "white",
-            borderRadius: 12,
-            boxShadow:
-              "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-            border: "1px solid #e5e7eb",
-            overflow: "hidden",
-          }}
+          ref={panelRef}
+          data-tt-panel
+          data-visible={panelVisible}
+          style={{ "--tt-panel-origin": panelOrigin } as React.CSSProperties}
         >
           {/* Header */}
           <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "12px 16px",
-              backgroundColor: state?.isSimulated ? "#fef3c7" : "#f9fafb",
-              borderBottom: "1px solid #e5e7eb",
-            }}
+            data-tt-panel-header
+            data-simulated={state?.isSimulated ?? false}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 18 }}>
-                {state?.isSimulated ? "⏰" : "🕐"}
-              </span>
-              <span style={{ fontWeight: 600, color: "#111827" }}>
-                Time Travel
-              </span>
+            <div data-tt-panel-title>
+              <BillSDKLogo />
+              <span>Time Travel</span>
             </div>
             <button
               type="button"
+              data-tt-panel-close
               onClick={() => setIsCollapsed(true)}
-              style={{
-                padding: 4,
-                borderRadius: 4,
-                border: "none",
-                backgroundColor: "transparent",
-                cursor: "pointer",
-                color: "#6b7280",
-                fontSize: 18,
-                lineHeight: 1,
-              }}
+              aria-label="Close panel"
             >
-              ×
+              <CloseIcon />
             </button>
           </div>
 
-          <div style={{ padding: 16 }}>
+          <div data-tt-panel-content>
             {/* Customer ID Input (only if not provided via prop) */}
             {!customerId && (
-              <div style={{ marginBottom: 16 }}>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#6b7280",
-                    marginBottom: 8,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                  }}
-                >
+              <div style={{ marginBottom: 12 }}>
+                <label htmlFor="tt-customer-id" data-tt-label>
                   Customer ID
-                </div>
+                </label>
                 <input
+                  id="tt-customer-id"
                   type="text"
+                  data-tt-input
                   value={customerIdInput}
                   onChange={(e) => setCustomerIdInput(e.target.value)}
                   onBlur={fetchState}
+                  onKeyDown={(e) => e.key === "Enter" && fetchState()}
                   placeholder="Enter customer ID…"
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: 6,
-                    border: "1px solid #e5e7eb",
-                    fontSize: 14,
-                    color: "#374151",
-                    boxSizing: "border-box",
-                  }}
+                  spellCheck={false}
                 />
               </div>
             )}
 
             {/* Customer indicator (when provided via prop) */}
             {customerId && (
-              <div
-                style={{
-                  marginBottom: 16,
-                  padding: "8px 12px",
-                  backgroundColor: "#eff6ff",
-                  borderRadius: 6,
-                  fontSize: 12,
-                  color: "#1e40af",
-                }}
-              >
+              <div data-tt-customer>
                 Customer: <strong>{truncateId(customerId)}</strong>
               </div>
             )}
@@ -435,35 +405,18 @@ export function TimeTravelOverlay({
             {activeCustomerId ? (
               <>
                 {/* Current Time Display */}
-                <div
-                  style={{
-                    marginBottom: 16,
-                    padding: 12,
-                    backgroundColor: "#f9fafb",
-                    borderRadius: 8,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#6b7280",
-                      marginBottom: 4,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
+                <div data-tt-time-display>
+                  <div data-tt-time-label>
                     {state?.isSimulated ? "Simulated Time" : "Current Time"}
                   </div>
-                  <div
-                    style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}
-                  >
+                  <div data-tt-time-value>
                     {state?.simulatedTime
                       ? formatDate(state.simulatedTime)
                       : state?.realTime
                         ? formatDate(state.realTime)
-                        : "Loading..."}
+                        : "Loading…"}
                   </div>
-                  <div style={{ fontSize: 14, color: "#6b7280" }}>
+                  <div data-tt-time-sub>
                     {state?.simulatedTime
                       ? formatTime(state.simulatedTime)
                       : state?.realTime
@@ -473,248 +426,115 @@ export function TimeTravelOverlay({
                 </div>
 
                 {/* Quick Actions */}
-                <div style={{ marginBottom: 16 }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#6b7280",
-                      marginBottom: 8,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
+                <div data-tt-label>Quick Advance</div>
+                <div data-tt-actions>
+                  <button
+                    type="button"
+                    data-tt-action
+                    onClick={() => advance(1, 0)}
+                    disabled={isLoading}
                   >
-                    Quick Advance
-                  </div>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3, 1fr)",
-                      gap: 8,
-                    }}
+                    +1 day
+                  </button>
+                  <button
+                    type="button"
+                    data-tt-action
+                    onClick={() => advance(7, 0)}
+                    disabled={isLoading}
                   >
-                    {[
-                      { label: "+1 day", days: 1 },
-                      { label: "+1 week", days: 7 },
-                      { label: "+1 month", months: 1 },
-                    ].map((action) => (
-                      <button
-                        key={action.label}
-                        type="button"
-                        onClick={() =>
-                          advance(action.days ?? 0, action.months ?? 0)
-                        }
-                        disabled={isLoading}
-                        style={{
-                          padding: "8px 12px",
-                          borderRadius: 6,
-                          border: "1px solid #e5e7eb",
-                          backgroundColor: "white",
-                          cursor: isLoading ? "not-allowed" : "pointer",
-                          color: "#374151",
-                          fontSize: 13,
-                          fontWeight: 500,
-                          transition: "all 0.15s",
-                          opacity: isLoading ? 0.5 : 1,
-                        }}
-                      >
-                        {action.label}
-                      </button>
-                    ))}
-                  </div>
+                    +1 week
+                  </button>
+                  <button
+                    type="button"
+                    data-tt-action
+                    onClick={() => advance(0, 1)}
+                    disabled={isLoading}
+                  >
+                    +1 month
+                  </button>
                 </div>
 
                 {/* Date Picker */}
-                <div style={{ marginBottom: 16 }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#6b7280",
-                      marginBottom: 8,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    Go to Date
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <input
-                      type="date"
-                      value={dateInput}
-                      onChange={(e) => {
-                        const target = e.target as HTMLInputElement;
-                        setDateInput(target.value);
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: "8px 12px",
-                        borderRadius: 6,
-                        border: "1px solid #e5e7eb",
-                        fontSize: 14,
-                        color: "#374151",
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleDateSubmit}
-                      disabled={isLoading || !dateInput}
-                      style={{
-                        padding: "8px 16px",
-                        borderRadius: 6,
-                        border: "none",
-                        backgroundColor: "#3b82f6",
-                        color: "white",
-                        cursor:
-                          isLoading || !dateInput ? "not-allowed" : "pointer",
-                        fontSize: 14,
-                        fontWeight: 500,
-                        opacity: isLoading || !dateInput ? 0.5 : 1,
-                      }}
-                    >
-                      Go
-                    </button>
-                  </div>
-                </div>
-
-                {/* Reset Button */}
-                {state?.isSimulated && (
+                <label htmlFor="tt-date-input" data-tt-label>
+                  Go to Date
+                </label>
+                <input
+                  id="tt-date-input"
+                  type="date"
+                  data-tt-input
+                  style={{ width: "100%", marginBottom: 6 }}
+                  value={dateInput}
+                  onChange={(e) => setDateInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleDateSubmit()}
+                />
+                <div data-tt-actions style={{ marginBottom: 12 }}>
                   <button
                     type="button"
-                    onClick={reset}
-                    disabled={isLoading}
-                    style={{
-                      width: "100%",
-                      padding: "10px 16px",
-                      borderRadius: 6,
-                      border: "1px solid #ef4444",
-                      backgroundColor: "white",
-                      color: "#ef4444",
-                      cursor: isLoading ? "not-allowed" : "pointer",
-                      fontSize: 14,
-                      fontWeight: 500,
-                      opacity: isLoading ? 0.5 : 1,
-                      marginBottom: 16,
-                    }}
+                    data-tt-btn-primary
+                    onClick={handleDateSubmit}
+                    disabled={isLoading || !dateInput}
                   >
-                    Reset to Real Time
+                    Go
                   </button>
-                )}
+                  <button
+                    type="button"
+                    data-tt-btn-reset
+                    onClick={reset}
+                    disabled={isLoading || !state?.isSimulated}
+                  >
+                    Reset
+                  </button>
+                </div>
 
                 {/* Billing Actions */}
-                <div style={{ marginBottom: 16 }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#6b7280",
-                      marginBottom: 8,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    Billing Actions
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      type="button"
-                      onClick={() => processRenewals(true)}
-                      disabled={isProcessingRenewals}
-                      title="Check what would happen without actually charging"
-                      style={{
-                        flex: 1,
-                        padding: "8px 12px",
-                        borderRadius: 6,
-                        border: "1px solid #e5e7eb",
-                        backgroundColor: "white",
-                        cursor: isProcessingRenewals
-                          ? "not-allowed"
-                          : "pointer",
-                        color: "#374151",
-                        fontSize: 13,
-                        fontWeight: 500,
-                        opacity: isProcessingRenewals ? 0.5 : 1,
-                      }}
-                    >
-                      {isProcessingRenewals ? "..." : "Dry Run"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => processRenewals(false)}
-                      disabled={isProcessingRenewals}
-                      title="Process renewals and charge customers"
-                      style={{
-                        flex: 1,
-                        padding: "8px 12px",
-                        borderRadius: 6,
-                        border: "none",
-                        backgroundColor: "#10b981",
-                        cursor: isProcessingRenewals
-                          ? "not-allowed"
-                          : "pointer",
-                        color: "white",
-                        fontSize: 13,
-                        fontWeight: 500,
-                        opacity: isProcessingRenewals ? 0.5 : 1,
-                      }}
-                    >
-                      {isProcessingRenewals
-                        ? "Processing..."
-                        : "Process Renewals"}
-                    </button>
-                  </div>
+                <div data-tt-label>Billing</div>
+                <button
+                  type="button"
+                  data-tt-btn-primary
+                  style={{ width: "100%", marginBottom: 12 }}
+                  onClick={() => processRenewals(false)}
+                  disabled={isProcessingRenewals}
+                >
+                  {isProcessingRenewals ? "Processing…" : "Process Renewals"}
+                </button>
 
-                  {/* Renewal Result */}
-                  {renewalResult && (
-                    <div
-                      style={{
-                        marginTop: 8,
-                        padding: 12,
-                        backgroundColor:
-                          renewalResult.failed > 0 ? "#fef2f2" : "#f0fdf4",
-                        borderRadius: 6,
-                        fontSize: 12,
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(2, 1fr)",
-                          gap: 4,
-                        }}
-                      >
-                        <div>
-                          <span style={{ color: "#6b7280" }}>Processed:</span>{" "}
-                          <strong>{renewalResult.processed}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "#059669" }}>Succeeded:</span>{" "}
-                          <strong style={{ color: "#059669" }}>
-                            {renewalResult.succeeded}
-                          </strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "#dc2626" }}>Failed:</span>{" "}
-                          <strong style={{ color: "#dc2626" }}>
-                            {renewalResult.failed}
-                          </strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "#6b7280" }}>Skipped:</span>{" "}
-                          <strong>{renewalResult.skipped}</strong>
-                        </div>
+                {/* Renewal Result */}
+                {renewalResult && (
+                  <div
+                    data-tt-result
+                    data-has-errors={renewalResult.failed > 0}
+                  >
+                    <div data-tt-result-grid>
+                      <div data-tt-result-item>
+                        Processed:{" "}
+                        <span data-tt-result-value>
+                          {renewalResult.processed}
+                        </span>
+                      </div>
+                      <div data-tt-result-item>
+                        Succeeded:{" "}
+                        <span data-tt-result-value data-success>
+                          {renewalResult.succeeded}
+                        </span>
+                      </div>
+                      <div data-tt-result-item>
+                        Failed:{" "}
+                        <span data-tt-result-value data-danger>
+                          {renewalResult.failed}
+                        </span>
+                      </div>
+                      <div data-tt-result-item>
+                        Skipped:{" "}
+                        <span data-tt-result-value>
+                          {renewalResult.skipped}
+                        </span>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </>
             ) : (
-              <div
-                style={{
-                  padding: 16,
-                  textAlign: "center",
-                  color: "#6b7280",
-                }}
-              >
-                Enter a customer ID to control time
-              </div>
+              <div data-tt-empty>Enter a customer ID to control time</div>
             )}
 
             {/* All Customers Toggle */}
@@ -722,63 +542,30 @@ export function TimeTravelOverlay({
               <div>
                 <button
                   type="button"
+                  data-tt-customers-toggle
                   onClick={() => setShowAllCustomers(!showAllCustomers)}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: 6,
-                    border: "1px solid #e5e7eb",
-                    backgroundColor: "#f9fafb",
-                    cursor: "pointer",
-                    color: "#374151",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
                 >
                   <span>
                     {allCustomers.length} customer(s) with simulated time
                   </span>
-                  <span>{showAllCustomers ? "▲" : "▼"}</span>
+                  <ChevronIcon open={showAllCustomers} />
                 </button>
 
                 {showAllCustomers && (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      maxHeight: 150,
-                      overflowY: "auto",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 6,
-                    }}
-                  >
+                  <div data-tt-customers-list>
                     {allCustomers.map((c) => (
                       <div
                         key={c.customerId}
-                        style={{
-                          padding: "8px 12px",
-                          borderBottom: "1px solid #f3f4f6",
-                          fontSize: 12,
-                          display: "flex",
-                          justifyContent: "space-between",
-                          backgroundColor:
-                            c.customerId === activeCustomerId
-                              ? "#eff6ff"
-                              : "transparent",
-                        }}
+                        data-tt-customer-item
+                        data-active={c.customerId === activeCustomerId}
                       >
-                        <span
-                          style={{
-                            fontFamily: "monospace",
-                            color: "#374151",
-                          }}
-                        >
+                        <span data-tt-customer-id>
                           {truncateId(c.customerId)}
                         </span>
-                        <span style={{ color: "#6b7280" }}>
-                          {c.simulatedTime ? formatDate(c.simulatedTime) : "—"}
+                        <span data-tt-customer-date>
+                          {c.simulatedTime
+                            ? formatShortDate(c.simulatedTime)
+                            : "—"}
                         </span>
                       </div>
                     ))}
@@ -789,18 +576,7 @@ export function TimeTravelOverlay({
           </div>
 
           {/* Footer Warning */}
-          <div
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#fef2f2",
-              borderTop: "1px solid #fecaca",
-              fontSize: 11,
-              color: "#991b1b",
-              textAlign: "center",
-            }}
-          >
-            Development only - Do not use in production
-          </div>
+          <div data-tt-footer>Development only — Do not use in production</div>
         </div>
       )}
     </div>
