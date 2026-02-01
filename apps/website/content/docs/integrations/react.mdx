@@ -54,12 +54,3 @@ billing.refresh();
 // Per-hook refresh
 const { refresh } = billing.useSubscription();
 ```
-
-## Atoms
-
-For non-React contexts:
-
-```typescript
-billing.$subscription.subscribe(sub => console.log(sub));
-billing.$subscription.get();
-```
