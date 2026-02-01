@@ -35,8 +35,7 @@
   ],
   "scripts": {
     "build": "tsup",
-    "dev": "tsx src/index.ts",
-    "start": "node dist/index.js",
+    "dev": "tsup --watch",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

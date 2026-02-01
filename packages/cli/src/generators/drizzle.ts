@@ -79,7 +79,7 @@ function getColumnDefinition(
   fieldName: string,
   field: DBFieldAttribute,
   provider: "pg" | "mysql" | "sqlite",
-  schema: DBSchema,
+  _schema: DBSchema,
 ): string {
   const columnType = getColumnType(field, provider);
   const columnName = toSnakeCase(fieldName);

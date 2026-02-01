@@ -65,5 +65,5 @@ export function getSupportedAdapters(): string[] {
   return Object.keys(generators);
 }
 
-export { generateDrizzleSchema } from "./drizzle";
 export type { DrizzleGeneratorOptions } from "./drizzle";
+export { generateDrizzleSchema } from "./drizzle";

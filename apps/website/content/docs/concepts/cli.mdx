@@ -1,0 +1,170 @@
+---
+title: CLI
+description: Generate schemas and manage your billing configuration
+---
+
+The BillSDK CLI helps you generate database schemas from your billing configuration. It reads your `billing.ts` config file, merges schemas from any plugins you're using, and generates the appropriate ORM-specific code.
+
+## Generate
+
+The `generate` command creates the database schema required by BillSDK. It reads your config, detects your adapter, and generates the schema file.
+
+```bash
+npx @billsdk/cli generate
+```
+
+### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-c, --config <path>` | Path to billing config file | Auto-detected |
+| `-o, --output <path>` | Output file path | `billing-schema.ts` |
+| `-p, --provider <provider>` | Database provider (`pg`, `mysql`, `sqlite`) | `pg` |
+| `-y, --yes` | Skip confirmation prompts | `false` |
+
+### Examples
+
+```bash
+# Generate with defaults
+npx @billsdk/cli generate
+
+# Custom output path
+npx @billsdk/cli generate --output src/lib/db/billing-schema.ts
+
+# Specify provider
+npx @billsdk/cli generate --provider sqlite
+
+# Skip prompts (CI/CD)
+npx @billsdk/cli generate --yes
+```
+
+### Output
+
+The command generates a Drizzle schema file with:
+
+- Tables for `customer`, `subscription`, `payment`
+- Plugin tables (e.g., `time_travel_state` if using time-travel plugin)
+- Relations between tables
+- Proper column types for your provider
+
+```typescript
+// Generated billing-schema.ts
+import { pgTable, text, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+
+export const customer = pgTable("customer", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  externalId: text("external_id").notNull().unique(),
+  email: text("email"),
+  name: text("name"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// ... more tables
+```
+
+### After Generating
+
+Run your ORM's migration tools:
+
+```bash
+npx drizzle-kit generate
+npx drizzle-kit migrate
+```
+
+## Init
+
+The `init` command scaffolds BillSDK in your project. It creates a `billing.ts` config file and optionally installs dependencies.
+
+```bash
+npx @billsdk/cli init
+```
+
+### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-y, --yes` | Skip prompts and use defaults | `false` |
+
+### Interactive Prompts
+
+Without `--yes`, the CLI asks:
+
+1. **Database adapter** — Drizzle ORM (recommended) or In-Memory (testing)
+2. **Database provider** — PostgreSQL, MySQL, or SQLite (if using Drizzle)
+3. **Install dependencies** — Whether to run the install command
+
+### Generated Config
+
+```typescript
+// billing.ts
+import { billsdk } from "billsdk";
+import { drizzleAdapter } from "@billsdk/drizzle-adapter";
+import { db } from "./db";
+import * as schema from "./billing-schema";
+
+export const billing = billsdk({
+  database: drizzleAdapter(db, {
+    schema,
+    provider: "pg",
+  }),
+  plans: [
+    {
+      code: "free",
+      name: "Free",
+      description: "Get started for free",
+      price: { monthly: 0, yearly: 0 },
+      features: {
+        projects: { type: "limit", value: 3 },
+      },
+    },
+    {
+      code: "pro",
+      name: "Pro",
+      description: "For growing teams",
+      price: { monthly: 1900, yearly: 19000 },
+      features: {
+        projects: { type: "limit", value: 100 },
+        analytics: { type: "boolean", value: true },
+      },
+    },
+  ],
+});
+```
+
+### Dependencies Installed
+
+For Drizzle with PostgreSQL:
+
+```bash
+billsdk @billsdk/drizzle-adapter drizzle-orm drizzle-kit postgres
+```
+
+## Config File Discovery
+
+The CLI searches for your billing config in these locations:
+
+- `billing.ts`
+- `src/billing.ts`
+- `lib/billing.ts`
+- `src/lib/billing.ts`
+- `utils/billing.ts`
+- `src/utils/billing.ts`
+
+Use `--config` to specify a custom path.
+
+## Plugin Schema Support
+
+The CLI automatically merges schemas from plugins. If you're using the time-travel plugin:
+
+```typescript
+import { timeTravelPlugin } from "@billsdk/time-travel";
+
+export const billing = billsdk({
+  // ...
+  plugins: [timeTravelPlugin()],
+});
+```
+
+Running `generate` will include the plugin's `time_travel_state` table in the output.
