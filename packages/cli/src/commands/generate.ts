@@ -70,11 +70,9 @@ export const generateCommand = new Command("generate")
         ? options.output
         : path.join(cwd, options.output);
 
-      const shouldWrite = true;
-
       try {
         await fs.access(outputPath);
-        // File exists
+        // File exists - ask for confirmation unless --yes flag
         if (!options.yes) {
           const overwrite = await p.confirm({
             message: `File ${chalk.dim(options.output)} already exists. Overwrite?`,
@@ -87,41 +85,39 @@ export const generateCommand = new Command("generate")
           }
         }
       } catch {
-        // File doesn't exist, we can write
+        // File doesn't exist, continue
       }
 
-      if (shouldWrite) {
-        // Generate schema
-        spinner.start("Generating schema…");
-        const result = await generateSchema({
-          schema,
-          adapterId,
-          provider,
-          output: options.output,
-        });
-        spinner.stop(`${chalk.green("✓")} Schema generated`);
+      // Generate schema
+      spinner.start("Generating schema…");
+      const result = await generateSchema({
+        schema,
+        adapterId,
+        provider,
+        output: options.output,
+      });
+      spinner.stop(`${chalk.green("✓")} Schema generated`);
 
-        // Write file
-        spinner.start("Writing file…");
-        await fs.mkdir(path.dirname(outputPath), { recursive: true });
-        await fs.writeFile(outputPath, result.code, "utf-8");
-        spinner.stop(
-          `${chalk.green("✓")} Written to ${chalk.dim(options.output)}`,
-        );
+      // Write file
+      spinner.start("Writing file…");
+      await fs.mkdir(path.dirname(outputPath), { recursive: true });
+      await fs.writeFile(outputPath, result.code, "utf-8");
+      spinner.stop(
+        `${chalk.green("✓")} Written to ${chalk.dim(options.output)}`,
+      );
 
-        // Success message
-        p.log.success(
-          `Generated ${chalk.cyan(result.fileName)} with ${tableCount} tables`,
-        );
+      // Success message
+      p.log.success(
+        `Generated ${chalk.cyan(result.fileName)} with ${tableCount} tables`,
+      );
 
-        // Next steps
-        p.note(
-          "Run migrations:\n" +
-            chalk.dim("  npx drizzle-kit generate\n") +
-            chalk.dim("  npx drizzle-kit migrate"),
-          "Next steps",
-        );
-      }
+      // Next steps
+      p.note(
+        "Run migrations:\n" +
+          chalk.dim("  npx drizzle-kit generate\n") +
+          chalk.dim("  npx drizzle-kit migrate"),
+        "Next steps",
+      );
 
       p.outro(chalk.green("Done!"));
     } catch (error) {
