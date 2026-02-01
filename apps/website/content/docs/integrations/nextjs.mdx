@@ -49,6 +49,55 @@ export default async function DashboardPage() {
 }
 ```
 
+## Client Components
+
+For client-side interactivity, use the [React hooks](/docs/integrations/react).
+
+```typescript title="lib/billing-client.ts"
+import { createBillingClient } from "billsdk/react";
+
+export const billingClient = createBillingClient();
+
+// Re-export hooks for convenience
+export const { useCustomer, useSubscription, usePlans } = billingClient;
+```
+
+```tsx title="components/plan-badge.tsx"
+"use client";
+
+import { useSubscription } from "@/lib/billing-client";
+
+export function PlanBadge() {
+  const { data: subscription, isLoading } = useSubscription();
+  
+  if (isLoading) return <span>Loading…</span>;
+  return <span>{subscription?.planCode ?? "Free"}</span>;
+}
+```
+
+Set the customer ID after authentication:
+
+```tsx title="app/providers.tsx"
+"use client";
+
+import { useEffect } from "react";
+import { billingClient } from "@/lib/billing-client";
+
+export function BillingProvider({ 
+  userId, 
+  children 
+}: { 
+  userId: string | null;
+  children: React.ReactNode;
+}) {
+  useEffect(() => {
+    billingClient.setCustomerId(userId ?? "");
+  }, [userId]);
+
+  return children;
+}
+```
+
 ## Cron for Renewals
 
 ```json title="vercel.json"
