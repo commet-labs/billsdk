@@ -184,8 +184,7 @@ export function TimeTravelOverlay({
         }),
       });
       if (res.ok) {
-        await fetchState();
-        await fetchAllCustomers();
+        await Promise.all([fetchState(), fetchAllCustomers()]);
       }
     } catch (error) {
       console.error("[TimeTravelOverlay] Failed to advance:", error);
@@ -206,8 +205,7 @@ export function TimeTravelOverlay({
         body: JSON.stringify({ customerId: activeCustomerId, date }),
       });
       if (res.ok) {
-        await fetchState();
-        await fetchAllCustomers();
+        await Promise.all([fetchState(), fetchAllCustomers()]);
       }
     } catch (error) {
       console.error("[TimeTravelOverlay] Failed to set time:", error);
@@ -229,8 +227,7 @@ export function TimeTravelOverlay({
       });
       if (res.ok) {
         setDateInput("");
-        await fetchState();
-        await fetchAllCustomers();
+        await Promise.all([fetchState(), fetchAllCustomers()]);
       }
     } catch (error) {
       console.error("[TimeTravelOverlay] Failed to reset:", error);
@@ -381,8 +378,11 @@ export function TimeTravelOverlay({
             {/* Customer ID Input (only if not provided via prop) */}
             {!customerId && (
               <div style={{ marginBottom: 12 }}>
-                <div data-tt-label>Customer ID</div>
+                <label htmlFor="tt-customer-id" data-tt-label>
+                  Customer ID
+                </label>
                 <input
+                  id="tt-customer-id"
                   type="text"
                   data-tt-input
                   value={customerIdInput}
@@ -455,8 +455,11 @@ export function TimeTravelOverlay({
                 </div>
 
                 {/* Date Picker */}
-                <div data-tt-label>Go to Date</div>
+                <label htmlFor="tt-date-input" data-tt-label>
+                  Go to Date
+                </label>
                 <input
+                  id="tt-date-input"
                   type="date"
                   data-tt-input
                   style={{ width: "100%", marginBottom: 6 }}

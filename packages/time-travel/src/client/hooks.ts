@@ -234,18 +234,24 @@ export function useClickOutside(
   handler: () => void,
   enabled: boolean,
 ) {
+  // Store handler in ref to avoid re-subscribing on handler changes
+  const handlerRef = useRef(handler);
+  useEffect(() => {
+    handlerRef.current = handler;
+  });
+
   useEffect(() => {
     if (!enabled) return;
 
     const listener = (e: MouseEvent | TouchEvent) => {
       const el = ref.current;
       if (!el || el.contains(e.target as Node)) return;
-      handler();
+      handlerRef.current();
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        handler();
+        handlerRef.current();
       }
     };
 
@@ -258,5 +264,5 @@ export function useClickOutside(
       document.removeEventListener("touchstart", listener);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [ref, handler, enabled]);
+  }, [ref, enabled]);
 }

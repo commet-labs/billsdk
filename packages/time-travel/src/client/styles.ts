@@ -43,6 +43,8 @@ export const OVERLAY_STYLES = `
   user-select: none;
   white-space: nowrap;
   transition: background 150ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 [data-tt-badge]:hover {
@@ -232,8 +234,11 @@ export const OVERLAY_STYLES = `
 }
 
 [data-tt-input]:focus {
-  outline: none;
   border-color: var(--tt-text-muted);
+}
+
+[data-tt-input]:focus:not(:focus-visible) {
+  outline: none;
 }
 
 [data-tt-input]::placeholder {
@@ -372,11 +377,42 @@ export const OVERLAY_STYLES = `
 
 /* Label */
 [data-tt-label] {
+  display: block;
   font-size: 11px;
   font-weight: 500;
   color: var(--tt-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 6px;
+}
+
+/* Focus visible */
+[data-tt-input]:focus-visible {
+  outline: 2px solid var(--tt-text-muted);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+[data-tt-badge]:focus-visible,
+[data-tt-action]:focus-visible,
+[data-tt-btn-primary]:focus-visible,
+[data-tt-btn-reset]:focus-visible,
+[data-tt-panel-close]:focus-visible,
+[data-tt-customers-toggle]:focus-visible {
+  outline: 2px solid var(--tt-text-muted);
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  [data-tt-panel],
+  [data-tt-badge],
+  [data-tt-customers-toggle],
+  [data-tt-action],
+  [data-tt-btn-primary],
+  [data-tt-btn-reset],
+  [data-tt-input] {
+    transition: none !important;
+  }
 }
 `;
