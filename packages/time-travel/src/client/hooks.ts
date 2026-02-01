@@ -126,12 +126,16 @@ export function useDrag({
 
       const handleTransitionEnd = (e: TransitionEvent) => {
         if (e.propertyName === "translate") {
-          el.style.transition = "";
-          el.style.translate = "";
-          translationRef.current = { x: 0, y: 0 };
-          stateRef.current = "idle";
-          onPositionChange(target.corner);
           el.removeEventListener("transitionend", handleTransitionEnd);
+          onPositionChange(target.corner);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              el.style.transition = "";
+              el.style.translate = "";
+              translationRef.current = { x: 0, y: 0 };
+              stateRef.current = "idle";
+            });
+          });
         }
       };
 
