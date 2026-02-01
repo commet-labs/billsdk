@@ -18,16 +18,38 @@ export {
   matchMethod,
   matchPath,
 } from "./api";
+export type {
+  AdapterFactory,
+  AdapterFactoryConfig,
+  AdapterFactoryOptions,
+  AdapterHelpers,
+  CleanedWhere,
+  CustomAdapter,
+} from "./db/adapter";
+// Re-export adapter factory for adapter authors
+export { createAdapterFactory } from "./db/adapter";
+export type {
+  DBFieldAttribute,
+  DBFieldReference,
+  DBFieldType,
+  DBSchema,
+  DBTableSchema,
+} from "./db/schema";
+// Re-export schema utilities
+export {
+  billingSchema,
+  defineField,
+  defineTable,
+  getBillingSchema,
+  TABLES,
+} from "./db/schema";
 export type { BaseErrorCode, HttpStatus } from "./error";
-
 // Re-export error handling
 export { BASE_ERROR_CODES, BillingError, defineErrorCodes } from "./error";
 // Re-export all types
 export type * from "./types";
-
 // Re-export time provider
 export { createDefaultTimeProvider } from "./types/time";
-
 // Re-export utilities
 export {
   addDays,

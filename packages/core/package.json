@@ -38,6 +38,10 @@
       "types": "./dist/db/schema.d.ts",
       "default": "./dist/db/schema.js"
     },
+    "./db/adapter": {
+      "types": "./dist/db/adapter/index.d.ts",
+      "default": "./dist/db/adapter/index.js"
+    },
     "./types": {
       "types": "./dist/types/index.d.ts",
       "default": "./dist/types/index.js"
@@ -53,6 +57,9 @@
       ],
       "db": [
         "./dist/db/schema.d.ts"
+      ],
+      "db/adapter": [
+        "./dist/db/adapter/index.d.ts"
       ],
       "types": [
         "./dist/types/index.d.ts"

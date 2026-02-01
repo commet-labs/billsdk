@@ -1,4 +1,9 @@
-import type { DBAdapter, SortBy, Where } from "@billsdk/core";
+import {
+  type CleanedWhere,
+  type CustomAdapter,
+  createAdapterFactory,
+  type DBAdapter,
+} from "@billsdk/core";
 
 /**
  * In-memory storage for the adapter
@@ -6,16 +11,12 @@ import type { DBAdapter, SortBy, Where } from "@billsdk/core";
 type Storage = Map<string, Map<string, Record<string, unknown>>>;
 
 /**
- * Generate a unique ID
- */
-function generateId(): string {
-  return crypto.randomUUID();
-}
-
-/**
  * Apply where clauses to filter records
  */
-function applyWhere(record: Record<string, unknown>, where: Where[]): boolean {
+function applyWhere(
+  record: Record<string, unknown>,
+  where: CleanedWhere[],
+): boolean {
   return where.every((clause) => {
     const value = record[clause.field];
 
@@ -57,7 +58,7 @@ function applyWhere(record: Record<string, unknown>, where: Where[]): boolean {
  */
 function applySorting<T extends Record<string, unknown>>(
   records: T[],
-  sortBy?: SortBy,
+  sortBy?: { field: string; direction: "asc" | "desc" },
 ): T[] {
   if (!sortBy) return records;
 
@@ -121,24 +122,23 @@ export function memoryAdapter(): DBAdapter {
     return table;
   }
 
-  return {
-    id: "memory",
-
+  // Create the custom adapter implementation
+  const createCustomAdapter = (): CustomAdapter => ({
     async create<T extends Record<string, unknown>>(data: {
       model: string;
-      data: Omit<T, "id">;
+      data: Record<string, unknown>;
       select?: string[];
     }): Promise<T> {
       const table = getTable(data.model);
-      const id = generateId();
-      const record = { id, ...data.data } as unknown as T;
+      const id = data.data.id as string;
+      const record = { ...data.data } as unknown as T;
       table.set(id, record);
       return selectFields(record, data.select);
     },
 
     async findOne<T extends Record<string, unknown>>(data: {
       model: string;
-      where: Where[];
+      where: CleanedWhere[];
       select?: string[];
     }): Promise<T | null> {
       const table = getTable(data.model);
@@ -154,11 +154,11 @@ export function memoryAdapter(): DBAdapter {
 
     async findMany<T extends Record<string, unknown>>(data: {
       model: string;
-      where?: Where[];
+      where?: CleanedWhere[];
       select?: string[];
       limit?: number;
       offset?: number;
-      sortBy?: SortBy;
+      sortBy?: { field: string; direction: "asc" | "desc" };
     }): Promise<T[]> {
       const table = getTable(data.model);
       let records = Array.from(table.values()) as T[];
@@ -189,8 +189,8 @@ export function memoryAdapter(): DBAdapter {
 
     async update<T extends Record<string, unknown>>(data: {
       model: string;
-      where: Where[];
-      update: Partial<T>;
+      where: CleanedWhere[];
+      update: Record<string, unknown>;
     }): Promise<T | null> {
       const table = getTable(data.model);
 
@@ -207,7 +207,7 @@ export function memoryAdapter(): DBAdapter {
 
     async updateMany(data: {
       model: string;
-      where: Where[];
+      where: CleanedWhere[];
       update: Record<string, unknown>;
     }): Promise<number> {
       const table = getTable(data.model);
@@ -223,7 +223,10 @@ export function memoryAdapter(): DBAdapter {
       return count;
     },
 
-    async delete(data: { model: string; where: Where[] }): Promise<void> {
+    async delete(data: {
+      model: string;
+      where: CleanedWhere[];
+    }): Promise<void> {
       const table = getTable(data.model);
 
       for (const [id, record] of table.entries()) {
@@ -234,7 +237,10 @@ export function memoryAdapter(): DBAdapter {
       }
     },
 
-    async deleteMany(data: { model: string; where: Where[] }): Promise<number> {
+    async deleteMany(data: {
+      model: string;
+      where: CleanedWhere[];
+    }): Promise<number> {
       const table = getTable(data.model);
       let count = 0;
 
@@ -248,7 +254,10 @@ export function memoryAdapter(): DBAdapter {
       return count;
     },
 
-    async count(data: { model: string; where?: Where[] }): Promise<number> {
+    async count(data: {
+      model: string;
+      where?: CleanedWhere[];
+    }): Promise<number> {
       const table = getTable(data.model);
 
       if (!data.where || data.where.length === 0) {
@@ -264,13 +273,32 @@ export function memoryAdapter(): DBAdapter {
 
       return count;
     },
+  });
 
-    async transaction<R>(
-      callback: (adapter: DBAdapter) => Promise<R>,
-    ): Promise<R> {
-      // Memory adapter doesn't need real transactions
-      // Just execute the callback directly
-      return callback(this);
+  // Use the adapter factory and immediately invoke it
+  return createAdapterFactory({
+    config: {
+      adapterId: "memory",
+      adapterName: "Memory Adapter",
+      supportsJSON: true,
+      supportsDates: true,
+      supportsBooleans: true,
+      supportsArrays: true,
+      // Memory adapter transactions - just execute directly
+      transaction: async <R>(callback: (adapter: DBAdapter) => Promise<R>) => {
+        const adapter = createAdapterFactory({
+          config: {
+            adapterId: "memory",
+            supportsJSON: true,
+            supportsDates: true,
+            supportsBooleans: true,
+            supportsArrays: true,
+          },
+          adapter: (_helpers) => createCustomAdapter(),
+        })({});
+        return callback(adapter);
+      },
     },
-  };
+    adapter: (_helpers) => createCustomAdapter(),
+  })({});
 }
