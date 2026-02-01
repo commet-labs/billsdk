@@ -1,13 +1,17 @@
 import type { DBFieldAttribute, DBSchema, DBTableSchema } from "@billsdk/core";
 import * as prettier from "prettier";
 
-/**
- * Options for generating Drizzle schema
- */
 export interface DrizzleGeneratorOptions {
   schema: DBSchema;
   provider: "pg" | "mysql" | "sqlite";
   output?: string;
+}
+
+/**
+ * Convert camelCase to snake_case
+ */
+function toSnakeCase(str: string): string {
+  return str.replace(/([A-Z])/g, "_$1").toLowerCase();
 }
 
 /**
@@ -24,52 +28,37 @@ function getColumnType(
       if (provider === "pg") return "text";
       if (provider === "mysql") return "varchar";
       return "text";
-
     case "number":
-      if (provider === "pg") return "integer";
-      if (provider === "mysql") return "int";
       return "integer";
-
     case "boolean":
-      if (provider === "sqlite") return "integer"; // SQLite uses 0/1
+      if (provider === "sqlite") return "integer";
       return "boolean";
-
     case "date":
       if (provider === "pg") return "timestamp";
       if (provider === "mysql") return "datetime";
-      return "integer"; // SQLite stores as unix timestamp
-
+      return "integer";
     case "json":
       if (provider === "pg") return "jsonb";
       if (provider === "mysql") return "json";
-      return "text"; // SQLite stores as JSON string
-
+      return "text";
     case "string[]":
-      if (provider === "pg") return "text().array()";
-      return "text"; // MySQL/SQLite store as JSON string
-
+      if (provider === "pg") return "text";
+      return "text";
     case "number[]":
-      if (provider === "pg") return "integer().array()";
-      return "text"; // MySQL/SQLite store as JSON string
-
+      if (provider === "pg") return "integer";
+      return "text";
     default:
       return "text";
   }
 }
 
-/**
- * Get the Drizzle import prefix based on provider
- */
 function getProviderImport(provider: "pg" | "mysql" | "sqlite"): {
   importPath: string;
   tableFunction: string;
 } {
   switch (provider) {
     case "pg":
-      return {
-        importPath: "drizzle-orm/pg-core",
-        tableFunction: "pgTable",
-      };
+      return { importPath: "drizzle-orm/pg-core", tableFunction: "pgTable" };
     case "mysql":
       return {
         importPath: "drizzle-orm/mysql-core",
@@ -84,239 +73,202 @@ function getProviderImport(provider: "pg" | "mysql" | "sqlite"): {
 }
 
 /**
- * Get the column definition for a field
+ * Generate column definition
  */
 function getColumnDefinition(
   fieldName: string,
   field: DBFieldAttribute,
   provider: "pg" | "mysql" | "sqlite",
+  schema: DBSchema,
 ): string {
   const columnType = getColumnType(field, provider);
+  const columnName = toSnakeCase(fieldName);
   const parts: string[] = [];
 
-  // Column name and type
-  // Handle array types which already include ()
-  if (columnType.endsWith(".array()")) {
-    const baseType = columnType.replace(".array()", "");
-    parts.push(`${fieldName}: ${baseType}`);
-  } else if (provider === "mysql" && columnType === "varchar") {
-    // MySQL varchar needs length
-    parts.push(`${fieldName}: ${columnType}({ length: 255 })`);
+  // Column with name
+  if (provider === "mysql" && columnType === "varchar") {
+    parts.push(`${fieldName}: ${columnType}("${columnName}", { length: 255 })`);
   } else {
-    parts.push(`${fieldName}: ${columnType}()`);
+    parts.push(`${fieldName}: ${columnType}("${columnName}")`);
   }
 
-  // Add constraints
-  const constraints: string[] = [];
-
+  // Primary key
   if (field.primaryKey) {
-    constraints.push("primaryKey()");
+    parts.push(".primaryKey()");
   }
 
-  if (field.required === false) {
-    // Optional fields get notNull() removed (default is nullable in Drizzle)
-  } else {
-    // Required fields (default)
-    constraints.push("notNull()");
-  }
-
+  // Unique
   if (field.unique) {
-    constraints.push("unique()");
+    parts.push(".unique()");
   }
 
-  // Handle default values
+  // Foreign key reference (inline)
+  if (field.references) {
+    const refTable = field.references.model;
+    const onDelete =
+      field.references.onDelete === "cascade"
+        ? ', { onDelete: "cascade" }'
+        : "";
+    parts.push(
+      `.references(() => ${refTable}.${field.references.field}${onDelete})`,
+    );
+  }
+
+  // Default value
   if (field.defaultValue !== undefined) {
     if (typeof field.defaultValue === "function") {
-      // Dynamic defaults - use $defaultFn
       const fnString = field.defaultValue.toString();
       if (fnString.includes("randomUUID") || fnString.includes("crypto")) {
-        constraints.push("$defaultFn(() => crypto.randomUUID())");
+        // For text IDs, use $defaultFn
+        parts.push(".$defaultFn(() => crypto.randomUUID())");
       } else if (fnString.includes("new Date")) {
-        constraints.push("$defaultFn(() => new Date())");
+        parts.push(".defaultNow()");
       }
     } else if (typeof field.defaultValue === "string") {
-      constraints.push(`default('${field.defaultValue}')`);
+      parts.push(`.default("${field.defaultValue}")`);
     } else if (typeof field.defaultValue === "number") {
-      constraints.push(`default(${field.defaultValue})`);
+      parts.push(`.default(${field.defaultValue})`);
     } else if (typeof field.defaultValue === "boolean") {
-      if (provider === "sqlite") {
-        constraints.push(`default(${field.defaultValue ? 1 : 0})`);
-      } else {
-        constraints.push(`default(${field.defaultValue})`);
-      }
+      parts.push(
+        `.default(${provider === "sqlite" ? (field.defaultValue ? 1 : 0) : field.defaultValue})`,
+      );
     }
   }
 
-  // Combine column with constraints
-  if (constraints.length > 0) {
-    return `${parts[0]}.${constraints.join(".")}`;
+  // NotNull (after defaults, before references usually, but Drizzle is flexible)
+  if (field.required !== false && !field.primaryKey) {
+    parts.push(".notNull()");
   }
 
-  // Handle array types - need to add .array() at the end
-  if (columnType.endsWith(".array()")) {
-    return `${parts[0]}.array()`;
-  }
-
-  return parts[0];
+  return parts.join("");
 }
 
 /**
- * Generate the table definition for a single table
+ * Generate table definition
  */
 function generateTableDefinition(
   tableName: string,
   table: DBTableSchema,
   provider: "pg" | "mysql" | "sqlite",
   tableFunction: string,
+  schema: DBSchema,
 ): string {
   const columns: string[] = [];
 
   for (const [fieldName, field] of Object.entries(table.fields)) {
-    columns.push(getColumnDefinition(fieldName, field, provider));
+    columns.push(getColumnDefinition(fieldName, field, provider, schema));
   }
 
   return `export const ${tableName} = ${tableFunction}("${tableName}", {
-  ${columns.join(",\n  ")}
+  ${columns.join(",\n  ")},
 });`;
 }
 
 /**
- * Generate relation definitions
+ * Generate relations
  */
 function generateRelations(schema: DBSchema): string[] {
-  const relations: string[] = [];
+  const result: string[] = [];
 
   for (const [tableName, table] of Object.entries(schema)) {
-    const tableRelations: string[] = [];
+    const oneRels: string[] = [];
+    const manyRels: string[] = [];
 
-    // Find foreign keys in this table
+    // "one" relations (this table has FK to another)
     for (const [fieldName, field] of Object.entries(table.fields)) {
       if (field.references) {
         const refTable = field.references.model;
-        // This table has a "one" relation to the referenced table
-        tableRelations.push(
-          `${refTable}: one(${refTable}, {
+        oneRels.push(`${refTable}: one(${refTable}, {
     fields: [${tableName}.${fieldName}],
     references: [${refTable}.${field.references.field}],
-  })`,
-        );
+  })`);
       }
     }
 
-    // Find tables that reference this table (many side)
+    // "many" relations (other tables have FK to this one)
     for (const [otherTable, otherSchema] of Object.entries(schema)) {
       if (otherTable === tableName) continue;
-
-      for (const [, field] of Object.entries(otherSchema.fields)) {
+      for (const field of Object.values(otherSchema.fields)) {
         if (field.references?.model === tableName) {
-          // This table has a "many" relation from otherTable
-          tableRelations.push(`${otherTable}s: many(${otherTable})`);
+          manyRels.push(`${otherTable}s: many(${otherTable})`);
         }
       }
     }
 
-    if (tableRelations.length > 0) {
-      relations.push(`export const ${tableName}Relations = relations(${tableName}, ({ one, many }) => ({
-  ${tableRelations.join(",\n  ")}
+    const allRels = [...oneRels, ...manyRels];
+    if (allRels.length > 0) {
+      // Only include helpers that are actually used
+      const helpers: string[] = [];
+      if (oneRels.length > 0) helpers.push("one");
+      if (manyRels.length > 0) helpers.push("many");
+
+      result.push(`export const ${tableName}Relations = relations(${tableName}, ({ ${helpers.join(", ")} }) => ({
+  ${allRels.join(",\n  ")},
 }));`);
     }
   }
 
-  return relations;
+  return result;
 }
 
 /**
- * Collect all column types used in the schema
+ * Collect column types for imports
  */
 function collectColumnTypes(
   schema: DBSchema,
   provider: "pg" | "mysql" | "sqlite",
 ): Set<string> {
   const types = new Set<string>();
-
   for (const table of Object.values(schema)) {
     for (const field of Object.values(table.fields)) {
-      const colType = getColumnType(field, provider);
-
-      // Extract base type (remove array suffix)
-      const baseType = colType.replace("().array()", "").replace("()", "");
-      types.add(baseType);
+      types.add(getColumnType(field, provider));
     }
   }
-
   return types;
 }
 
 /**
- * Generate Drizzle schema code from BillSDK schema
+ * Generate Drizzle schema
  */
 export async function generateDrizzleSchema(
   options: DrizzleGeneratorOptions,
 ): Promise<{ code: string; fileName: string }> {
   const { schema, provider } = options;
   const { importPath, tableFunction } = getProviderImport(provider);
-
-  // Collect used column types
   const columnTypes = collectColumnTypes(schema, provider);
 
-  // Build imports
-  const imports: string[] = [];
-
-  // Core type imports
+  // Imports
   const coreImports = [tableFunction, ...Array.from(columnTypes)].join(", ");
-  imports.push(`import { ${coreImports} } from "${importPath}";`);
+  const imports = [
+    `import { ${coreImports} } from "${importPath}";`,
+    `import { relations } from "drizzle-orm";`,
+  ];
 
-  // Relations import
-  imports.push(`import { relations } from "drizzle-orm";`);
-
-  // Generate table definitions
+  // Tables
   const tables: string[] = [];
   for (const [tableName, table] of Object.entries(schema)) {
     tables.push(
-      generateTableDefinition(tableName, table, provider, tableFunction),
+      generateTableDefinition(
+        tableName,
+        table,
+        provider,
+        tableFunction,
+        schema,
+      ),
     );
   }
 
-  // Generate relations
-  const relations = generateRelations(schema);
+  // Relations
+  const rels = generateRelations(schema);
 
-  // Combine everything
-  const code = `/**
- * BillSDK Database Schema
- * Generated by @billsdk/cli
- * 
- * DO NOT EDIT - This file is auto-generated.
- * Re-run "npx @billsdk/cli generate" to regenerate.
- */
-
-${imports.join("\n")}
-
-// =====================
-// Tables
-// =====================
+  // Combine (clean, no section comments)
+  const code = `${imports.join("\n")}
 
 ${tables.join("\n\n")}
 
-// =====================
-// Relations
-// =====================
-
-${relations.join("\n\n")}
-
-// =====================
-// Type exports
-// =====================
-
-${Object.keys(schema)
-  .map(
-    (tableName) =>
-      `export type ${capitalize(tableName)} = typeof ${tableName}.$inferSelect;
-export type New${capitalize(tableName)} = typeof ${tableName}.$inferInsert;`,
-  )
-  .join("\n")}
+${rels.join("\n\n")}
 `;
 
-  // Format with prettier
   const formatted = await prettier.format(code, {
     parser: "typescript",
     semi: true,
@@ -329,11 +281,4 @@ export type New${capitalize(tableName)} = typeof ${tableName}.$inferInsert;`,
     code: formatted,
     fileName: options.output || "billing-schema.ts",
   };
-}
-
-/**
- * Capitalize first letter
- */
-function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
 }
