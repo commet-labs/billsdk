@@ -1,5 +1,11 @@
 # @billsdk/time-travel
 
+## 0.2.1
+
+### Patch Changes
+
+- 8e7c232: Fixed visual flash when dragging badge to a new corner position
+
 ## 0.2.0
 
 ### Minor Changes
