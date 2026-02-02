@@ -1,5 +1,11 @@
 # @billsdk/cli
 
+## 0.1.1
+
+### Patch Changes
+
+- 4114955: Version bump for npm publish
+
 ## 0.1.0
 
 Initial release of the BillSDK CLI.
