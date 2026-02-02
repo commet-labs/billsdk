@@ -6,9 +6,9 @@
 
 - Updated dependencies [3a20ed7]
   - @billsdk/core@0.4.0
-  - @billsdk/drizzle-adapter@2.0.0
-  - @billsdk/memory-adapter@2.0.0
-  - @billsdk/payment-adapter@2.0.0
+  - @billsdk/drizzle-adapter@1.0.3
+  - @billsdk/memory-adapter@1.0.3
+  - @billsdk/payment-adapter@1.0.3
 
 ## 0.3.1
 
