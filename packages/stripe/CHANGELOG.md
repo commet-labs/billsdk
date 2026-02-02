@@ -1,5 +1,12 @@
 # @billsdk/stripe
 
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [3a20ed7]
+  - @billsdk/core@0.4.0
+
 ## 1.1.0
 
 ### Minor Changes
@@ -7,7 +14,6 @@
 - 66c98fc: Refactored to use PaymentIntent instead of Stripe Subscriptions
 
   BillSDK now owns all billing logic (subscriptions, proration, renewals). Stripe only handles payment processing.
-
   - **Free plans**: Use `mode: "setup"` in Checkout to collect card for future use without charging
   - **Paid plans**: Use `mode: "payment"` with `setup_future_usage: "off_session"` to charge and save card
   - **Upgrades/renewals**: Direct charge via `PaymentIntent` using saved payment method

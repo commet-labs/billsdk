@@ -1,6 +1,6 @@
 {
   "name": "@billsdk/payment-adapter",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Default payment adapter for BillSDK (instant activation, no payment required)",
   "type": "module",
   "license": "MIT",

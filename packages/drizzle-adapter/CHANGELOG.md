@@ -1,5 +1,14 @@
 # @billsdk/drizzle-adapter
 
+## 1.0.3
+
+### Patch Changes
+
+- 3a20ed7: Refactored to use `createAdapterFactory` internally (no public API changes)
+
+- Updated dependencies [3a20ed7]
+  - @billsdk/core@0.4.0
+
 ## 1.0.2
 
 ### Patch Changes
