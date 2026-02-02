@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1769266725520,
-      "tag": "0000_brave_vengeance",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1769538601038,
-      "tag": "0001_curvy_morlocks",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1770042004691,
-      "tag": "0002_dark_silvermane",
+      "when": 1770042700398,
+      "tag": "0000_old_ben_grimm",
       "breakpoints": true
     }
   ]
