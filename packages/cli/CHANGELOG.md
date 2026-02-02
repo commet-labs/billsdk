@@ -1,5 +1,12 @@
 # @billsdk/cli
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [3a20ed7]
+  - @billsdk/core@0.4.0
+
 ## 0.1.0
 
 Initial release of the BillSDK CLI.

@@ -1,5 +1,12 @@
 # @billsdk/time-travel
 
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [3a20ed7]
+  - @billsdk/core@0.4.0
+
 ## 0.2.1
 
 ### Patch Changes
@@ -11,7 +18,6 @@
 ### Minor Changes
 
 - ac0d009: Redesigned TimeTravelOverlay with improved UX and developer experience
-
   - Complete visual redesign with minimal sage-clay dark theme
   - Added draggable badge with snap-to-corners functionality
   - Replaced clock icon with BillSDK logo
