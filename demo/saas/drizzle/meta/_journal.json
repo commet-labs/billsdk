@@ -15,6 +15,13 @@
       "when": 1769538601038,
       "tag": "0001_curvy_morlocks",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770042004691,
+      "tag": "0002_dark_silvermane",
+      "breakpoints": true
     }
   ]
 }
