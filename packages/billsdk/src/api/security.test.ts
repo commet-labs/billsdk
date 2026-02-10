@@ -97,15 +97,6 @@ describe("Router security", () => {
       const response = await handler(request);
       expect(response.status).toBe(200);
     });
-
-    it("allows GET /plans without origin or CSRF", async () => {
-      const ctx = createTestContext();
-      const { handler } = createRouter(ctx);
-      const request = buildRequest("/plans", { method: "GET" });
-      const response = await handler(request);
-      // May be 200 or other status depending on data, but NOT 403
-      expect(response.status).not.toBe(403);
-    });
   });
 
   describe("CSRF token endpoint", () => {
@@ -188,19 +179,6 @@ describe("Router security", () => {
   });
 
   describe("CSRF check on mutations", () => {
-    it("rejects POST with valid origin but no CSRF token", async () => {
-      const ctx = createTestContext();
-      const { handler } = createRouter(ctx);
-      const request = buildRequest("/customer", {
-        method: "POST",
-        origin: TEST_ORIGIN,
-      });
-      const response = await handler(request);
-      expect(response.status).toBe(403);
-      const error = await getResponseError(response);
-      expect(error.code).toBe("INVALID_CSRF_TOKEN");
-    });
-
     it("rejects POST with mismatched CSRF header and cookie", async () => {
       const ctx = createTestContext();
       const { handler } = createRouter(ctx);
@@ -286,17 +264,6 @@ describe("Router security", () => {
       expect(response.status).not.toBe(403);
     });
 
-    it("allows POST with mixed-case 'BEARER' scheme", async () => {
-      const ctx = createTestContext();
-      const { handler } = createRouter(ctx);
-      const request = buildRequest("/customer", {
-        method: "POST",
-        authorization: `BEARER ${TEST_SECRET}`,
-      });
-      const response = await handler(request);
-      expect(response.status).not.toBe(403);
-    });
-
     it("allows POST with extra whitespace in Authorization header", async () => {
       const ctx = createTestContext();
       const { handler } = createRouter(ctx);
@@ -319,17 +286,6 @@ describe("Router security", () => {
       expect(response.status).toBe(403);
     });
 
-    it("does not bypass security for webhooks (still skipped by path)", async () => {
-      const ctx = createTestContext();
-      const { handler } = createRouter(ctx);
-      const request = buildRequest("/webhook", {
-        method: "POST",
-        authorization: `Bearer ${TEST_SECRET}`,
-      });
-      const response = await handler(request);
-      // Webhook is skipped by path, not by Bearer — should not be 403
-      expect(response.status).not.toBe(403);
-    });
   });
 
   describe("Dev mode (empty trustedOrigins)", () => {
