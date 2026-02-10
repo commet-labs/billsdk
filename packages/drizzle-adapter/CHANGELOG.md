@@ -1,5 +1,12 @@
 # @billsdk/drizzle-adapter
 
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies [[`976ba1b`](https://github.com/commet-labs/billsdk/commit/976ba1b6a04bc1610dc0da32b676fd542348235f)]:
+  - @billsdk/core@0.5.0
+
 ## 1.0.3
 
 ### Patch Changes

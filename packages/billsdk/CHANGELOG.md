@@ -1,5 +1,27 @@
 # billsdk
 
+## 0.4.0
+
+### Minor Changes
+
+- [#14](https://github.com/commet-labs/billsdk/pull/14) [`976ba1b`](https://github.com/commet-labs/billsdk/commit/976ba1b6a04bc1610dc0da32b676fd542348235f) Thanks [@decker-dev](https://github.com/decker-dev)! - Added endpoint security: origin validation, CSRF token protection, and Bearer secret for server-to-server calls.
+
+  **Breaking:** `secret` is now required. Set `BILLSDK_SECRET` env var or pass `secret` to `billsdk()`. Generate one with `openssl rand -base64 32`.
+
+  New options:
+  - `trustedOrigins` — origins allowed to make mutating requests (supports wildcards)
+  - Bearer auth — server-to-server calls can send `Authorization: Bearer <secret>` to bypass browser security checks
+
+  Mutating endpoints (`POST`/`PUT`/`PATCH`/`DELETE`) are now protected by default. `GET` requests and `/webhook` are exempt. The BillSDK client handles CSRF tokens automatically.
+
+### Patch Changes
+
+- Updated dependencies [[`976ba1b`](https://github.com/commet-labs/billsdk/commit/976ba1b6a04bc1610dc0da32b676fd542348235f)]:
+  - @billsdk/core@0.5.0
+  - @billsdk/drizzle-adapter@2.0.0
+  - @billsdk/memory-adapter@2.0.0
+  - @billsdk/payment-adapter@2.0.0
+
 ## 0.3.2
 
 ### Patch Changes
