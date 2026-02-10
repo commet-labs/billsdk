@@ -53,6 +53,7 @@ function buildRequest(
     origin?: string;
     csrfHeader?: string;
     csrfCookie?: string;
+    authorization?: string;
   } = {},
 ): Request {
   const method = options.method ?? "GET";
@@ -67,6 +68,9 @@ function buildRequest(
   }
   if (options.csrfCookie) {
     headers.Cookie = `__billsdk_csrf=${options.csrfCookie}`;
+  }
+  if (options.authorization) {
+    headers.Authorization = options.authorization;
   }
   return new Request(`https://myapp.com/api/billing${path}`, {
     method,
@@ -254,6 +258,43 @@ describe("Router security", () => {
       const request = buildRequest("/webhook", { method: "POST" });
       const response = await handler(request);
       // Should NOT be 403 (may be 500 due to missing adapter, but security skipped)
+      expect(response.status).not.toBe(403);
+    });
+  });
+
+  describe("Bearer secret bypass (server-to-server)", () => {
+    it("allows POST with valid Bearer secret, no origin or CSRF needed", async () => {
+      const ctx = createTestContext();
+      const { handler } = createRouter(ctx);
+      const request = buildRequest("/customer", {
+        method: "POST",
+        authorization: `Bearer ${TEST_SECRET}`,
+      });
+      const response = await handler(request);
+      // Should NOT be 403 (security bypassed)
+      expect(response.status).not.toBe(403);
+    });
+
+    it("rejects POST with wrong Bearer secret", async () => {
+      const ctx = createTestContext();
+      const { handler } = createRouter(ctx);
+      const request = buildRequest("/customer", {
+        method: "POST",
+        authorization: "Bearer wrong-secret",
+      });
+      const response = await handler(request);
+      expect(response.status).toBe(403);
+    });
+
+    it("does not bypass security for webhooks (still skipped by path)", async () => {
+      const ctx = createTestContext();
+      const { handler } = createRouter(ctx);
+      const request = buildRequest("/webhook", {
+        method: "POST",
+        authorization: `Bearer ${TEST_SECRET}`,
+      });
+      const response = await handler(request);
+      // Webhook is skipped by path, not by Bearer — should not be 403
       expect(response.status).not.toBe(403);
     });
   });

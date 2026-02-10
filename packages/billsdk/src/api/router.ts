@@ -132,7 +132,7 @@ function checkOrigin(
     return {
       error: errorResponse(
         "INVALID_ORIGIN",
-        `Origin ${origin} is not in trustedOrigins. Add it to your billsdk config.`,
+        "Origin is not in trustedOrigins. Add it to your billsdk config.",
         403,
       ),
     };
@@ -238,24 +238,24 @@ export function createRouter(ctx: BillingContext): {
 
     // Security: origin + CSRF check for mutating requests
     if (!SAFE_METHODS.has(method) && !SECURITY_SKIP_PATHS.has(path)) {
-      // 1. Origin check
-      const originResult = checkOrigin(request, ctx.trustedOrigins);
-      if (originResult) {
-        ctx.logger.warn("Origin check failed", {
-          path,
-          origin:
-            request.headers.get("origin") ||
-            request.headers.get("referer") ||
-            "(none)",
-        });
-        return originResult.error;
-      }
+      // Server-to-server: Bearer secret bypasses browser security checks
+      const authHeader = request.headers.get("authorization");
+      const isBearerAuth = authHeader === `Bearer ${ctx.secret}`;
 
-      // 2. CSRF token check
-      const csrfResult = await checkCsrf(request, ctx.secret);
-      if (csrfResult) {
-        ctx.logger.warn("CSRF check failed", { path });
-        return csrfResult.error;
+      if (!isBearerAuth) {
+        // 1. Origin check
+        const originResult = checkOrigin(request, ctx.trustedOrigins);
+        if (originResult) {
+          ctx.logger.warn("Origin check failed", { path });
+          return originResult.error;
+        }
+
+        // 2. CSRF token check
+        const csrfResult = await checkCsrf(request, ctx.secret);
+        if (csrfResult) {
+          ctx.logger.warn("CSRF check failed", { path });
+          return csrfResult.error;
+        }
       }
     }
 

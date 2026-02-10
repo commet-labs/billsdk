@@ -126,17 +126,13 @@ function createLogger(options: BillSDKOptions["logger"]): Logger {
   };
 }
 
-const DEFAULT_SECRET = "billsdk-development-secret-change-in-production";
-
 /**
  * Resolve trusted origins from config and environment
  */
-function resolveTrustedOrigins(
-  configOrigins: BillSDKOptions["trustedOrigins"],
-): string[] {
+function resolveTrustedOrigins(configOrigins?: string[]): string[] {
   const origins: string[] = [];
 
-  if (Array.isArray(configOrigins)) {
+  if (configOrigins) {
     origins.push(...configOrigins);
   }
 
@@ -158,7 +154,7 @@ function resolveTrustedOrigins(
 }
 
 /**
- * Resolve secret from config and environment
+ * Resolve secret from config or environment. Throws if not provided.
  */
 function resolveSecret(configSecret: string | undefined): string {
   if (configSecret) return configSecret;
@@ -169,7 +165,11 @@ function resolveSecret(configSecret: string | undefined): string {
       : undefined;
   if (envSecret) return envSecret;
 
-  return DEFAULT_SECRET;
+  throw new Error(
+    "[billsdk] Secret is required. " +
+      "Set BILLSDK_SECRET in your environment or pass `secret` to billsdk(). " +
+      "Generate one with: openssl rand -base64 32",
+  );
 }
 
 /**
@@ -180,28 +180,16 @@ function validateSecurity(
   trustedOrigins: string[],
   logger: Logger,
 ): void {
-  const isProduction =
-    typeof globalThis.process !== "undefined" &&
-    globalThis.process.env?.NODE_ENV === "production";
-
-  if (isProduction && secret === DEFAULT_SECRET) {
-    throw new Error(
-      "[billsdk] BILLSDK_SECRET is required in production. " +
-        "Set it in your environment or pass `secret` to billsdk(). " +
-        "Generate one with: openssl rand -base64 32",
-    );
-  }
-
-  if (secret === DEFAULT_SECRET) {
-    logger.warn(
-      "Using default development secret. Set BILLSDK_SECRET for production.",
-    );
-  } else if (secret.length < 32) {
+  if (secret.length < 32) {
     logger.warn(
       "Secret should be at least 32 characters for adequate security. " +
         "Generate one with: openssl rand -base64 32",
     );
   }
+
+  const isProduction =
+    typeof globalThis.process !== "undefined" &&
+    globalThis.process.env?.NODE_ENV === "production";
 
   if (isProduction && trustedOrigins.length === 0) {
     logger.warn(

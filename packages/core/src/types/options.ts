@@ -125,9 +125,7 @@ export interface BillSDKOptions<
   /**
    * List of trusted origins allowed to make mutating requests (POST/PUT/PATCH/DELETE).
    *
-   * Can be an array of origin strings (supports wildcards like `*.example.com`)
-   * or an async function that resolves origins per-request.
-   *
+   * Supports exact origins and wildcards (e.g., `*.example.com`).
    * Falls back to `BILLSDK_TRUSTED_ORIGINS` env var (comma-separated).
    * If empty in production, a warning is logged.
    *
@@ -136,7 +134,7 @@ export interface BillSDKOptions<
    * trustedOrigins: ["https://myapp.com", "*.myapp.com"]
    * ```
    */
-  trustedOrigins?: string[] | ((request?: Request) => Promise<string[]>);
+  trustedOrigins?: string[];
 
   features?: TFeatures;
 
