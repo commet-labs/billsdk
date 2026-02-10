@@ -285,7 +285,6 @@ describe("Router security", () => {
       const response = await handler(request);
       expect(response.status).toBe(403);
     });
-
   });
 
   describe("Dev mode (empty trustedOrigins)", () => {
