@@ -114,10 +114,30 @@ export interface BillSDKOptions<
   basePath?: string;
 
   /**
-   * Secret key for signing tokens and webhooks
-   * Required in production
+   * Secret key for signing CSRF tokens and webhooks.
+   * Must be at least 32 characters. Required in production.
+   *
+   * If not provided, falls back to `BILLSDK_SECRET` env var.
+   * In development, a default insecure secret is used with a warning.
    */
   secret?: string;
+
+  /**
+   * List of trusted origins allowed to make mutating requests (POST/PUT/PATCH/DELETE).
+   *
+   * Can be an array of origin strings (supports wildcards like `*.example.com`)
+   * or an async function that resolves origins per-request.
+   *
+   * Falls back to `BILLSDK_TRUSTED_ORIGINS` env var (comma-separated).
+   * If empty in production, a warning is logged.
+   *
+   * @example
+   * ```ts
+   * trustedOrigins: ["https://myapp.com", "*.myapp.com"]
+   * ```
+   */
+  trustedOrigins?: string[] | ((request?: Request) => Promise<string[]>);
+
   features?: TFeatures;
 
   plans?: PlanConfig<ExtractFeatureCodes<TFeatures>>[];
@@ -191,12 +211,14 @@ export interface ResolvedBillSDKOptions<
       | "payment"
       | "plans"
       | "features"
+      | "trustedOrigins"
     >
   > {
   plugins: BillSDKPlugin[];
   payment?: PaymentAdapter;
   plans?: PlanConfig<ExtractFeatureCodes<TFeatures>>[];
   features?: TFeatures;
+  trustedOrigins: string[];
   hooks: {
     before?: BillingMiddleware;
     after?: BillingMiddleware;

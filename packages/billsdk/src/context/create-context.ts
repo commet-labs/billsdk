@@ -64,9 +64,14 @@ export interface BillingContext {
   logger: Logger;
 
   /**
-   * Secret for signing
+   * Secret for signing CSRF tokens
    */
   secret: string;
+
+  /**
+   * Resolved trusted origins for origin validation
+   */
+  trustedOrigins: string[];
 
   /**
    * Time provider for getting current time
@@ -121,6 +126,92 @@ function createLogger(options: BillSDKOptions["logger"]): Logger {
   };
 }
 
+const DEFAULT_SECRET = "billsdk-development-secret-change-in-production";
+
+/**
+ * Resolve trusted origins from config and environment
+ */
+function resolveTrustedOrigins(
+  configOrigins: BillSDKOptions["trustedOrigins"],
+): string[] {
+  const origins: string[] = [];
+
+  if (Array.isArray(configOrigins)) {
+    origins.push(...configOrigins);
+  }
+
+  // Merge with env variable (comma-separated)
+  const envOrigins =
+    typeof globalThis.process !== "undefined"
+      ? globalThis.process.env?.BILLSDK_TRUSTED_ORIGINS
+      : undefined;
+  if (envOrigins) {
+    origins.push(
+      ...envOrigins
+        .split(",")
+        .map((o) => o.trim())
+        .filter(Boolean),
+    );
+  }
+
+  return origins;
+}
+
+/**
+ * Resolve secret from config and environment
+ */
+function resolveSecret(configSecret: string | undefined): string {
+  if (configSecret) return configSecret;
+
+  const envSecret =
+    typeof globalThis.process !== "undefined"
+      ? globalThis.process.env?.BILLSDK_SECRET
+      : undefined;
+  if (envSecret) return envSecret;
+
+  return DEFAULT_SECRET;
+}
+
+/**
+ * Validate security configuration
+ */
+function validateSecurity(
+  secret: string,
+  trustedOrigins: string[],
+  logger: Logger,
+): void {
+  const isProduction =
+    typeof globalThis.process !== "undefined" &&
+    globalThis.process.env?.NODE_ENV === "production";
+
+  if (isProduction && secret === DEFAULT_SECRET) {
+    throw new Error(
+      "[billsdk] BILLSDK_SECRET is required in production. " +
+        "Set it in your environment or pass `secret` to billsdk(). " +
+        "Generate one with: openssl rand -base64 32",
+    );
+  }
+
+  if (secret === DEFAULT_SECRET) {
+    logger.warn(
+      "Using default development secret. Set BILLSDK_SECRET for production.",
+    );
+  } else if (secret.length < 32) {
+    logger.warn(
+      "Secret should be at least 32 characters for adequate security. " +
+        "Generate one with: openssl rand -base64 32",
+    );
+  }
+
+  if (isProduction && trustedOrigins.length === 0) {
+    logger.warn(
+      "No trustedOrigins configured. " +
+        "Set trustedOrigins in your config or BILLSDK_TRUSTED_ORIGINS env var " +
+        "to protect mutating endpoints from cross-site requests.",
+    );
+  }
+}
+
 /**
  * Resolve options with defaults
  */
@@ -132,7 +223,8 @@ function resolveOptions(
     database: adapter,
     payment: options.payment,
     basePath: options.basePath ?? "/api/billing",
-    secret: options.secret ?? generateDefaultSecret(),
+    secret: resolveSecret(options.secret),
+    trustedOrigins: resolveTrustedOrigins(options.trustedOrigins),
     plans: options.plans,
     features: options.features,
     plugins: options.plugins ?? [],
@@ -143,13 +235,6 @@ function resolveOptions(
       disabled: options.logger?.disabled ?? false,
     },
   };
-}
-
-/**
- * Generate a default secret (for development only)
- */
-function generateDefaultSecret(): string {
-  return "billsdk-development-secret-change-in-production";
 }
 
 /**
@@ -183,6 +268,13 @@ export async function createBillingContext(
     getNow,
   );
 
+  // Validate security configuration
+  validateSecurity(
+    resolvedOptions.secret,
+    resolvedOptions.trustedOrigins,
+    logger,
+  );
+
   // Build context
   const context: BillingContext = {
     options: resolvedOptions,
@@ -194,6 +286,7 @@ export async function createBillingContext(
     plugins,
     logger,
     secret: resolvedOptions.secret,
+    trustedOrigins: resolvedOptions.trustedOrigins,
     timeProvider: createDefaultTimeProvider(),
 
     hasPlugin(id: string): boolean {
