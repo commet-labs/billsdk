@@ -14,6 +14,9 @@ export const billing = billsdk({
     provider: "pg",
   }),
 
+  secret: process.env.BILLSDK_SECRET!,
+  trustedOrigins: [process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"],
+
   payment: stripePayment({
     secretKey: process.env.STRIPE_SECRET_KEY!,
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,

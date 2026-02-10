@@ -15,12 +15,58 @@ interface FetchOptions {
   headers?: Record<string, string>;
 }
 
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
 /**
- * Create a configured fetch function
+ * Create a configured fetch function with automatic CSRF token handling.
+ *
+ * On the first mutating request (POST/PUT/PATCH/DELETE), the client
+ * automatically fetches a CSRF token from `GET /csrf-token` and caches it.
+ * The token is sent as the `x-billsdk-csrf` header on all subsequent
+ * mutating requests. The matching cookie is sent automatically via
+ * `credentials: "include"`.
  */
 export function createFetch(config: ClientConfig = {}) {
   const baseFetch = config.fetch ?? fetch;
   const baseURL = config.baseURL ?? "/api/billing";
+  const credentials = config.credentials ?? "include";
+
+  // CSRF token cache (per createFetch instance)
+  let csrfToken: string | null = null;
+  let csrfPromise: Promise<string> | null = null;
+
+  async function fetchCsrfToken(): Promise<string> {
+    const response = await baseFetch(`${baseURL}/csrf-token`, {
+      method: "GET",
+      credentials,
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch CSRF token: ${response.status}`);
+    }
+    const data = (await response.json()) as { csrfToken: string };
+    return data.csrfToken;
+  }
+
+  async function ensureCsrfToken(): Promise<string> {
+    if (csrfToken) return csrfToken;
+
+    // Deduplicate concurrent requests for the token
+    if (!csrfPromise) {
+      csrfPromise = fetchCsrfToken()
+        .then((token) => {
+          csrfToken = token;
+          csrfPromise = null;
+          return token;
+        })
+        .catch((err) => {
+          // Clear so next request retries instead of returning a rejected promise forever
+          csrfPromise = null;
+          throw err;
+        });
+    }
+
+    return csrfPromise;
+  }
 
   return async <T>(path: string, options: FetchOptions = {}): Promise<T> => {
     const method = options.method ?? "GET";
@@ -46,10 +92,16 @@ export function createFetch(config: ClientConfig = {}) {
       ...options.headers,
     };
 
+    // Auto-inject CSRF token for mutating requests
+    if (MUTATING_METHODS.has(method)) {
+      const token = await ensureCsrfToken();
+      headers["x-billsdk-csrf"] = token;
+    }
+
     const fetchOptions: RequestInit = {
       method,
       headers,
-      credentials: config.credentials ?? "include",
+      credentials,
     };
 
     if (options.body && ["POST", "PUT", "PATCH"].includes(method)) {
@@ -59,11 +111,44 @@ export function createFetch(config: ClientConfig = {}) {
     const response = await baseFetch(url, fetchOptions);
 
     if (!response.ok) {
+      // Parse error body once (body can only be consumed once)
       const errorData = (await response
         .json()
-        .catch(() => ({ error: { message: "Unknown error" } }))) as {
-        error?: { message?: string };
+        .catch(() => ({ error: { code: "", message: "Unknown error" } }))) as {
+        error?: { code?: string; message?: string };
       };
+
+      // If CSRF token was rejected, clear cache and retry once
+      if (
+        response.status === 403 &&
+        MUTATING_METHODS.has(method) &&
+        csrfToken &&
+        errorData?.error?.code === "INVALID_CSRF_TOKEN"
+      ) {
+        // Clear token and retry
+        csrfToken = null;
+        csrfPromise = null;
+        const newToken = await ensureCsrfToken();
+        headers["x-billsdk-csrf"] = newToken;
+
+        const retryResponse = await baseFetch(url, {
+          ...fetchOptions,
+          headers,
+        });
+        if (!retryResponse.ok) {
+          const retryError = (await retryResponse
+            .json()
+            .catch(() => ({ error: { message: "Unknown error" } }))) as {
+            error?: { message?: string };
+          };
+          throw new Error(
+            retryError?.error?.message ??
+              `Request failed: ${retryResponse.status}`,
+          );
+        }
+        return retryResponse.json() as Promise<T>;
+      }
+
       throw new Error(
         errorData?.error?.message ?? `Request failed: ${response.status}`,
       );

@@ -23,11 +23,16 @@ npm install billsdk @billsdk/stripe
 Create a `.env` file in the root of your project:
 
 ```txt title=".env"
+BILLSDK_SECRET=your-secret-key-at-least-32-characters
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
-Get these from [Stripe Dashboard → API Keys](https://dashboard.stripe.com/apikeys) and [Webhooks](https://dashboard.stripe.com/webhooks).
+Generate a secret with `openssl rand -base64 32`. Get Stripe keys from [Stripe Dashboard → API Keys](https://dashboard.stripe.com/apikeys) and [Webhooks](https://dashboard.stripe.com/webhooks).
+
+<Callout type="warn">
+`BILLSDK_SECRET` is required. BillSDK will not start without it.
+</Callout>
 
 </Step>
 
@@ -115,6 +120,9 @@ export const billing = billsdk({
     schema,
     provider: "pg", // or "mysql", "sqlite"
   }),
+
+  secret: process.env.BILLSDK_SECRET!,
+  trustedOrigins: [process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"],
 
   payment: stripePayment({
     secretKey: process.env.STRIPE_SECRET_KEY!,
