@@ -164,6 +164,7 @@ export function buildCsrfCookieHeader(
     "HttpOnly",
     "SameSite=Lax",
     "Path=/",
+    `Max-Age=${DEFAULT_TTL_SECONDS}`,
   ];
   if (secure) {
     parts.push("Secure");

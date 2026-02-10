@@ -149,12 +149,13 @@ describe("buildCsrfCookieHeader", () => {
   it("builds header without Secure in dev", () => {
     const header = buildCsrfCookieHeader("__billsdk_csrf", "token123", false);
     expect(header).toBe(
-      "__billsdk_csrf=token123; HttpOnly; SameSite=Lax; Path=/",
+      "__billsdk_csrf=token123; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600",
     );
   });
 
   it("builds header with Secure in production", () => {
     const header = buildCsrfCookieHeader("__billsdk_csrf", "token123", true);
     expect(header).toContain("Secure");
+    expect(header).toContain("Max-Age=3600");
   });
 });
