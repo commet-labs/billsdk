@@ -1,6 +1,6 @@
 {
   "name": "@billsdk/memory-adapter",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "In-memory database adapter for BillSDK (testing & development)",
   "type": "module",
   "license": "MIT",

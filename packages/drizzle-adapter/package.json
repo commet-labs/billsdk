@@ -1,6 +1,6 @@
 {
   "name": "@billsdk/drizzle-adapter",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Drizzle ORM adapter for BillSDK",
   "type": "module",
   "license": "MIT",
