@@ -275,6 +275,39 @@ describe("Router security", () => {
       expect(response.status).not.toBe(403);
     });
 
+    it("allows POST with lowercase 'bearer' scheme", async () => {
+      const ctx = createTestContext();
+      const { handler } = createRouter(ctx);
+      const request = buildRequest("/customer", {
+        method: "POST",
+        authorization: `bearer ${TEST_SECRET}`,
+      });
+      const response = await handler(request);
+      expect(response.status).not.toBe(403);
+    });
+
+    it("allows POST with mixed-case 'BEARER' scheme", async () => {
+      const ctx = createTestContext();
+      const { handler } = createRouter(ctx);
+      const request = buildRequest("/customer", {
+        method: "POST",
+        authorization: `BEARER ${TEST_SECRET}`,
+      });
+      const response = await handler(request);
+      expect(response.status).not.toBe(403);
+    });
+
+    it("allows POST with extra whitespace in Authorization header", async () => {
+      const ctx = createTestContext();
+      const { handler } = createRouter(ctx);
+      const request = buildRequest("/customer", {
+        method: "POST",
+        authorization: `  Bearer   ${TEST_SECRET}  `,
+      });
+      const response = await handler(request);
+      expect(response.status).not.toBe(403);
+    });
+
     it("rejects POST with wrong Bearer secret", async () => {
       const ctx = createTestContext();
       const { handler } = createRouter(ctx);

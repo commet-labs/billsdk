@@ -52,11 +52,17 @@ export function createFetch(config: ClientConfig = {}) {
 
     // Deduplicate concurrent requests for the token
     if (!csrfPromise) {
-      csrfPromise = fetchCsrfToken().then((token) => {
-        csrfToken = token;
-        csrfPromise = null;
-        return token;
-      });
+      csrfPromise = fetchCsrfToken()
+        .then((token) => {
+          csrfToken = token;
+          csrfPromise = null;
+          return token;
+        })
+        .catch((err) => {
+          // Clear so next request retries instead of returning a rejected promise forever
+          csrfPromise = null;
+          throw err;
+        });
     }
 
     return csrfPromise;
@@ -105,48 +111,44 @@ export function createFetch(config: ClientConfig = {}) {
     const response = await baseFetch(url, fetchOptions);
 
     if (!response.ok) {
+      // Parse error body once (body can only be consumed once)
+      const errorData = (await response
+        .json()
+        .catch(() => ({ error: { code: "", message: "Unknown error" } }))) as {
+        error?: { code?: string; message?: string };
+      };
+
       // If CSRF token was rejected, clear cache and retry once
       if (
         response.status === 403 &&
         MUTATING_METHODS.has(method) &&
-        csrfToken
+        csrfToken &&
+        errorData?.error?.code === "INVALID_CSRF_TOKEN"
       ) {
-        const errorData = (await response
-          .json()
-          .catch(() => ({ error: { code: "" } }))) as {
-          error?: { code?: string };
-        };
-        if (errorData?.error?.code === "INVALID_CSRF_TOKEN") {
-          // Clear token and retry
-          csrfToken = null;
-          csrfPromise = null;
-          const newToken = await ensureCsrfToken();
-          headers["x-billsdk-csrf"] = newToken;
+        // Clear token and retry
+        csrfToken = null;
+        csrfPromise = null;
+        const newToken = await ensureCsrfToken();
+        headers["x-billsdk-csrf"] = newToken;
 
-          const retryResponse = await baseFetch(url, {
-            ...fetchOptions,
-            headers,
-          });
-          if (!retryResponse.ok) {
-            const retryError = (await retryResponse
-              .json()
-              .catch(() => ({ error: { message: "Unknown error" } }))) as {
-              error?: { message?: string };
-            };
-            throw new Error(
-              retryError?.error?.message ??
-                `Request failed: ${retryResponse.status}`,
-            );
-          }
-          return retryResponse.json() as Promise<T>;
+        const retryResponse = await baseFetch(url, {
+          ...fetchOptions,
+          headers,
+        });
+        if (!retryResponse.ok) {
+          const retryError = (await retryResponse
+            .json()
+            .catch(() => ({ error: { message: "Unknown error" } }))) as {
+            error?: { message?: string };
+          };
+          throw new Error(
+            retryError?.error?.message ??
+              `Request failed: ${retryResponse.status}`,
+          );
         }
+        return retryResponse.json() as Promise<T>;
       }
 
-      const errorData = (await response
-        .json()
-        .catch(() => ({ error: { message: "Unknown error" } }))) as {
-        error?: { message?: string };
-      };
       throw new Error(
         errorData?.error?.message ?? `Request failed: ${response.status}`,
       );

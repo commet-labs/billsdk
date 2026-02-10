@@ -195,6 +195,52 @@ async function checkCsrf(
 }
 
 /**
+ * Timing-safe string comparison using HMAC.
+ * Prevents timing attacks when comparing secrets.
+ */
+async function timingSafeEqual(a: string, b: string): Promise<boolean> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode("billsdk-compare-key"),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const [macA, macB] = await Promise.all([
+    crypto.subtle.sign("HMAC", key, encoder.encode(a)),
+    crypto.subtle.sign("HMAC", key, encoder.encode(b)),
+  ]);
+  const viewA = new Uint8Array(macA);
+  const viewB = new Uint8Array(macB);
+  if (viewA.length !== viewB.length) return false;
+  let diff = 0;
+  for (let i = 0; i < viewA.length; i++) {
+    diff |= viewA[i]! ^ viewB[i]!;
+  }
+  return diff === 0;
+}
+
+/**
+ * Check Bearer auth header.
+ * Handles case-insensitive scheme and extra whitespace.
+ * Uses timing-safe comparison for the token.
+ */
+async function checkBearerAuth(
+  request: Request,
+  secret: string,
+): Promise<boolean> {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader) return false;
+
+  const parts = authHeader.trim().split(/\s+/);
+  if (parts.length !== 2) return false;
+  if (parts[0]!.toLowerCase() !== "bearer") return false;
+
+  return timingSafeEqual(parts[1]!, secret);
+}
+
+/**
  * Handle the GET /csrf-token endpoint.
  * Generates a new CSRF token, sets it as a cookie, and returns it in the response body.
  */
@@ -239,8 +285,7 @@ export function createRouter(ctx: BillingContext): {
     // Security: origin + CSRF check for mutating requests
     if (!SAFE_METHODS.has(method) && !SECURITY_SKIP_PATHS.has(path)) {
       // Server-to-server: Bearer secret bypasses browser security checks
-      const authHeader = request.headers.get("authorization");
-      const isBearerAuth = authHeader === `Bearer ${ctx.secret}`;
+      const isBearerAuth = await checkBearerAuth(request, ctx.secret);
 
       if (!isBearerAuth) {
         // 1. Origin check
