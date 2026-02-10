@@ -8,9 +8,10 @@ description: All configuration options for BillSDK
 ```typescript
 const billing = billsdk({
   database: drizzleAdapter(db, { schema, provider: "pg" }),
+  secret: process.env.BILLSDK_SECRET!,
+  trustedOrigins: ["https://myapp.com"],
   payment: stripePayment({ ... }),
   basePath: "/api/billing",
-  secret: process.env.BILLSDK_SECRET,
   features: [...],
   plans: [...],
   plugins: [...],
@@ -24,7 +25,8 @@ const billing = billsdk({
 | `database` | `DBAdapter` | `memoryAdapter()` | Database adapter |
 | `payment` | `PaymentAdapter` | `paymentAdapter()` | Payment provider adapter |
 | `basePath` | `string` | `/api/billing` | API base path |
-| `secret` | `string` | - | Signing secret (required in production) |
+| `secret` | `string` | - | **Required.** Secret for signing CSRF tokens and Bearer auth. Min 32 chars. Falls back to `BILLSDK_SECRET` env var |
+| `trustedOrigins` | `string[]` | `[]` | Origins allowed to make mutating requests. Supports wildcards (`*.example.com`). Falls back to `BILLSDK_TRUSTED_ORIGINS` env var |
 | `features` | `FeatureConfig[]` | `[]` | Feature definitions |
 | `plans` | `PlanConfig[]` | `[]` | Plan definitions |
 | `plugins` | `Plugin[]` | `[]` | Plugins |
@@ -185,3 +187,58 @@ logger: {
   disabled: false,
 }
 ```
+
+## Security
+
+BillSDK protects all mutating endpoints (`POST`, `PUT`, `PATCH`, `DELETE`) automatically. `GET` requests and the `/webhook` endpoint are exempt.
+
+### How It Works
+
+**Browser requests** are protected by two layers:
+1. **Origin validation** — the `Origin` header must match one of your `trustedOrigins`
+2. **CSRF token** — a signed token (using your `secret`) is required via cookie + header
+
+The BillSDK client handles CSRF tokens automatically. You don't need to do anything.
+
+**Server-to-server requests** can bypass origin and CSRF checks by sending the secret as a Bearer token:
+
+```bash
+curl -X POST https://myapp.com/api/billing/customer \
+  -H "Authorization: Bearer $BILLSDK_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"externalId": "user_123", "email": "user@example.com"}'
+```
+
+**Server-side direct calls** via `billing.api.*` don't go through HTTP, so security checks don't apply.
+
+### Configuration
+
+```typescript
+const billing = billsdk({
+  // Required. Throws if missing. Falls back to BILLSDK_SECRET env var.
+  secret: process.env.BILLSDK_SECRET!,
+
+  // Origins allowed to make mutating requests from the browser.
+  // Supports wildcards. Falls back to BILLSDK_TRUSTED_ORIGINS env var (comma-separated).
+  trustedOrigins: ["https://myapp.com", "*.myapp.com"],
+});
+```
+
+Generate a secret:
+
+```bash
+openssl rand -base64 32
+```
+
+### Trusted Origins
+
+| Pattern | Matches | Doesn't match |
+|---------|---------|---------------|
+| `https://myapp.com` | `https://myapp.com` | `http://myapp.com`, `https://sub.myapp.com` |
+| `*.myapp.com` | `https://sub.myapp.com`, `http://app.myapp.com` | `https://myapp.com` |
+| `https://*.myapp.com` | `https://sub.myapp.com` | `http://sub.myapp.com` |
+| `http://localhost:3000` | `http://localhost:3000` | `http://localhost:3001` |
+
+### Webhooks
+
+The `/webhook` endpoint is exempt from origin and CSRF checks. It relies on the payment provider's signature verification (e.g., Stripe's webhook secret).

@@ -114,11 +114,11 @@ export interface BillSDKOptions<
   basePath?: string;
 
   /**
-   * Secret key for signing CSRF tokens and webhooks.
-   * Must be at least 32 characters. Required in production.
+   * Secret key for signing CSRF tokens and authenticating server-to-server requests.
+   * Must be at least 32 characters.
    *
-   * If not provided, falls back to `BILLSDK_SECRET` env var.
-   * In development, a default insecure secret is used with a warning.
+   * Falls back to `BILLSDK_SECRET` env var. Throws if neither is set.
+   * Generate one with: `openssl rand -base64 32`
    */
   secret?: string;
 
