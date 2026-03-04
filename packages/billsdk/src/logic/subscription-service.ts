@@ -86,6 +86,9 @@ export async function createSubscription(
       subscriptionId: subscription.id,
       customerId: customer.id,
     },
+    trial: price.trialDays
+      ? { days: price.trialDays, endDate: subscription.trialEnd! }
+      : undefined,
   });
 
   if (result.status === "active") {
@@ -306,6 +309,95 @@ export async function changeSubscription(
     newAmount: newPrice.amount,
     isUpgrade: upgrade,
   });
+
+  // During trial: no proration (nothing was charged), charge new plan and activate
+  if (subscription.status === "trialing") {
+    let payment: Payment | null = null;
+    const changeDate = await ctx.timeProvider.now(params.customerId);
+
+    if (newPrice.amount > 0) {
+      if (!customer.providerCustomerId) {
+        throw new Error(
+          "Cannot change plan during trial without a payment method",
+        );
+      }
+
+      if (!ctx.paymentAdapter?.charge) {
+        throw new Error(
+          "Payment adapter does not support direct charging. Cannot process plan change.",
+        );
+      }
+
+      const chargeResult = await ctx.paymentAdapter.charge({
+        customer: {
+          id: customer.id,
+          email: customer.email,
+          providerCustomerId: customer.providerCustomerId,
+        },
+        amount: newPrice.amount,
+        currency: newPrice.currency,
+        description: `Plan change during trial: ${newPlan.name} (${targetInterval})`,
+        metadata: {
+          subscriptionId: subscription.id,
+          customerId: customer.id,
+          type: "trial_plan_change",
+          oldPlanCode: subscription.planCode,
+          newPlanCode,
+        },
+      });
+
+      if (chargeResult.status === "failed") {
+        throw new Error(chargeResult.error ?? "Charge failed");
+      }
+
+      payment = await ctx.internalAdapter.createPayment({
+        customerId: customer.id,
+        subscriptionId: subscription.id,
+        type: "subscription",
+        status: "succeeded",
+        amount: newPrice.amount,
+        currency: newPrice.currency,
+        providerPaymentId: chargeResult.providerPaymentId,
+        metadata: {
+          oldPlanCode: subscription.planCode,
+          newPlanCode,
+          type: "trial_plan_change",
+        },
+      });
+    }
+
+    // Calculate new billing period
+    const newPeriodEnd = new Date(changeDate);
+    if (targetInterval === "yearly") {
+      newPeriodEnd.setFullYear(newPeriodEnd.getFullYear() + 1);
+    } else if (targetInterval === "quarterly") {
+      newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 3);
+    } else {
+      newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 1);
+    }
+
+    const updatedSubscription = await ctx.internalAdapter.updateSubscription(
+      subscription.id,
+      {
+        planCode: newPlanCode,
+        interval: targetInterval,
+        status: "active",
+        currentPeriodStart: changeDate,
+        currentPeriodEnd: newPeriodEnd,
+        trialEnd: undefined,
+        scheduledPlanCode: undefined,
+        scheduledInterval: undefined,
+      },
+    );
+
+    return {
+      subscription: updatedSubscription,
+      previousPlan: oldPlan,
+      newPlan,
+      payment,
+      scheduled: false,
+    };
+  }
 
   // Downgrade: schedule for period end
   if (!upgrade) {

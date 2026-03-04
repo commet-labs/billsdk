@@ -22,6 +22,11 @@ export interface PaymentParams {
   successUrl?: string;
   cancelUrl?: string;
   metadata?: Record<string, string>;
+  /**
+   * Trial information - signals that checkout should collect card without charging.
+   * When present, payment adapters should use setup mode instead of payment mode.
+   */
+  trial?: { days: number; endDate: Date };
 }
 
 /**

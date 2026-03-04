@@ -21,7 +21,7 @@ billsdk({
       // Option 1: Custom logic
       await ctx.paymentAdapter.refund({ ... });
       return { refund, originalPayment };
-      
+
       // Option 2: Run default + side effects
       const result = await defaultBehavior();
       await sendEmail("Refund processed");
@@ -38,11 +38,11 @@ onRefund: async (ctx, params) => {
   const payment = await ctx.internalAdapter.findOne("payment", {
     where: [{ field: "id", operator: "eq", value: params.paymentId }],
   });
-  
+
   await ctx.paymentAdapter.refund({
     providerPaymentId: payment.providerPaymentId!,
   });
-  
+
   // Don't cancel subscription
   return { refund: payment, originalPayment: payment };
 },
@@ -56,7 +56,53 @@ onSubscriptionCancel: async (ctx, params) => {
     where: [{ field: "customerId", operator: "eq", value: params.customerId }],
     data: { planCode: "free" },
   });
-  
+
   return { subscription, canceledImmediately: false };
+},
+```
+
+## Example: Extend Trial
+
+Override `onTrialEnd` to extend the trial for engaged users instead of charging immediately:
+
+```typescript
+onTrialEnd: async (ctx, params, defaultBehavior) => {
+  const subscription = await ctx.internalAdapter.findSubscriptionById(
+    params.subscriptionId,
+  );
+
+  // Extend trial by 7 more days for engaged users
+  if (await isEngagedUser(subscription.customerId)) {
+    const newTrialEnd = new Date(subscription.trialEnd!);
+    newTrialEnd.setDate(newTrialEnd.getDate() + 7);
+
+    const updated = await ctx.internalAdapter.updateSubscription(
+      subscription.id,
+      { trialEnd: newTrialEnd },
+    );
+
+    return { subscription: updated, converted: false };
+  }
+
+  // Otherwise, run default (charge or cancel)
+  return defaultBehavior();
+},
+```
+
+## Example: Downgrade to Free on Trial End
+
+```typescript
+onTrialEnd: async (ctx, params) => {
+  const subscription = await ctx.internalAdapter.findSubscriptionById(
+    params.subscriptionId,
+  );
+
+  // Instead of charging, downgrade to free plan
+  const updated = await ctx.internalAdapter.updateSubscription(
+    subscription.id,
+    { planCode: "free", status: "active" },
+  );
+
+  return { subscription: updated, converted: false };
 },
 ```

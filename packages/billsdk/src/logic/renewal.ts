@@ -169,3 +169,74 @@ export function isInGracePeriod(
 
   return now <= graceEnd;
 }
+
+/**
+ * Check if a subscription is currently in a trial period
+ *
+ * @param subscription - The subscription to check
+ *
+ * @example
+ * ```typescript
+ * if (isInTrial(subscription)) {
+ *   // Show trial UI
+ * }
+ * ```
+ */
+export function isInTrial(subscription: Subscription): boolean {
+  return subscription.status === "trialing";
+}
+
+/**
+ * Calculate the number of days remaining in a trial
+ *
+ * @param subscription - The subscription to check
+ * @param now - Optional current time (defaults to new Date()). Use for time-travel testing.
+ * @returns Number of days remaining, or 0 if not trialing
+ *
+ * @example
+ * ```typescript
+ * const days = daysRemainingInTrial(subscription);
+ * if (days <= 3) {
+ *   // Show "trial ending soon" banner
+ * }
+ * ```
+ */
+export function daysRemainingInTrial(
+  subscription: Subscription,
+  now: Date = new Date(),
+): number {
+  if (subscription.status !== "trialing" || !subscription.trialEnd) return 0;
+  const diff = subscription.trialEnd.getTime() - now.getTime();
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+}
+
+/**
+ * Get trial information for a subscription
+ *
+ * @param subscription - The subscription to check
+ * @param now - Optional current time (defaults to new Date()). Use for time-travel testing.
+ * @returns Trial info object, or null if subscription has no trial
+ *
+ * @example
+ * ```typescript
+ * const trial = getTrialInfo(subscription);
+ * if (trial?.isTrialing) {
+ *   console.log(`${trial.daysRemaining} days left in trial`);
+ * }
+ * ```
+ */
+export function getTrialInfo(
+  subscription: Subscription,
+  now: Date = new Date(),
+): {
+  isTrialing: boolean;
+  daysRemaining: number;
+  trialEnd: Date | null;
+} | null {
+  if (!subscription.trialEnd) return null;
+  return {
+    isTrialing: subscription.status === "trialing",
+    daysRemaining: daysRemainingInTrial(subscription, now),
+    trialEnd: subscription.trialEnd,
+  };
+}

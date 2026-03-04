@@ -65,9 +65,11 @@ export const webhookEndpoints: Record<string, BillingEndpoint> = {
             }
           }
 
-          // Update subscription to active
+          // Preserve trialing status if subscription is in trial, otherwise activate
+          const newStatus =
+            subscription.status === "trialing" ? "trialing" : "active";
           await ctx.internalAdapter.updateSubscription(subscription.id, {
-            status: "active",
+            status: newStatus,
             providerSubscriptionId: result.providerSubscriptionId,
           });
 

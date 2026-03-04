@@ -1,6 +1,7 @@
 import type { Subscription, Where } from "@billsdk/core";
 import type { BillingContext } from "../context/create-context";
 import { TABLES } from "../db/schema";
+import { runBehavior } from "./behaviors/runner";
 
 /**
  * Parameters for processing renewals
@@ -41,6 +42,16 @@ export interface RenewalDetail {
 }
 
 /**
+ * Individual trial end result
+ */
+export interface TrialEndDetail {
+  subscriptionId: string;
+  customerId: string;
+  status: "converted" | "canceled" | "failed";
+  error?: string;
+}
+
+/**
  * Result of processing renewals
  */
 export interface ProcessRenewalsResult {
@@ -68,6 +79,11 @@ export interface ProcessRenewalsResult {
    * Details for each renewal
    */
   renewals: RenewalDetail[];
+
+  /**
+   * Trial end results
+   */
+  trialEnds: TrialEndDetail[];
 }
 
 /**
@@ -137,6 +153,104 @@ async function findDueSubscriptions(
     limit: params.limit,
     sortBy: { field: "currentPeriodEnd", direction: "asc" },
   });
+}
+
+/**
+ * Find subscriptions with expired trials
+ */
+async function findTrialingSubscriptions(
+  ctx: BillingContext,
+  params: ProcessRenewalsParams,
+): Promise<Subscription[]> {
+  const now = params.customerId
+    ? await ctx.timeProvider.now(params.customerId)
+    : new Date();
+
+  const where: Where[] = [
+    {
+      field: "status",
+      operator: "eq",
+      value: "trialing",
+    },
+    {
+      field: "trialEnd",
+      operator: "lte",
+      value: now,
+    },
+  ];
+
+  if (params.customerId) {
+    const customer = await ctx.internalAdapter.findCustomerByExternalId(
+      params.customerId,
+    );
+    if (!customer) {
+      return [];
+    }
+    where.push({
+      field: "customerId",
+      operator: "eq",
+      value: customer.id,
+    });
+  }
+
+  return ctx.adapter.findMany<Subscription>({
+    model: TABLES.SUBSCRIPTION,
+    where,
+    limit: params.limit,
+    sortBy: { field: "trialEnd", direction: "asc" },
+  });
+}
+
+/**
+ * Process expired trials via onTrialEnd behavior
+ */
+async function processTrialEnds(
+  ctx: BillingContext,
+  params: ProcessRenewalsParams,
+): Promise<TrialEndDetail[]> {
+  const trialingSubscriptions = await findTrialingSubscriptions(ctx, params);
+
+  ctx.logger.info(
+    `Found ${trialingSubscriptions.length} subscriptions with expired trials`,
+  );
+
+  const results: TrialEndDetail[] = [];
+
+  for (const subscription of trialingSubscriptions) {
+    try {
+      const result = await runBehavior(ctx, "onTrialEnd", {
+        subscriptionId: subscription.id,
+      });
+
+      const customer = await ctx.internalAdapter.findCustomerById(
+        subscription.customerId,
+      );
+
+      results.push({
+        subscriptionId: subscription.id,
+        customerId: customer?.externalId ?? subscription.customerId,
+        status: result.converted ? "converted" : "canceled",
+      });
+    } catch (error) {
+      ctx.logger.error("Error processing trial end", {
+        subscriptionId: subscription.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      const customer = await ctx.internalAdapter.findCustomerById(
+        subscription.customerId,
+      );
+
+      results.push({
+        subscriptionId: subscription.id,
+        customerId: customer?.externalId ?? subscription.customerId,
+        status: "failed",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  return results;
 }
 
 /**
@@ -407,7 +521,10 @@ export async function processRenewals(
     limit: params.limit,
   });
 
-  // Find due subscriptions
+  // Phase 1: Process expired trials
+  const trialEnds = await processTrialEnds(ctx, params);
+
+  // Phase 2: Find due subscriptions for normal renewals
   const dueSubscriptions = await findDueSubscriptions(ctx, params);
 
   ctx.logger.info(
@@ -420,6 +537,7 @@ export async function processRenewals(
     failed: 0,
     skipped: 0,
     renewals: [],
+    trialEnds,
   };
 
   // Process each subscription

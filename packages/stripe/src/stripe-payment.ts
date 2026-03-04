@@ -78,12 +78,12 @@ export function stripePayment(options: StripePaymentOptions): PaymentAdapter {
         stripeCustomerId = stripeCustomer.id;
       }
 
-      // Free plans: setup mode to collect card
-      // Paid plans: payment mode to charge and save card
-      const isFree = params.price.amount === 0;
+      // Setup mode: collect card without charging (free plans or trials)
+      // Payment mode: charge and save card (paid plans without trial)
+      const useSetupMode = params.price.amount === 0 || !!params.trial;
 
       const session = await stripeClient.checkout.sessions.create(
-        isFree
+        useSetupMode
           ? {
               mode: "setup",
               customer: stripeCustomerId,
