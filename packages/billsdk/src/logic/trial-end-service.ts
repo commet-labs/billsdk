@@ -92,10 +92,12 @@ export async function handleTrialEnd(
         subscriptionId: subscription.id,
       });
 
-      const pastDueSubscription =
-        await ctx.internalAdapter.updateSubscription(subscription.id, {
+      const pastDueSubscription = await ctx.internalAdapter.updateSubscription(
+        subscription.id,
+        {
           status: "past_due",
-        });
+        },
+      );
 
       return {
         subscription: pastDueSubscription ?? {
@@ -129,10 +131,12 @@ export async function handleTrialEnd(
         error: chargeResult.error,
       });
 
-      const pastDueSubscription =
-        await ctx.internalAdapter.updateSubscription(subscription.id, {
+      const pastDueSubscription = await ctx.internalAdapter.updateSubscription(
+        subscription.id,
+        {
           status: "past_due",
-        });
+        },
+      );
 
       return {
         subscription: pastDueSubscription ?? {
