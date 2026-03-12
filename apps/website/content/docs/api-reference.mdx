@@ -166,6 +166,65 @@ const features = await billing.api.listFeatures({
 
 **Returns:** `FeatureAccess[]`
 
+## Trial Helpers
+
+Utility functions for checking trial status. Import from `billsdk`:
+
+```typescript
+import { isInTrial, daysRemainingInTrial, getTrialInfo } from "billsdk";
+```
+
+### isInTrial
+
+Check if a subscription is currently in a trial period.
+
+```typescript
+if (isInTrial(subscription)) {
+  // Show trial UI
+}
+```
+
+**Returns:** `boolean`
+
+### daysRemainingInTrial
+
+Get the number of days remaining in the trial.
+
+```typescript
+const days = daysRemainingInTrial(subscription);
+if (days <= 3) {
+  // Show "trial ending soon" banner
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `subscription` | `Subscription` | Yes | The subscription to check |
+| `now` | `Date` | No | Current time (default: `new Date()`) |
+
+**Returns:** `number` (0 if not trialing)
+
+### getTrialInfo
+
+Get full trial information for a subscription.
+
+```typescript
+const trial = getTrialInfo(subscription);
+if (trial?.isTrialing) {
+  console.log(`${trial.daysRemaining} days left`);
+  console.log(`Trial ends: ${trial.trialEnd}`);
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `subscription` | `Subscription` | Yes | The subscription to check |
+| `now` | `Date` | No | Current time (default: `new Date()`) |
+
+**Returns:** `{ isTrialing: boolean; daysRemaining: number; trialEnd: Date | null } | null`
+
+Returns `null` if the subscription has never had a trial.
+
 ## Health
 
 ### health

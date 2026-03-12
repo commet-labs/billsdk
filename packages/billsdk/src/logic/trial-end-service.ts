@@ -24,8 +24,10 @@ export interface HandleTrialEndResult {
  *
  * This is the single source of truth for trial end logic.
  * The default behavior:
- * - If customer has a payment method: activates the subscription
- * - If no payment method: cancels the subscription
+ * - If customer has a payment method and amount > 0: charge first period, activate
+ * - If customer has a payment method and amount === 0: activate (free plan with trial)
+ * - If charge fails: mark as past_due
+ * - If no payment method: cancel the subscription
  */
 export async function handleTrialEnd(
   ctx: BillingContext,
@@ -48,8 +50,12 @@ export async function handleTrialEnd(
     throw new Error("Customer not found");
   }
 
-  // Get the plan
+  // Get the plan and price
   const plan = ctx.internalAdapter.findPlanByCode(subscription.planCode);
+  const price = ctx.internalAdapter.getPlanPrice(
+    subscription.planCode,
+    subscription.interval,
+  );
 
   ctx.logger.info("Processing trial end", {
     subscriptionId: subscription.id,
@@ -76,15 +82,114 @@ export async function handleTrialEnd(
     };
   }
 
-  // Customer has payment method - activate the subscription
-  ctx.logger.info("Payment method exists, activating subscription", {
-    subscriptionId: subscription.id,
-  });
+  // Customer has payment method — charge first period and activate
+  const now = await ctx.timeProvider.now(customer.externalId);
 
+  // Charge if plan has a cost
+  if (price && price.amount > 0) {
+    if (!ctx.paymentAdapter?.charge) {
+      ctx.logger.error("Payment adapter does not support direct charging", {
+        subscriptionId: subscription.id,
+      });
+
+      const pastDueSubscription = await ctx.internalAdapter.updateSubscription(
+        subscription.id,
+        {
+          status: "past_due",
+        },
+      );
+
+      return {
+        subscription: pastDueSubscription ?? {
+          ...subscription,
+          status: "past_due",
+        },
+        converted: false,
+      };
+    }
+
+    const chargeResult = await ctx.paymentAdapter.charge({
+      customer: {
+        id: customer.id,
+        email: customer.email,
+        providerCustomerId: customer.providerCustomerId,
+      },
+      amount: price.amount,
+      currency: price.currency,
+      description: `First period: ${plan?.name ?? subscription.planCode} (${subscription.interval})`,
+      metadata: {
+        subscriptionId: subscription.id,
+        customerId: customer.id,
+        type: "trial_conversion",
+        planCode: subscription.planCode,
+      },
+    });
+
+    if (chargeResult.status === "failed") {
+      ctx.logger.warn("Trial conversion charge failed", {
+        subscriptionId: subscription.id,
+        error: chargeResult.error,
+      });
+
+      const pastDueSubscription = await ctx.internalAdapter.updateSubscription(
+        subscription.id,
+        {
+          status: "past_due",
+        },
+      );
+
+      return {
+        subscription: pastDueSubscription ?? {
+          ...subscription,
+          status: "past_due",
+        },
+        converted: false,
+      };
+    }
+
+    // Create payment record
+    await ctx.internalAdapter.createPayment({
+      customerId: customer.id,
+      subscriptionId: subscription.id,
+      type: "subscription",
+      status: "succeeded",
+      amount: price.amount,
+      currency: price.currency,
+      providerPaymentId: chargeResult.providerPaymentId,
+      metadata: {
+        planCode: subscription.planCode,
+        interval: subscription.interval,
+        type: "trial_conversion",
+      },
+    });
+  }
+
+  // Calculate new billing period
+  const newPeriodStart = now;
+  const newPeriodEnd = new Date(now);
+  if (subscription.interval === "yearly") {
+    newPeriodEnd.setFullYear(newPeriodEnd.getFullYear() + 1);
+  } else if (subscription.interval === "quarterly") {
+    newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 3);
+  } else {
+    newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 1);
+  }
+
+  // Activate subscription with new billing period
   const activeSubscription = await ctx.internalAdapter.updateSubscription(
     subscription.id,
-    { status: "active" },
+    {
+      status: "active",
+      currentPeriodStart: newPeriodStart,
+      currentPeriodEnd: newPeriodEnd,
+    },
   );
+
+  ctx.logger.info("Trial converted to active subscription", {
+    subscriptionId: subscription.id,
+    newPeriodStart: newPeriodStart.toISOString(),
+    newPeriodEnd: newPeriodEnd.toISOString(),
+  });
 
   return {
     subscription: activeSubscription ?? { ...subscription, status: "active" },

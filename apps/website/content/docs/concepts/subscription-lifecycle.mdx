@@ -19,7 +19,8 @@ description: States and transitions
 
 ```
 pending_payment ──webhook──► active
-                          └► trialing ──trial ends──► active
+                          └► trialing ──trial ends──► active (charged)
+                                                   └► past_due (charge failed)
                                                    └► canceled (no payment method)
 
 active ──payment fails──► past_due ──retries fail──► canceled
@@ -53,4 +54,16 @@ prices: [
 ]
 ```
 
-During trial: `status: "trialing"`, payment method collected but not charged.
+### Trial Flow
+
+1. **Checkout**: User subscribes to a plan with `trialDays`. Stripe Checkout collects a payment method without charging (`mode: "setup"`).
+2. **Webhook**: After checkout completes, subscription stays `"trialing"` (not overwritten to `"active"`).
+3. **Trial period**: User has full access. `subscription.status === "trialing"` and `subscription.trialEnd` is set.
+4. **Trial ends**: The `processRenewals()` cron finds expired trials and runs the `onTrialEnd` behavior:
+   - **Has payment method**: Charges the first billing period, sets `currentPeriodStart`/`currentPeriodEnd`, transitions to `"active"`.
+   - **Charge fails**: Transitions to `"past_due"`.
+   - **No payment method**: Transitions to `"canceled"`.
+
+### Plan Change During Trial
+
+Changing plans during a trial ends the trial immediately. The customer is charged the full price of the new plan and a new billing period starts. No proration is applied since nothing was charged during the trial.
