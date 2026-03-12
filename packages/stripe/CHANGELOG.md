@@ -1,5 +1,24 @@
 # @billsdk/stripe
 
+## 2.0.0
+
+### Minor Changes
+
+- [#16](https://github.com/commet-labs/billsdk/pull/16) [`81d6167`](https://github.com/commet-labs/billsdk/commit/81d61671054a5b0ddfd8d8973076b5da8986c6b2) Thanks [@decker-dev](https://github.com/decker-dev)! - feat: implement free trial flow
+  - Trial subscriptions go through checkout to collect payment method without charging
+  - Cron automatically processes expired trials via `onTrialEnd` behavior
+  - Default: charges first period if payment method exists, cancels if not
+  - Override `onTrialEnd` behavior for custom logic (extend trial, downgrade, etc.)
+  - Added `PaymentParams.trial` field for provider-agnostic trial support
+  - Fixed webhook overriding `trialing` status to `active`
+  - Added trial helpers: `isInTrial`, `daysRemainingInTrial`, `getTrialInfo`
+  - Handle plan change during trial (ends trial, charges new plan immediately)
+
+### Patch Changes
+
+- Updated dependencies [[`81d6167`](https://github.com/commet-labs/billsdk/commit/81d61671054a5b0ddfd8d8973076b5da8986c6b2)]:
+  - @billsdk/core@0.6.0
+
 ## 1.1.2
 
 ### Patch Changes
