@@ -1,5 +1,12 @@
 # @billsdk/memory-adapter
 
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies [[`81d6167`](https://github.com/commet-labs/billsdk/commit/81d61671054a5b0ddfd8d8973076b5da8986c6b2)]:
+  - @billsdk/core@0.6.0
+
 ## 1.0.4
 
 ### Patch Changes
