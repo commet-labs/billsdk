@@ -1,4 +1,4 @@
-import type { Customer, Plan } from "../../types/models";
+import type { Customer, Plan } from "@billsdk/core/types";
 import { asyncAtom, atom } from "../atoms";
 import { createFetch } from "../proxy";
 import type {
