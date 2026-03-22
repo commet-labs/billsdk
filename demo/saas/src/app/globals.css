@@ -46,40 +46,40 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-/* Sage Clay - Dark Mode Only (matching BillSDK website) */
+/* Commet Warm — dark mode only (OKLCH with warm amber undertone) */
 :root {
   --radius: 1;
-  --background: #181a19;
-  --foreground: #e8ece6;
-  --card: #1c1e1d;
-  --card-foreground: #e8ece6;
-  --popover: #1c1e1d;
-  --popover-foreground: #e0e4de;
-  --primary: #c4c9c2;
-  --primary-foreground: #181a19;
-  --secondary: #222524;
-  --secondary-foreground: #e8ece6;
-  --muted: #222524;
-  --muted-foreground: #8a8e88;
-  --accent: #2a2d2c;
-  --accent-foreground: #e0e4de;
-  --destructive: #ef4444;
-  --border: hsla(100, 6%, 32%, 40%);
-  --input: hsla(100, 6%, 32%, 50%);
-  --ring: #8a8e88;
-  --chart-1: #6ee7b7;
-  --chart-2: #a78bfa;
-  --chart-3: #fbbf24;
-  --chart-4: #f472b6;
-  --chart-5: #38bdf8;
-  --sidebar: #1c1e1d;
-  --sidebar-foreground: #e8ece6;
-  --sidebar-primary: #c4c9c2;
-  --sidebar-primary-foreground: #181a19;
-  --sidebar-accent: #222524;
-  --sidebar-accent-foreground: #e8ece6;
-  --sidebar-border: hsla(100, 6%, 32%, 40%);
-  --sidebar-ring: #8a8e88;
+  --background: oklch(0.155 0.015 55);
+  --foreground: oklch(0.93 0.01 75);
+  --card: oklch(0.185 0.015 55);
+  --card-foreground: oklch(0.93 0.01 75);
+  --popover: oklch(0.185 0.015 55);
+  --popover-foreground: oklch(0.93 0.01 75);
+  --primary: oklch(0.93 0.015 60);
+  --primary-foreground: oklch(0.155 0.015 55);
+  --secondary: oklch(0.24 0.015 55);
+  --secondary-foreground: oklch(0.93 0.01 75);
+  --muted: oklch(0.24 0.015 55);
+  --muted-foreground: oklch(0.65 0.015 60);
+  --accent: oklch(0.24 0.015 55);
+  --accent-foreground: oklch(0.93 0.01 75);
+  --destructive: oklch(0.4 0.14 27);
+  --border: oklch(0.28 0.015 55);
+  --input: oklch(0.28 0.015 55);
+  --ring: oklch(0.6 0.12 50);
+  --chart-1: oklch(0.65 0.16 45);
+  --chart-2: oklch(0.65 0.1 175);
+  --chart-3: oklch(0.72 0.14 80);
+  --chart-4: oklch(0.55 0.12 35);
+  --chart-5: oklch(0.62 0.14 15);
+  --sidebar: oklch(0.185 0.015 55);
+  --sidebar-foreground: oklch(0.93 0.01 75);
+  --sidebar-primary: oklch(0.93 0.015 60);
+  --sidebar-primary-foreground: oklch(0.155 0.015 55);
+  --sidebar-accent: oklch(0.24 0.015 55);
+  --sidebar-accent-foreground: oklch(0.93 0.01 75);
+  --sidebar-border: oklch(0.28 0.015 55);
+  --sidebar-ring: oklch(0.6 0.12 50);
 }
 
 @layer base {
