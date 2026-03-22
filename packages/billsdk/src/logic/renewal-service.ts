@@ -282,8 +282,8 @@ async function applyScheduledChanges(
   await ctx.internalAdapter.updateSubscription(subscription.id, {
     planCode: newPlanCode,
     interval: newInterval,
-    scheduledPlanCode: undefined,
-    scheduledInterval: undefined,
+    scheduledPlanCode: null,
+    scheduledInterval: null,
   });
 
   return {

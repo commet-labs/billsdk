@@ -104,16 +104,31 @@ export async function createSubscription(
       }
     }
 
-    const activeSubscription = await ctx.internalAdapter.updateSubscription(
-      subscription.id,
-      { status: "active" },
-    );
-
     if (result.providerCustomerId && !customer.providerCustomerId) {
       await ctx.internalAdapter.updateCustomer(customer.id, {
         providerCustomerId: result.providerCustomerId,
       });
     }
+
+    // Trial: keep as trialing, don't charge yet
+    if (price.trialDays && subscription.trialEnd) {
+      const trialingSubscription =
+        await ctx.internalAdapter.updateSubscription(subscription.id, {
+          status: "trialing",
+        });
+
+      return {
+        subscription: trialingSubscription ?? {
+          ...subscription,
+          status: "trialing" as const,
+        },
+      };
+    }
+
+    const activeSubscription = await ctx.internalAdapter.updateSubscription(
+      subscription.id,
+      { status: "active" },
+    );
 
     if (price.amount > 0) {
       await ctx.internalAdapter.createPayment({

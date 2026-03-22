@@ -26,12 +26,20 @@ function applyWhere(
       case "ne":
         return value !== clause.value;
       case "gt":
+        if (value instanceof Date && clause.value instanceof Date)
+          return value.getTime() > clause.value.getTime();
         return typeof value === "number" && value > (clause.value as number);
       case "gte":
+        if (value instanceof Date && clause.value instanceof Date)
+          return value.getTime() >= clause.value.getTime();
         return typeof value === "number" && value >= (clause.value as number);
       case "lt":
+        if (value instanceof Date && clause.value instanceof Date)
+          return value.getTime() < clause.value.getTime();
         return typeof value === "number" && value < (clause.value as number);
       case "lte":
+        if (value instanceof Date && clause.value instanceof Date)
+          return value.getTime() <= clause.value.getTime();
         return typeof value === "number" && value <= (clause.value as number);
       case "in":
         return Array.isArray(clause.value) && clause.value.includes(value);
