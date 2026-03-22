@@ -1,12 +1,12 @@
 import { defineConfig } from "tsup";
 
-export default defineConfig({
+export default defineConfig((options) => ({
   entry: ["src/index.ts"],
   format: ["esm"],
   dts: true,
   splitting: false,
   sourcemap: true,
-  clean: true,
+  clean: !options.watch,
   banner: {
     js: "#!/usr/bin/env node",
   },
@@ -30,4 +30,4 @@ export default defineConfig({
     "mysql2",
     "postgres",
   ],
-});
+}));

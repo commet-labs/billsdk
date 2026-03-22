@@ -1,6 +1,6 @@
 import { defineConfig } from "tsup";
 
-export default defineConfig({
+export default defineConfig((options) => ({
   entry: [
     "src/index.ts",
     "src/client/index.ts",
@@ -13,7 +13,7 @@ export default defineConfig({
   format: ["esm"],
   dts: true,
   sourcemap: true,
-  clean: true,
+  clean: !options.watch,
   splitting: false,
   treeshake: true,
   external: [
@@ -23,4 +23,4 @@ export default defineConfig({
     "@billsdk/payment-adapter",
     "react",
   ],
-});
+}));
