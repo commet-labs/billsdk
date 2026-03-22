@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { paymentAdapter } from "@billsdk/payment-adapter";
 import { createBillSDK } from "../billsdk/base";
 
 function createBilling(overrides = {}) {
-  return createBillSDK({
+  const payment = paymentAdapter();
+  const billing = createBillSDK({
     secret: "test-secret-that-is-at-least-32-characters-long!!",
     trustedOrigins: ["http://localhost:3000"],
+    payment,
     features: [
       { code: "export", name: "Export", type: "boolean" },
       { code: "api_access", name: "API Access", type: "boolean" },
@@ -31,6 +34,21 @@ function createBilling(overrides = {}) {
     ],
     ...overrides,
   });
+  return { billing, payment };
+}
+
+async function subscribe(
+  billing: ReturnType<typeof createBilling>["billing"],
+  payment: ReturnType<typeof createBilling>["payment"],
+  customerId: string,
+  planCode: string,
+) {
+  const { subscription } = await billing.api.createSubscription({
+    customerId,
+    planCode,
+  });
+  await billing.handler(payment.createWebhookRequest(subscription.id));
+  return billing.api.getSubscription({ customerId });
 }
 
 describe("Subscription lifecycle", () => {
@@ -45,37 +63,32 @@ describe("Subscription lifecycle", () => {
 
   describe("creation", () => {
     it("activates with correct billing period on paid plan", async () => {
-      const billing = createBilling();
+      const { billing, payment } = createBilling();
       await billing.api.createCustomer({
         externalId: "user_1",
         email: "user@test.com",
       });
 
-      const { subscription } = await billing.api.createSubscription({
-        customerId: "user_1",
-        planCode: "starter",
-      });
+      const sub = await subscribe(billing, payment, "user_1", "starter");
 
-      expect(subscription.status).toBe("active");
-      expect(subscription.planCode).toBe("starter");
-      expect(subscription.currentPeriodStart).toEqual(
+      expect(sub).not.toBeNull();
+      expect(sub!.status).toBe("active");
+      expect(sub!.planCode).toBe("starter");
+      expect(sub!.currentPeriodStart).toEqual(
         new Date("2025-01-15T00:00:00Z"),
       );
-      expect(subscription.currentPeriodEnd).toEqual(
+      expect(sub!.currentPeriodEnd).toEqual(
         new Date("2025-02-15T00:00:00Z"),
       );
     });
 
     it("creates a payment record on paid plan", async () => {
-      const billing = createBilling();
+      const { billing, payment } = createBilling();
       await billing.api.createCustomer({
         externalId: "user_1",
         email: "user@test.com",
       });
-      await billing.api.createSubscription({
-        customerId: "user_1",
-        planCode: "starter",
-      });
+      await subscribe(billing, payment, "user_1", "starter");
 
       const payments = await billing.api.listPayments({
         customerId: "user_1",
@@ -88,18 +101,16 @@ describe("Subscription lifecycle", () => {
     });
 
     it("activates without payment record on free plan", async () => {
-      const billing = createBilling();
+      const { billing, payment } = createBilling();
       await billing.api.createCustomer({
         externalId: "user_1",
         email: "user@test.com",
       });
 
-      const { subscription } = await billing.api.createSubscription({
-        customerId: "user_1",
-        planCode: "free",
-      });
+      const sub = await subscribe(billing, payment, "user_1", "free");
 
-      expect(subscription.status).toBe("active");
+      expect(sub).not.toBeNull();
+      expect(sub!.status).toBe("active");
 
       const payments = await billing.api.listPayments({
         customerId: "user_1",
@@ -108,21 +119,14 @@ describe("Subscription lifecycle", () => {
     });
 
     it("cancels old subscription when creating a new one", async () => {
-      const billing = createBilling();
+      const { billing, payment } = createBilling();
       await billing.api.createCustomer({
         externalId: "user_1",
         email: "user@test.com",
       });
 
-      await billing.api.createSubscription({
-        customerId: "user_1",
-        planCode: "starter",
-      });
-
-      await billing.api.createSubscription({
-        customerId: "user_1",
-        planCode: "pro",
-      });
+      await subscribe(billing, payment, "user_1", "starter");
+      await subscribe(billing, payment, "user_1", "pro");
 
       const currentSub = await billing.api.getSubscription({
         customerId: "user_1",
@@ -135,15 +139,12 @@ describe("Subscription lifecycle", () => {
 
   describe("cancellation", () => {
     it("cancels immediately and revokes access", async () => {
-      const billing = createBilling();
+      const { billing, payment } = createBilling();
       await billing.api.createCustomer({
         externalId: "user_1",
         email: "user@test.com",
       });
-      await billing.api.createSubscription({
-        customerId: "user_1",
-        planCode: "starter",
-      });
+      await subscribe(billing, payment, "user_1", "starter");
 
       await billing.api.cancelSubscription({
         customerId: "user_1",
@@ -155,15 +156,12 @@ describe("Subscription lifecycle", () => {
     });
 
     it("schedules cancellation at period end without revoking access", async () => {
-      const billing = createBilling();
+      const { billing, payment } = createBilling();
       await billing.api.createCustomer({
         externalId: "user_1",
         email: "user@test.com",
       });
-      await billing.api.createSubscription({
-        customerId: "user_1",
-        planCode: "starter",
-      });
+      await subscribe(billing, payment, "user_1", "starter");
 
       await billing.api.cancelSubscription({
         customerId: "user_1",
@@ -177,7 +175,7 @@ describe("Subscription lifecycle", () => {
     });
 
     it("throws when canceling without active subscription", async () => {
-      const billing = createBilling();
+      const { billing } = createBilling();
       await billing.api.createCustomer({
         externalId: "user_1",
         email: "user@test.com",
@@ -192,7 +190,7 @@ describe("Subscription lifecycle", () => {
     });
 
     it("throws when canceling for non-existent customer", async () => {
-      const billing = createBilling();
+      const { billing } = createBilling();
 
       await expect(
         billing.api.cancelSubscription({

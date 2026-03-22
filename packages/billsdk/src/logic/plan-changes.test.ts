@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { paymentAdapter } from "@billsdk/payment-adapter";
 import { createBillSDK } from "../billsdk/base";
 
 function createBilling(overrides = {}) {
-  return createBillSDK({
+  const payment = paymentAdapter();
+  const billing = createBillSDK({
     secret: "test-secret-that-is-at-least-32-characters-long!!",
     trustedOrigins: ["http://localhost:3000"],
+    payment,
     features: [
       { code: "export", name: "Export", type: "boolean" },
       { code: "api_access", name: "API Access", type: "boolean" },
@@ -50,20 +53,24 @@ function createBilling(overrides = {}) {
     ],
     ...overrides,
   });
+  return { billing, payment };
 }
 
-async function setupCustomerWithPlan(
-  billing: ReturnType<typeof createBilling>,
+async function subscribe(
+  billing: ReturnType<typeof createBilling>["billing"],
+  payment: ReturnType<typeof createBilling>["payment"],
   planCode: string,
 ) {
   await billing.api.createCustomer({
     externalId: "user_1",
     email: "user@test.com",
   });
-  return billing.api.createSubscription({
+  const { subscription } = await billing.api.createSubscription({
     customerId: "user_1",
     planCode,
   });
+  await billing.handler(payment.createWebhookRequest(subscription.id));
+  return billing.api.getSubscription({ customerId: "user_1" });
 }
 
 describe("Plan changes", () => {
@@ -78,10 +85,9 @@ describe("Plan changes", () => {
 
   describe("upgrades", () => {
     it("calculates proration correctly mid-period", async () => {
-      const billing = createBilling();
-      await setupCustomerWithPlan(billing, "starter");
+      const { billing, payment } = createBilling();
+      await subscribe(billing, payment, "starter");
 
-      // Advance to Jan 7 (6 days used out of 31)
       vi.setSystemTime(new Date("2025-01-07T00:00:00Z"));
 
       const result = await billing.api.changeSubscription({
@@ -91,7 +97,6 @@ describe("Plan changes", () => {
 
       expect(result.scheduled).toBe(false);
       expect(result.subscription!.planCode).toBe("pro");
-
       // credit = round(1000/31 * 25) = 806
       // netAmount = 2000 - 806 = 1194
       expect(result.payment).not.toBeNull();
@@ -100,25 +105,22 @@ describe("Plan changes", () => {
     });
 
     it("gives full credit when upgrading same day as subscription", async () => {
-      const billing = createBilling();
-      await setupCustomerWithPlan(billing, "starter");
+      const { billing, payment } = createBilling();
+      await subscribe(billing, payment, "starter");
 
-      // Same day — 0 days used, 31 remaining
       const result = await billing.api.changeSubscription({
         customerId: "user_1",
         newPlanCode: "pro",
       });
 
-      // credit = round(1000/31 * 31) = 1000
-      // netAmount = 2000 - 1000 = 1000
+      // credit = round(1000/31 * 31) = 1000, netAmount = 2000 - 1000 = 1000
       expect(result.payment!.amount).toBe(1000);
     });
 
     it("gives near-zero credit when upgrading on last day", async () => {
-      const billing = createBilling();
-      await setupCustomerWithPlan(billing, "starter");
+      const { billing, payment } = createBilling();
+      await subscribe(billing, payment, "starter");
 
-      // Jan 31 — 30 days used, 1 remaining
       vi.setSystemTime(new Date("2025-01-31T00:00:00Z"));
 
       const result = await billing.api.changeSubscription({
@@ -126,14 +128,13 @@ describe("Plan changes", () => {
         newPlanCode: "pro",
       });
 
-      // credit = round(1000/31 * 1) = 32
-      // netAmount = 2000 - 32 = 1968
+      // credit = round(1000/31 * 1) = 32, netAmount = 2000 - 32 = 1968
       expect(result.payment!.amount).toBe(1968);
     });
 
     it("charges full new plan price when upgrading from free", async () => {
-      const billing = createBilling();
-      await setupCustomerWithPlan(billing, "free");
+      const { billing, payment } = createBilling();
+      await subscribe(billing, payment, "free");
 
       vi.setSystemTime(new Date("2025-01-15T00:00:00Z"));
 
@@ -142,13 +143,12 @@ describe("Plan changes", () => {
         newPlanCode: "pro",
       });
 
-      // credit from $0 plan = 0
       expect(result.payment!.amount).toBe(2000);
     });
 
     it("resets billing period start and end", async () => {
-      const billing = createBilling();
-      await setupCustomerWithPlan(billing, "starter");
+      const { billing, payment } = createBilling();
+      await subscribe(billing, payment, "starter");
 
       vi.setSystemTime(new Date("2025-01-15T00:00:00Z"));
 
@@ -168,8 +168,8 @@ describe("Plan changes", () => {
 
   describe("downgrades", () => {
     it("schedules for period end instead of applying immediately", async () => {
-      const billing = createBilling();
-      await setupCustomerWithPlan(billing, "pro");
+      const { billing, payment } = createBilling();
+      await subscribe(billing, payment, "pro");
 
       vi.setSystemTime(new Date("2025-01-15T00:00:00Z"));
 
@@ -185,8 +185,8 @@ describe("Plan changes", () => {
     });
 
     it("does not create a payment", async () => {
-      const billing = createBilling();
-      await setupCustomerWithPlan(billing, "pro");
+      const { billing, payment } = createBilling();
+      await subscribe(billing, payment, "pro");
 
       const result = await billing.api.changeSubscription({
         customerId: "user_1",
@@ -199,8 +199,8 @@ describe("Plan changes", () => {
 
   describe("validation", () => {
     it("throws when changing to the same plan", async () => {
-      const billing = createBilling();
-      await setupCustomerWithPlan(billing, "starter");
+      const { billing, payment } = createBilling();
+      await subscribe(billing, payment, "starter");
 
       await expect(
         billing.api.changeSubscription({
@@ -213,8 +213,17 @@ describe("Plan changes", () => {
 
   describe("during trial", () => {
     it("charges new plan full price and activates immediately", async () => {
-      const billing = createBilling();
-      await setupCustomerWithPlan(billing, "trial-pro");
+      const { billing, payment } = createBilling();
+      await billing.api.createCustomer({
+        externalId: "user_1",
+        email: "user@test.com",
+      });
+      const { subscription } = await billing.api.createSubscription({
+        customerId: "user_1",
+        planCode: "trial-pro",
+      });
+      // Confirm webhook to set providerCustomerId
+      await billing.handler(payment.createWebhookRequest(subscription.id));
 
       vi.setSystemTime(new Date("2025-01-05T00:00:00Z"));
 

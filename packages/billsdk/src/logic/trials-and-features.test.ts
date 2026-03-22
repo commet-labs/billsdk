@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ChargeParams, ChargeResult, PaymentAdapter } from "@billsdk/core";
 import { paymentAdapter } from "@billsdk/payment-adapter";
 import { createBillSDK } from "../billsdk/base";
 
-function createBilling(overrides = {}) {
-  return createBillSDK({
+function createBilling(paymentOverrides = {}) {
+  const payment = paymentAdapter(paymentOverrides);
+  const billing = createBillSDK({
     secret: "test-secret-that-is-at-least-32-characters-long!!",
     trustedOrigins: ["http://localhost:3000"],
+    payment,
     features: [
       { code: "export", name: "Export", type: "boolean" },
       { code: "api_access", name: "API Access", type: "boolean" },
@@ -38,18 +39,22 @@ function createBilling(overrides = {}) {
         features: ["export", "api_access"],
       },
     ],
-    ...overrides,
   });
+  return { billing, payment };
 }
 
-function failingChargeAdapter(): PaymentAdapter {
-  const base = paymentAdapter();
-  return {
-    ...base,
-    async charge(_params: ChargeParams): Promise<ChargeResult> {
-      return { status: "failed", error: "card_declined" };
-    },
-  };
+async function subscribe(
+  billing: ReturnType<typeof createBilling>["billing"],
+  payment: ReturnType<typeof createBilling>["payment"],
+  planCode: string,
+) {
+  await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
+  const { subscription } = await billing.api.createSubscription({
+    customerId: "user_1",
+    planCode,
+  });
+  await billing.handler(payment.createWebhookRequest(subscription.id));
+  return billing.api.getSubscription({ customerId: "user_1" });
 }
 
 describe("Trials", () => {
@@ -63,27 +68,17 @@ describe("Trials", () => {
   });
 
   it("starts in trialing status with correct trial dates", async () => {
-    const billing = createBilling();
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
+    const { billing, payment } = createBilling();
+    const sub = await subscribe(billing, payment, "trial-pro");
 
-    const { subscription } = await billing.api.createSubscription({
-      customerId: "user_1",
-      planCode: "trial-pro",
-    });
-
-    expect(subscription.status).toBe("trialing");
-    expect(subscription.trialEnd).toEqual(new Date("2025-01-15T00:00:00Z"));
+    expect(sub!.status).toBe("trialing");
+    expect(sub!.trialEnd).toEqual(new Date("2025-01-15T00:00:00Z"));
   });
 
   it("converts to active after trial end with payment method", async () => {
-    const billing = createBilling();
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
-    await billing.api.createSubscription({
-      customerId: "user_1",
-      planCode: "trial-pro",
-    });
+    const { billing, payment } = createBilling();
+    await subscribe(billing, payment, "trial-pro");
 
-    // Advance past trial end
     vi.setSystemTime(new Date("2025-01-15T00:00:01Z"));
 
     const result = await billing.api.processRenewals({ customerId: "user_1" });
@@ -96,19 +91,14 @@ describe("Trials", () => {
   });
 
   it("cancels after trial end when charge fails", async () => {
-    const billing = createBilling({ payment: failingChargeAdapter() });
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
-    await billing.api.createSubscription({
-      customerId: "user_1",
-      planCode: "trial-pro",
-    });
+    const { billing, payment } = createBilling({ charges: "fail" });
+    await subscribe(billing, payment, "trial-pro");
 
     vi.setSystemTime(new Date("2025-01-15T00:00:01Z"));
 
     const result = await billing.api.processRenewals({ customerId: "user_1" });
 
     expect(result.trialEnds).toHaveLength(1);
-    // Trial end with charge failure → past_due or canceled
     expect(["canceled", "failed"]).toContain(result.trialEnds[0].status);
   });
 });
@@ -124,9 +114,8 @@ describe("Feature access", () => {
   });
 
   it("grants access to plan features with active subscription", async () => {
-    const billing = createBilling();
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
-    await billing.api.createSubscription({ customerId: "user_1", planCode: "pro" });
+    const { billing, payment } = createBilling();
+    await subscribe(billing, payment, "pro");
 
     const exportAccess = await billing.api.checkFeature({
       customerId: "user_1",
@@ -142,9 +131,8 @@ describe("Feature access", () => {
   });
 
   it("denies access to features not in plan", async () => {
-    const billing = createBilling();
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
-    await billing.api.createSubscription({ customerId: "user_1", planCode: "free" });
+    const { billing, payment } = createBilling();
+    await subscribe(billing, payment, "free");
 
     const result = await billing.api.checkFeature({
       customerId: "user_1",
@@ -155,7 +143,7 @@ describe("Feature access", () => {
   });
 
   it("denies access without subscription", async () => {
-    const billing = createBilling();
+    const { billing } = createBilling();
     await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
 
     const result = await billing.api.checkFeature({
@@ -167,9 +155,8 @@ describe("Feature access", () => {
   });
 
   it("denies access after immediate cancellation", async () => {
-    const billing = createBilling();
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
-    await billing.api.createSubscription({ customerId: "user_1", planCode: "pro" });
+    const { billing, payment } = createBilling();
+    await subscribe(billing, payment, "pro");
 
     await billing.api.cancelSubscription({
       customerId: "user_1",
@@ -185,12 +172,8 @@ describe("Feature access", () => {
   });
 
   it("grants access during trial", async () => {
-    const billing = createBilling();
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
-    await billing.api.createSubscription({
-      customerId: "user_1",
-      planCode: "trial-pro",
-    });
+    const { billing, payment } = createBilling();
+    await subscribe(billing, payment, "trial-pro");
 
     const result = await billing.api.checkFeature({
       customerId: "user_1",
@@ -201,9 +184,8 @@ describe("Feature access", () => {
   });
 
   it("updates access after upgrade", async () => {
-    const billing = createBilling();
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
-    await billing.api.createSubscription({ customerId: "user_1", planCode: "free" });
+    const { billing, payment } = createBilling();
+    await subscribe(billing, payment, "free");
 
     const before = await billing.api.checkFeature({
       customerId: "user_1",

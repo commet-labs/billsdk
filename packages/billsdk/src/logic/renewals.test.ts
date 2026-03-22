@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ChargeParams, ChargeResult, PaymentAdapter } from "@billsdk/core";
 import { paymentAdapter } from "@billsdk/payment-adapter";
 import { createBillSDK } from "../billsdk/base";
 
-function createBilling(overrides = {}) {
-  return createBillSDK({
+function createBilling(paymentOverrides = {}) {
+  const payment = paymentAdapter(paymentOverrides);
+  const billing = createBillSDK({
     secret: "test-secret-that-is-at-least-32-characters-long!!",
     trustedOrigins: ["http://localhost:3000"],
+    payment,
     features: [
       { code: "export", name: "Export", type: "boolean" },
     ],
@@ -30,18 +31,21 @@ function createBilling(overrides = {}) {
         features: [],
       },
     ],
-    ...overrides,
   });
+  return { billing, payment };
 }
 
-function failingChargeAdapter(): PaymentAdapter {
-  const base = paymentAdapter();
-  return {
-    ...base,
-    async charge(_params: ChargeParams): Promise<ChargeResult> {
-      return { status: "failed", error: "card_declined" };
-    },
-  };
+async function subscribe(
+  billing: ReturnType<typeof createBilling>["billing"],
+  payment: ReturnType<typeof createBilling>["payment"],
+  planCode: string,
+) {
+  await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
+  const { subscription } = await billing.api.createSubscription({
+    customerId: "user_1",
+    planCode,
+  });
+  await billing.handler(payment.createWebhookRequest(subscription.id));
 }
 
 describe("Renewals", () => {
@@ -55,11 +59,9 @@ describe("Renewals", () => {
   });
 
   it("charges correct amount and advances billing period", async () => {
-    const billing = createBilling();
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
-    await billing.api.createSubscription({ customerId: "user_1", planCode: "starter" });
+    const { billing, payment } = createBilling();
+    await subscribe(billing, payment, "starter");
 
-    // Advance past period end (Feb 1)
     vi.setSystemTime(new Date("2025-02-01T00:00:01Z"));
 
     const result = await billing.api.processRenewals({ customerId: "user_1" });
@@ -74,30 +76,25 @@ describe("Renewals", () => {
   });
 
   it("is idempotent — running twice does not double-charge", async () => {
-    const billing = createBilling();
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
-    await billing.api.createSubscription({ customerId: "user_1", planCode: "starter" });
+    const { billing, payment } = createBilling();
+    await subscribe(billing, payment, "starter");
 
     vi.setSystemTime(new Date("2025-02-01T00:00:01Z"));
 
     await billing.api.processRenewals({ customerId: "user_1" });
     const secondRun = await billing.api.processRenewals({ customerId: "user_1" });
 
-    // Second run finds 0 due subscriptions (period already advanced)
     expect(secondRun.processed).toBe(0);
 
-    // Only 1 subscription payment + 1 renewal = 2 total
     const payments = await billing.api.listPayments({ customerId: "user_1" });
     const renewalPayments = payments.filter((p) => p.type === "renewal");
     expect(renewalPayments).toHaveLength(1);
   });
 
   it("applies scheduled downgrade before charging", async () => {
-    const billing = createBilling();
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
-    await billing.api.createSubscription({ customerId: "user_1", planCode: "pro" });
+    const { billing, payment } = createBilling();
+    await subscribe(billing, payment, "pro");
 
-    // Schedule downgrade
     await billing.api.changeSubscription({
       customerId: "user_1",
       newPlanCode: "starter",
@@ -107,7 +104,7 @@ describe("Renewals", () => {
 
     const result = await billing.api.processRenewals({ customerId: "user_1" });
 
-    expect(result.renewals[0].amount).toBe(1000); // Starter price, not Pro
+    expect(result.renewals[0].amount).toBe(1000);
     expect(result.renewals[0].planChanged).toEqual({
       from: "pro",
       to: "starter",
@@ -119,9 +116,8 @@ describe("Renewals", () => {
   });
 
   it("advances period without payment on free plan", async () => {
-    const billing = createBilling();
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
-    await billing.api.createSubscription({ customerId: "user_1", planCode: "free" });
+    const { billing, payment } = createBilling();
+    await subscribe(billing, payment, "free");
 
     vi.setSystemTime(new Date("2025-02-01T00:00:01Z"));
 
@@ -135,9 +131,8 @@ describe("Renewals", () => {
   });
 
   it("marks subscription as past_due when charge fails", async () => {
-    const billing = createBilling({ payment: failingChargeAdapter() });
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
-    await billing.api.createSubscription({ customerId: "user_1", planCode: "starter" });
+    const { billing, payment } = createBilling({ charges: "fail" });
+    await subscribe(billing, payment, "starter");
 
     vi.setSystemTime(new Date("2025-02-01T00:00:01Z"));
 

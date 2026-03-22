@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { paymentAdapter } from "@billsdk/payment-adapter";
 import { createBillSDK } from "../billsdk/base";
 
 // Upgrade same-day: starter($1000) → pro($2000)
@@ -6,9 +7,11 @@ import { createBillSDK } from "../billsdk/base";
 const UPGRADE_AMOUNT = 1000;
 
 function createBilling() {
-  return createBillSDK({
+  const payment = paymentAdapter();
+  const billing = createBillSDK({
     secret: "test-secret-that-is-at-least-32-characters-long!!",
     trustedOrigins: ["http://localhost:3000"],
+    payment,
     features: [
       { code: "export", name: "Export", type: "boolean" },
     ],
@@ -27,11 +30,19 @@ function createBilling() {
       },
     ],
   });
+  return { billing, payment };
 }
 
-async function setupWithPayment(billing: ReturnType<typeof createBilling>) {
+async function setupWithPayment(
+  billing: ReturnType<typeof createBilling>["billing"],
+  payment: ReturnType<typeof createBilling>["payment"],
+) {
   await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
-  await billing.api.createSubscription({ customerId: "user_1", planCode: "starter" });
+  const { subscription } = await billing.api.createSubscription({
+    customerId: "user_1",
+    planCode: "starter",
+  });
+  await billing.handler(payment.createWebhookRequest(subscription.id));
 
   // Upgrade creates a payment with providerPaymentId (via charge())
   const result = await billing.api.changeSubscription({
@@ -54,35 +65,35 @@ describe("Refunds", () => {
 
   describe("validation", () => {
     it("rejects refund exceeding remaining amount", async () => {
-      const billing = createBilling();
-      const payment = await setupWithPayment(billing);
+      const { billing, payment } = createBilling();
+      const pay = await setupWithPayment(billing, payment);
 
       await expect(
         billing.api.createRefund({
-          paymentId: payment.id,
+          paymentId: pay.id,
           amount: UPGRADE_AMOUNT + 1000,
         }),
       ).rejects.toThrow(`Only ${UPGRADE_AMOUNT} is available for refund`);
     });
 
     it("rejects double full refund", async () => {
-      const billing = createBilling();
-      const payment = await setupWithPayment(billing);
+      const { billing, payment } = createBilling();
+      const pay = await setupWithPayment(billing, payment);
 
-      await billing.api.createRefund({ paymentId: payment.id });
+      await billing.api.createRefund({ paymentId: pay.id });
 
       await expect(
-        billing.api.createRefund({ paymentId: payment.id }),
+        billing.api.createRefund({ paymentId: pay.id }),
       ).rejects.toThrow("Cannot refund payment with status");
     });
   });
 
   describe("full refund", () => {
     it("creates negative payment record and marks original as refunded", async () => {
-      const billing = createBilling();
-      const payment = await setupWithPayment(billing);
+      const { billing, payment } = createBilling();
+      const pay = await setupWithPayment(billing, payment);
 
-      const result = await billing.api.createRefund({ paymentId: payment.id });
+      const result = await billing.api.createRefund({ paymentId: pay.id });
 
       expect(result.refund.amount).toBe(-UPGRADE_AMOUNT);
       expect(result.refund.type).toBe("refund");
@@ -92,10 +103,10 @@ describe("Refunds", () => {
     });
 
     it("cancels the subscription (default behavior)", async () => {
-      const billing = createBilling();
-      const payment = await setupWithPayment(billing);
+      const { billing, payment } = createBilling();
+      const pay = await setupWithPayment(billing, payment);
 
-      await billing.api.createRefund({ paymentId: payment.id });
+      await billing.api.createRefund({ paymentId: pay.id });
 
       const sub = await billing.api.getSubscription({ customerId: "user_1" });
       expect(sub).toBeNull();
@@ -104,11 +115,11 @@ describe("Refunds", () => {
 
   describe("partial refund", () => {
     it("keeps payment status as succeeded with partial refundedAmount", async () => {
-      const billing = createBilling();
-      const payment = await setupWithPayment(billing);
+      const { billing, payment } = createBilling();
+      const pay = await setupWithPayment(billing, payment);
 
       const result = await billing.api.createRefund({
-        paymentId: payment.id,
+        paymentId: pay.id,
         amount: 300,
       });
 
@@ -118,12 +129,12 @@ describe("Refunds", () => {
     });
 
     it("accumulates multiple partial refunds correctly", async () => {
-      const billing = createBilling();
-      const payment = await setupWithPayment(billing);
+      const { billing, payment } = createBilling();
+      const pay = await setupWithPayment(billing, payment);
 
-      await billing.api.createRefund({ paymentId: payment.id, amount: 300 });
+      await billing.api.createRefund({ paymentId: pay.id, amount: 300 });
       const second = await billing.api.createRefund({
-        paymentId: payment.id,
+        paymentId: pay.id,
         amount: 400,
       });
 
@@ -132,12 +143,12 @@ describe("Refunds", () => {
     });
 
     it("transitions to refunded when partial refunds exhaust the amount", async () => {
-      const billing = createBilling();
-      const payment = await setupWithPayment(billing);
+      const { billing, payment } = createBilling();
+      const pay = await setupWithPayment(billing, payment);
 
-      await billing.api.createRefund({ paymentId: payment.id, amount: 300 });
+      await billing.api.createRefund({ paymentId: pay.id, amount: 300 });
       const final = await billing.api.createRefund({
-        paymentId: payment.id,
+        paymentId: pay.id,
         amount: UPGRADE_AMOUNT - 300,
       });
 
