@@ -1,6 +1,6 @@
 # @billsdk/time-travel
 
-## 1.0.0
+## 0.2.4
 
 ### Patch Changes
 

@@ -6,8 +6,8 @@
 
 - Updated dependencies [[`81d6167`](https://github.com/commet-labs/billsdk/commit/81d61671054a5b0ddfd8d8973076b5da8986c6b2)]:
   - billsdk@0.5.0
-  - @billsdk/stripe@2.0.0
-  - @billsdk/time-travel@1.0.0
+  - @billsdk/stripe@1.2.0
+  - @billsdk/time-travel@0.2.4
 
 ## 0.0.3
 
