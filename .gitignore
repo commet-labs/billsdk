@@ -31,3 +31,5 @@ coverage/
 /packages/docs
 
 .cursor
+
+CLAUDE.md
