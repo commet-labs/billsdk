@@ -24,11 +24,14 @@ function CommetLogo() {
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: (
+      title: <CommetLogo />,
+      url: "https://commet.co",
+      children: (
         <div className="flex items-center gap-3">
-          <CommetLogo />
           <div className="h-4 w-px shrink-0 bg-fd-border" />
-          <span className="text-sm font-medium">billSDK</span>
+          <a href="/" className="text-sm font-medium hover:text-foreground/80">
+            billSDK
+          </a>
         </div>
       ),
       transparentMode: "always",
