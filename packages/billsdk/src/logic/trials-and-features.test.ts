@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { paymentAdapter } from "@billsdk/payment-adapter";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createBillSDK } from "../billsdk/base";
 
 function createBilling(paymentOverrides = {}) {
@@ -144,7 +144,10 @@ describe("Feature access", () => {
 
   it("denies access without subscription", async () => {
     const { billing } = createBilling();
-    await billing.api.createCustomer({ externalId: "user_1", email: "u@t.com" });
+    await billing.api.createCustomer({
+      externalId: "user_1",
+      email: "u@t.com",
+    });
 
     const result = await billing.api.checkFeature({
       customerId: "user_1",

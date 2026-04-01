@@ -93,8 +93,10 @@ export interface PaymentAdapterInstance extends PaymentAdapter {
 export function paymentAdapter(
   options: PaymentAdapterOptions = {},
 ): PaymentAdapterInstance {
-  const { charges: chargeBehavior = "succeed", refunds: refundBehavior = "succeed" } =
-    options;
+  const {
+    charges: chargeBehavior = "succeed",
+    refunds: refundBehavior = "succeed",
+  } = options;
 
   const sessions: PaymentSession[] = [];
   const chargeRecords: ChargeRecord[] = [];

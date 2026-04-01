@@ -112,10 +112,12 @@ export async function createSubscription(
 
     // Trial: keep as trialing, don't charge yet
     if (price.trialDays && subscription.trialEnd) {
-      const trialingSubscription =
-        await ctx.internalAdapter.updateSubscription(subscription.id, {
+      const trialingSubscription = await ctx.internalAdapter.updateSubscription(
+        subscription.id,
+        {
           status: "trialing",
-        });
+        },
+      );
 
       return {
         subscription: trialingSubscription ?? {

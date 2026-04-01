@@ -1,10 +1,10 @@
-export { paymentAdapter } from "./payment-adapter";
 export type {
+  ChargeBehavior,
+  ChargeRecord,
   PaymentAdapterInstance,
   PaymentAdapterOptions,
   PaymentSession,
-  ChargeRecord,
-  RefundRecord,
-  ChargeBehavior,
   RefundBehavior,
+  RefundRecord,
 } from "./payment-adapter";
+export { paymentAdapter } from "./payment-adapter";

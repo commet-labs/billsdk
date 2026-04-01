@@ -14,9 +14,16 @@ export const metadata: Metadata = {
   description:
     "A billing engine that runs inside your application. No lock-in. No revenue share.",
   icons: {
-    icon: "/logo.svg",
-    shortcut: "/logo.svg",
-    apple: "/logo.svg",
+    icon: [
+      {
+        media: "(prefers-color-scheme: light)",
+        url: "/favicon-light.svg",
+      },
+      {
+        media: "(prefers-color-scheme: dark)",
+        url: "/favicon-dark.svg",
+      },
+    ],
   },
   openGraph: {
     type: "website",

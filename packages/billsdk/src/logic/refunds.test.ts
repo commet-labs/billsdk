@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { paymentAdapter } from "@billsdk/payment-adapter";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createBillSDK } from "../billsdk/base";
 
 // Upgrade same-day: starter($1000) → pro($2000)
@@ -12,9 +12,7 @@ function createBilling() {
     secret: "test-secret-that-is-at-least-32-characters-long!!",
     trustedOrigins: ["http://localhost:3000"],
     payment,
-    features: [
-      { code: "export", name: "Export", type: "boolean" },
-    ],
+    features: [{ code: "export", name: "Export", type: "boolean" }],
     plans: [
       {
         code: "starter",

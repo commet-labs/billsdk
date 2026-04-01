@@ -37,33 +37,6 @@ if (allowed) {
 export default function HomePage() {
   return (
     <div className="min-h-screen w-full relative">
-      {/* Background gradient */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          background:
-            "radial-gradient(125% 125% at 50% 90%, var(--background) 40%, var(--muted) 100%)",
-        }}
-      />
-
-      {/* Diamond Grid Pattern - Dark Mode */}
-      <div
-        className="absolute inset-0 z-1 dark:opacity-100 opacity-0 transition-opacity"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0 L60 30 L30 60 L0 30 Z' fill='none' stroke='rgba(142, 136, 126, 0.08)' stroke-width='1'/%3E%3C/svg%3E")`,
-          backgroundSize: "60px 60px",
-        }}
-      />
-
-      {/* Diamond Grid Pattern - Light Mode */}
-      <div
-        className="absolute inset-0 z-1 dark:opacity-0 opacity-100 transition-opacity"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0 L60 30 L30 60 L0 30 Z' fill='none' stroke='rgba(94, 88, 80, 0.06)' stroke-width='1'/%3E%3C/svg%3E")`,
-          backgroundSize: "60px 60px",
-        }}
-      />
-
       {/* Content */}
       <div className="relative z-10 w-full max-w-(--fd-layout-width) mx-auto px-4 sm:px-6 pt-20 pb-12 md:py-20">
         <div className="space-y-12 md:space-y-20">

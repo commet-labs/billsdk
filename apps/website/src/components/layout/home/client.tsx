@@ -37,7 +37,7 @@ export const navItemVariants = cva("[&_svg]:size-4", {
       }),
       icon: buttonVariants({
         color: "ghost",
-        size: "icon",
+        size: "icon-xs",
       }),
     },
   },
@@ -88,7 +88,7 @@ export function Header({
             <NavigationMenuLinkItem key={i} item={item} className="text-sm" />
           ))}
       </ul>
-      <div className="flex flex-row items-center justify-end gap-1.5 flex-1 max-lg:hidden">
+      <div className="flex flex-row items-center justify-end gap-1 flex-1 max-lg:hidden">
         {searchToggle.enabled !== false &&
           (searchToggle.components?.lg ?? (
             <LargeSearchToggle
@@ -196,17 +196,17 @@ function HeaderNavigationMenu({
       <header
         id="nd-nav"
         {...props}
-        className={cn("sticky h-0 top-0 z-40", props.className)}
+        className={cn("sticky h-0 top-0 z-50", props.className)}
       >
         <div
           className={cn(
-            "backdrop-blur-lg border-b transition-colors *:mx-auto *:max-w-(--fd-layout-width)",
+            "backdrop-blur-sm border-b transition-colors *:mx-auto *:max-w-(--fd-layout-width)",
             value.length > 0 && "max-lg:shadow-lg",
-            (!isTransparent || value.length > 0) && "bg-fd-background/80",
+            (!isTransparent || value.length > 0) && "bg-background/80",
           )}
         >
           <NavigationMenuList
-            className="flex h-14 w-full items-center px-4"
+            className="flex h-12 w-full items-center px-4"
             asChild
           >
             <nav>{props.children}</nav>

@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { paymentAdapter } from "@billsdk/payment-adapter";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createBillSDK } from "../billsdk/base";
 
 function createBilling(overrides = {}) {
@@ -74,12 +74,8 @@ describe("Subscription lifecycle", () => {
       expect(sub).not.toBeNull();
       expect(sub!.status).toBe("active");
       expect(sub!.planCode).toBe("starter");
-      expect(sub!.currentPeriodStart).toEqual(
-        new Date("2025-01-15T00:00:00Z"),
-      );
-      expect(sub!.currentPeriodEnd).toEqual(
-        new Date("2025-02-15T00:00:00Z"),
-      );
+      expect(sub!.currentPeriodStart).toEqual(new Date("2025-01-15T00:00:00Z"));
+      expect(sub!.currentPeriodEnd).toEqual(new Date("2025-02-15T00:00:00Z"));
     });
 
     it("creates a payment record on paid plan", async () => {

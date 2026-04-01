@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { paymentAdapter } from "@billsdk/payment-adapter";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createBillSDK } from "../billsdk/base";
 
 function createBilling(paymentOverrides = {}) {
@@ -8,9 +8,7 @@ function createBilling(paymentOverrides = {}) {
     secret: "test-secret-that-is-at-least-32-characters-long!!",
     trustedOrigins: ["http://localhost:3000"],
     payment,
-    features: [
-      { code: "export", name: "Export", type: "boolean" },
-    ],
+    features: [{ code: "export", name: "Export", type: "boolean" }],
     plans: [
       {
         code: "starter",
@@ -82,7 +80,9 @@ describe("Renewals", () => {
     vi.setSystemTime(new Date("2025-02-01T00:00:01Z"));
 
     await billing.api.processRenewals({ customerId: "user_1" });
-    const secondRun = await billing.api.processRenewals({ customerId: "user_1" });
+    const secondRun = await billing.api.processRenewals({
+      customerId: "user_1",
+    });
 
     expect(secondRun.processed).toBe(0);
 

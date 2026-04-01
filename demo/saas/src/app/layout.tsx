@@ -2,6 +2,7 @@ import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { TemplateHeader } from "@/components/template-header";
 import "./globals.css";
 
 const ibmPlexMono = IBM_Plex_Mono({
@@ -35,7 +36,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${ibmPlexMono.className} antialiased`}>
+      <body
+        className={`${ibmPlexMono.className} flex min-h-dvh flex-col antialiased`}
+      >
+        <TemplateHeader />
         <NuqsAdapter>{children}</NuqsAdapter>
         <Analytics />
       </body>

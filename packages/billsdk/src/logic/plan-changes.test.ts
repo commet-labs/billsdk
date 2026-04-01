@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { paymentAdapter } from "@billsdk/payment-adapter";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createBillSDK } from "../billsdk/base";
 
 function createBilling(overrides = {}) {
