@@ -1,0 +1,11 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="640" fill="#1a1916"/>
+  <!-- Commet Logo -->
+  <path d="M600 220L652.11 310.5H547.89L600 220Z" fill="#ede9e1"/>
+  <path d="M600 400L652.11 310.5H547.89L600 400Z" fill="#ede9e1"/>
+  <rect width="130" height="8.7" transform="matrix(0.718749 0.695269 -0.64697 0.762515 547.88 304.55)" fill="#1a1916"/>
+  <!-- Separator -->
+  <rect x="660" y="280" width="1" height="80" fill="#3d3a35"/>
+  <!-- billSDK text -->
+  <text x="690" y="325" font-family="'IBM Plex Mono', monospace" font-size="40" font-weight="500" fill="#ede9e1">billSDK</text>
+</svg>

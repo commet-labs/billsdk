@@ -1,5 +1,5 @@
 import { DocsLayout } from "fumadocs-ui/layouts/notebook";
-import { baseOptions } from "@/lib/layout.shared";
+import { baseOptions, githubLink } from "@/lib/layout.shared";
 import { source } from "@/lib/source";
 
 export default function Layout({ children }: LayoutProps<"/docs">) {
@@ -10,6 +10,7 @@ export default function Layout({ children }: LayoutProps<"/docs">) {
       {...base}
       nav={{ ...nav, mode: "top" }}
       tree={source.getPageTree()}
+      links={[githubLink]}
     >
       {children}
     </DocsLayout>
