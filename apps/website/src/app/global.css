@@ -81,6 +81,25 @@
   --color-fd-overlay: oklch(0.155 0.015 55 / 0.2);
 }
 
+/* Match header height across all layouts (commet uses h-12) */
+#nd-nav nav,
+#nd-subnav {
+  height: 3rem; /* h-12 */
+}
+
+/* Consistent max-width and padding across all layouts */
+#nd-subnav [data-header-body] {
+  max-width: 1536px; /* 2xl */
+  margin-inline: auto;
+  padding-inline: 1rem; /* px-4 */
+  width: 100%;
+}
+
+#nd-page {
+  max-width: 1536px;
+  margin-inline: auto;
+}
+
 /* Override fumadocs neutral sidebar pure-gray HSL with warm OKLCH */
 .dark #nd-sidebar {
   --color-fd-muted: oklch(0.24 0.015 55);
