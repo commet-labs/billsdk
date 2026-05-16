@@ -53,12 +53,12 @@
   },
   "devDependencies": {
     "@billsdk/core": "workspace:*",
-    "@biomejs/biome": "2.3.11",
-    "@types/node": "22.15.29",
-    "stripe": "14.0.0",
+    "@biomejs/biome": "2.4.15",
+    "@types/node": "25.8.0",
+    "stripe": "22.1.1",
     "tsup": "8.5.1",
-    "typescript": "5.9.3",
-    "vitest": "4.0.17"
+    "typescript": "6.0.3",
+    "vitest": "4.1.6"
   },
   "keywords": [
     "billing",
